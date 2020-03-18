@@ -1,0 +1,21 @@
+apiVersion: skaffold/v2alpha4
+kind: Config
+metadata:
+  name: cards-against-formality-services
+build:
+  artifacts:
+    - image: web-gateway-service
+      context: services/web-gateway-service
+      docker:
+        dockerfile: dev.Dockerfile
+deploy:
+  kubectl:
+    manifests:
+      - config/base-config.yaml
+      - services/web-gateway-service/k8s-pod.yaml
+  helm:
+    releases:
+      - name: nats
+        chartPath: bitnami/nats
+        remote: true
+        setValues: { auth.enabled: false }
