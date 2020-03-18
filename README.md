@@ -28,15 +28,17 @@ The project only has 4 dependencies for local development:
 Once you've insured you have installed all the above dependencies, follow these steps to start contributing.
 
 Clone the repository
-
-  git clone https://github.com/JordanPawlett/cards-against-formality-services.git
+```sh
+git clone https://github.com/JordanPawlett/cards-against-formality-services.git
+```
 
 Run the dev server!
-
-  yarn run dev
+```sh
+yarn run dev
+```
 
 Expose the remote debug port - All dev node servers will have a debugger exposed on port 9229.
-
-  kubectl port-forward [name-of-service]-service 9229:9229
-
+```sh
+kubectl port-forward [name-of-service]-service 9229:9229
+```
 Skaffold will handle hot-code changes, ensuring pods will be swapped out of the running kubernetes cluster.
