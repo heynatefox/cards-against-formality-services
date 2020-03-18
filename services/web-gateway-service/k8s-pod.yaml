@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-gateway-service
+spec:
+  containers:
+    - name: web-gateway-service
+      image: web-gateway-service
+      envFrom:
+        - configMapRef:
+            name: base-config
+      env:
+        - name: REQUESTS_PER_MINUTE
+          value: "100"
