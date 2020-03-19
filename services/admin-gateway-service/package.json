@@ -1,0 +1,58 @@
+{
+  "name": "admin-gateway-service",
+  "version": "0.0.1",
+  "description": "Admin Gateway to access admin routes and all internal services",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
+    "start": "node ./build/index.js",
+    "ci": "jest --watch",
+    "test": "jest --coverage",
+    "lint": "tslint -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.14",
+    "@types/node": "^10.12.12",
+    "@types/boom": "^7.3.0",
+    "@types/jsonwebtoken": "^8.3.8",
+    "jest": "^23.6.0",
+    "jest-cli": "^23.6.0",
+    "moleculer-repl": "^0.5.3",
+    "ts-jest": "^23.10.5",
+    "ts-node": "^7.0.1",
+    "ts-node-dev": "^1.0.0-pre.40",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "boom": "^7.3.0",
+    "compression": "^1.7.4",
+    "jsonwebtoken": "^8.5.1",
+    "moleculer": "^0.14.1",
+    "moleculer-web": "^0.8.5",
+    "nats": "^1.4.0"
+  },
+  "engines": {
+    "node": ">= 8.x.x"
+  },
+  "jest": {
+    "coverageDirectory": "<rootDir>/coverage",
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "testMatch": [
+      "**/*.spec.(ts|js)"
+    ],
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.specs.json"
+      }
+    }
+  }
+}

@@ -1,28 +1,30 @@
 import compression from 'compression';
 import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { verify } from 'jsonwebtoken';
+import { unauthorized } from 'boom';
 
 /**
- * WebGatewayService acts as the core gateway to access any of the internal services.
+ * AdminGatewayService exposes all access to admin users.
  *
  * @export
- * @class WebGatewayService
+ * @class AdminGatewayService
  * @extends {Service}
  */
-export default class WebGatewayService extends Service {
+export default class AdminGatewayService extends Service {
 
   /**
-   * Creates an instance of WebGatewayService.
+   * Creates an instance of AdminGatewayService.
    *
    * @param {ServiceBroker} _broker
-   * @memberof WebGatewayService
+   * @memberof AdminGatewayService
    */
   constructor(_broker: ServiceBroker) {
     super(_broker);
 
     this.parseServiceSchema(
       {
-        name: 'web-gateway',
+        name: 'admin-gateway',
         mixins: [
           ApiGateway
         ],
@@ -50,10 +52,11 @@ export default class WebGatewayService extends Service {
           ],
           routes: [
             {
-              path: '/api',
+              path: '/admin',
               authorization: false,
               aliases: {
-
+                'GET /web/health': 'web-gateway.health',
+                'GET /gateway/health': 'admin-gateway.health',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
@@ -66,11 +69,64 @@ export default class WebGatewayService extends Service {
               }
             }],
         },
+        methods: {
+          authorize: this.authorize
+        },
         actions: {
           health: this.health
         }
       }
     );
+  }
+
+  /**
+   * Verify and Decode the JWT token using the Seret.
+   *
+   * @private
+   * @param {string} token
+   * @returns {Promise<any>}
+   * @memberof AdminGatewayService
+   */
+  private verifyAndDecode(token: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(decoded);
+        return;
+      });
+    });
+  }
+
+  /**
+   * Authorize the request. Decode the User token and add it to the ctx meta.
+   *
+   * @private
+   * @param {Context<any, any>} ctx
+   * @param {string} route
+   * @param {*} req
+   * @param {*} res
+   * @returns
+   * @memberof AdminGatewayService
+   */
+  private authorize(ctx: Context<any, any>, route: string, req: any, res: any) {
+    const auth = req.headers['authorization'];
+    if (!auth || !auth.startsWith('Bearer')) {
+      return Promise.reject(unauthorized('No token found'));
+    }
+
+    const token = auth.slice(7);
+    return this.verifyAndDecode(token)
+      .then(decoded => {
+        ctx.meta.user = decoded;
+        return ctx;
+      })
+      .catch(err => {
+        this.logger.error(err);
+        unauthorized('Invalid token. Insufficient privileges');
+      });
   }
 
   /**

@@ -4,6 +4,10 @@ metadata:
   name: cards-against-formality-services
 build:
   artifacts:
+    - image: admin-gateway-service
+      context: services/admin-gateway-service
+      docker:
+        dockerfile: dev.Dockerfile
     - image: web-gateway-service
       context: services/web-gateway-service
       docker:
@@ -11,7 +15,9 @@ build:
 deploy:
   kubectl:
     manifests:
+      - secret.yaml
       - config/base-config.yaml
+      - services/admin-gateway-service/k8s-pod.yaml
       - services/web-gateway-service/k8s-pod.yaml
   helm:
     releases:
