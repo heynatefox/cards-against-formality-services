@@ -12,16 +12,25 @@ build:
       context: services/web-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+    - image: websocket-gateway-service
+      context: services/websocket-gateway-service
+      docker:
+        dockerfile: dev.Dockerfile
 deploy:
   kubectl:
     manifests:
-      - secret.yaml
+      - config/secret.yaml
       - config/base-config.yaml
       - services/admin-gateway-service/k8s-pod.yaml
       - services/web-gateway-service/k8s-pod.yaml
+      - services/websocket-gateway-service/k8s-pod.yaml
   helm:
     releases:
       - name: nats
         chartPath: bitnami/nats
         remote: true
         setValues: { auth.enabled: false }
+      - name: websocket-redis
+        chartPath: bitnami/redis
+        remote: true
+        setValues: { usePassword: false }
