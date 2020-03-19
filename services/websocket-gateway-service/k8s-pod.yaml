@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: websocket-gateway-service
+spec:
+  containers:
+    - name: websocket-gateway-service
+      image: websocket-gateway-service
+      envFrom:
+        - configMapRef:
+            name: base-config
+      env:
+        - name: PORT
+          value: "80"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_HOST
+          value: websocket-redis-master
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-auth
+              key: jwtSecret

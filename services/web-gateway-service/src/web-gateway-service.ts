@@ -79,7 +79,7 @@ export default class WebGatewayService extends Service {
    * @private
    * @param {Context} ctx
    * @returns {Promise<NodeHealthStatus>}
-   * @memberof AdminGatewayService
+   * @memberof WebGatewayService
    */
   private health(ctx: Context): Promise<NodeHealthStatus> {
     return ctx.call('$node.health');

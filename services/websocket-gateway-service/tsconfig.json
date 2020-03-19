@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "allowJs": false,
+    "noImplicitAny": false,
+    "outDir": "./build",
+    "pretty": true,
+    "types": [
+      "jest",
+      "node"
+    ],
+    "sourceMap": false,
+    "target": "es6",
+    "baseUrl": "."
+  },
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.json",
+    "./src/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "test",
+    "coverage",
+    "data",
+    "./src/**/*.spec.ts",
+  ]
+}
