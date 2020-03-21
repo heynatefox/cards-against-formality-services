@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-gateway
+spec:
+  containers:
+    - name: nginx-gateway
+      image: nginx-gateway
+      envFrom:
+        - configMapRef:
+            name: base-config
+      ports:
+        - containerPort: 80

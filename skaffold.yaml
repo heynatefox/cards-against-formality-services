@@ -16,14 +16,23 @@ build:
       context: services/websocket-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+    - image: nginx-gateway
+      context: services/nginx
+      docker:
+        dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:
       - config/secret.yaml
       - config/base-config.yaml
       - services/admin-gateway-service/k8s-pod.yaml
+      - services/admin-gateway-service/k8s-svc.yaml
       - services/web-gateway-service/k8s-pod.yaml
+      - services/web-gateway-service/k8s-svc.yaml
       - services/websocket-gateway-service/k8s-pod.yaml
+      - services/websocket-gateway-service/k8s-svc.yaml
+      - services/nginx/k8s-pod.yaml
+      - services/nginx/k8s-svc.yaml
   helm:
     releases:
       - name: nats

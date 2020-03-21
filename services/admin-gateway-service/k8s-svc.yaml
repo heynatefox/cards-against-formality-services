@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: admin-gateway-service
+  name: admin-gateway-service
+  namespace: default
+  annotations: null
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: admin-gateway-service
