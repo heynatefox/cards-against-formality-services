@@ -117,7 +117,6 @@ export default class CardsService extends Service {
    * @memberof CardsService
    */
   private entityUpdated(json: any, ctx: Context) {
-    this.logger.info('updated', json);
     return ctx.emit(`${this.name}.updated`, json);
   }
 

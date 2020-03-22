@@ -63,8 +63,17 @@ export default class AdminGatewayService extends Service {
                 'GET /cards/:id': 'cards.get',
                 'GET /cards': 'cards.list',
                 'POST /cards/search': 'cards.find',
+                'POST /cards': 'cards.create',
                 'PATCH /cards/:id': 'cards.update',
-                'DELETE /cards/:id': 'cards.remove'
+                'DELETE /cards/:id': 'cards.remove',
+
+                'GET /clients/health': 'clients.health',
+                'GET /clients/:id': 'clients.get',
+                'GET /clients': 'clients.list',
+                'POST /clients/search': 'clients.find',
+                'POST /clients': 'clients.create',
+                'PATCH /clients/:id': 'clients.update',
+                'DELETE /clients/:id': 'clients.remove',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

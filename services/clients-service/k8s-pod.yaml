@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clients-service
+spec:
+  containers:
+    - name: clients-service
+      image: clients-service
+      envFrom:
+        - configMapRef:
+            name: base-config
+      env:
+        - name: PORT
+          value: "80"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-auth
+              key: jwtSecret

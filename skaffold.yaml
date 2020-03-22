@@ -20,6 +20,10 @@ build:
       context: services/cards-service
       docker:
         dockerfile: dev.Dockerfile
+    - image: clients-service
+      context: services/clients-service
+      docker:
+        dockerfile: dev.Dockerfile
     - image: nginx-gateway
       context: services/nginx
       docker:
@@ -37,6 +41,8 @@ deploy:
       - services/websocket-gateway-service/k8s-svc.yaml
       - services/cards-service/k8s-pod.yaml
       - services/cards-service/k8s-svc.yaml
+      - services/clients-service/k8s-pod.yaml
+      - services/clients-service/k8s-svc.yaml
       - services/nginx/k8s-pod.yaml
       - services/nginx/k8s-svc.yaml
   helm:

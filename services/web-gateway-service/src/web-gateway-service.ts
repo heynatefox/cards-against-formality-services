@@ -53,7 +53,11 @@ export default class WebGatewayService extends Service {
               path: '/api',
               authorization: false,
               aliases: {
+                'POST /login': this.handleLogin,
 
+                'GET /cards/:id': 'cards.get',
+                'GET /cards': 'cards.list',
+                'POST /cards/search': 'cards.find',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
@@ -71,6 +75,39 @@ export default class WebGatewayService extends Service {
         }
       }
     );
+  }
+
+  /**
+   * Handle setting the correct headers with the generated jwt token.
+   *
+   * @private
+   * @param {*} req
+   * @param {*} res
+   * @returns {Promise<any>}
+   * @memberof WebGatewayService
+   */
+  private handleLogin(req: any, res: any): Promise<any> {
+    return req.$ctx.call('clients.login', req.$params)
+      .then(msg => {
+        const daysToExpire = 0.25;
+        const date = new Date();
+        date.setDate(date.getDate() + daysToExpire);
+
+        res.writeHead(200, {
+          'Content-Type': 'application/json',
+          'Set-Cookie': `auth=${req.$ctx.meta.token}; Expires=${date.toUTCString()}`
+        });
+        res.write(JSON.stringify(msg));
+        res.end();
+        return null;
+      })
+      .catch(_err => {
+        const err = _err?.message?.payload ? _err.message.payload : _err;
+        res.writeHead(err.statusCode || err.code, { 'Content-Type': 'application/json' });
+        res.write(JSON.stringify(err));
+        res.end();
+        return null;
+      });
   }
 
   /**
