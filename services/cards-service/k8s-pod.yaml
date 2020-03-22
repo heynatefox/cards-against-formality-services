@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cards-service
+spec:
+  containers:
+    - name: cards-service
+      image: cards-service
+      envFrom:
+        - configMapRef:
+            name: base-config
+      env:
+        - name: PORT
+          value: "80"

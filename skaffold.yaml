@@ -16,6 +16,10 @@ build:
       context: services/websocket-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+    - image: cards-service
+      context: services/cards-service
+      docker:
+        dockerfile: dev.Dockerfile
     - image: nginx-gateway
       context: services/nginx
       docker:
@@ -31,6 +35,8 @@ deploy:
       - services/web-gateway-service/k8s-svc.yaml
       - services/websocket-gateway-service/k8s-pod.yaml
       - services/websocket-gateway-service/k8s-svc.yaml
+      - services/cards-service/k8s-pod.yaml
+      - services/cards-service/k8s-svc.yaml
       - services/nginx/k8s-pod.yaml
       - services/nginx/k8s-svc.yaml
   helm:
@@ -41,5 +47,9 @@ deploy:
         setValues: { auth.enabled: false }
       - name: websocket-redis
         chartPath: bitnami/redis
+        remote: true
+        setValues: { usePassword: false }
+      - name: mongo
+        chartPath: bitnami/mongodb
         remote: true
         setValues: { usePassword: false }

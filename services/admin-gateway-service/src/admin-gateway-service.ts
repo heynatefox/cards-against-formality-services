@@ -53,10 +53,18 @@ export default class AdminGatewayService extends Service {
           routes: [
             {
               path: '/admin',
+              // Enable in prod.
               authorization: false,
               aliases: {
                 'GET /web/health': 'web-gateway.health',
                 'GET /gateway/health': 'admin-gateway.health',
+
+                'GET /cards/health': 'cards.health',
+                'GET /cards/:id': 'cards.get',
+                'GET /cards': 'cards.list',
+                'POST /cards/search': 'cards.find',
+                'PATCH /cards/:id': 'cards.update',
+                'DELETE /cards/:id': 'cards.remove'
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
