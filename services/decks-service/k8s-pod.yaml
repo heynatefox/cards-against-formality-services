@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: decks-service
+  name: decks-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: decks-service
+  template:
+    metadata:
+      labels:
+        app: decks-service
+    spec:
+      containers:
+        - name: decks-service
+          image: decks-service
+          envFrom:
+            - configMapRef:
+                name: base-config
+          env:
+            - name: PORT
+              value: "80"
+      restartPolicy: Always

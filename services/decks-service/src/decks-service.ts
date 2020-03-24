@@ -1,48 +1,53 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 
 import dbMixin from '../mixins/db.mixin';
-// Will remove seeds in prod.
-import cardData from '../seeds/cards.json';
 
 /**
- * CardsService acts as a data store with a transactional outbox, for playing cards.
+ * Decks Service handles collating a set of cards in a deck structure.
  *
  * @export
- * @class CardsService
+ * @class DecksService
  * @extends {Service}
  */
-export default class CardsService extends Service {
+export default class DecksService extends Service {
 
   /**
-   * Validation schema for cards being added to the Cards Service mongodb.
+   * Validation Schema for Deck.
    *
    * @private
-   * @memberof CardsService
+   * @memberof DecksService
    */
   private validationSchema = {
-    text: 'string',
-    cardType: { type: 'enum', values: ['white', 'black'] },
-    deck: { type: 'array', items: 'string' },
-    pick: { type: 'number', optional: true },
+    name: 'string',
+    whiteCards: { type: 'array', items: 'string', default: [] },
+    blackCards: { type: 'array', items: 'string', default: [] },
   };
 
   /**
-   * Creates an instance of CardsService.
+   * Creates an instance of DecksService.
    *
    * @param {ServiceBroker} _broker
-   * @memberof CardsService
+   * @memberof DecksService
    */
   constructor(_broker: ServiceBroker) {
     super(_broker);
 
     this.parseServiceSchema(
       {
-        name: 'cards',
+        name: 'decks',
         mixins: [
-          dbMixin('cards')
+          dbMixin('decks')
         ],
         settings: {
-          entityValidator: this.validationSchema
+          entityValidator: this.validationSchema,
+          populates: {
+            whiteCards: {
+              action: 'cards.get'
+            },
+            blackCards: {
+              action: 'cards.get'
+            },
+          }
         },
         actions: {
           health: this.health
@@ -51,6 +56,7 @@ export default class CardsService extends Service {
         entityUpdated: this.entityUpdated,
         entityRemoved: this.entityRemoved,
         afterConnected: async () => {
+          await this.broker.waitForServices('cards');
           const count = await this.adapter.count();
           if (count === 0) {
             this.seedDb();
@@ -65,19 +71,19 @@ export default class CardsService extends Service {
    *
    * @private
    * @returns
-   * @memberof CardsService
+   * @memberof DecksService
    */
-  private seedDb() {
-    const { blackCards, whiteCards } = cardData;
-    const blackCardPromises = blackCards.map(card => {
-      return Object.assign(card, { cardType: 'black' });
-    });
-
-    const whiteCardPromises = whiteCards.map(card => {
-      return { text: card, cardType: 'white' };
-    });
-
-    return this.adapter.insertMany([...blackCardPromises, ...whiteCardPromises]);
+  private async seedDb() {
+    const _cards: any[] = await this.broker.call('cards.find', { query: {} });
+    const { whiteCards, blackCards } = _cards.reduce((acc, card) => {
+      if (card.cardType === 'black') {
+        acc.blackCards.push(card._id);
+      } else {
+        acc.whiteCards.push(card._id);
+      }
+      return acc;
+    }, { whiteCards: [], blackCards: [] });
+    return this.broker.call(`${this.name}.create`, { name: 'Base cards', whiteCards, blackCards });
   }
 
   /**
@@ -86,7 +92,7 @@ export default class CardsService extends Service {
    * @private
    * @param {Context} ctx
    * @returns {Promise<NodeHealthStatus>}
-   * @memberof CardsService
+   * @memberof DecksService
    */
   private health(ctx: Context): Promise<NodeHealthStatus> {
     return ctx.call('$node.health');
@@ -99,7 +105,7 @@ export default class CardsService extends Service {
    * @param {*} json
    * @param {Context} ctx
    * @returns
-   * @memberof CardsService
+   * @memberof DecksService
    */
   private entityCreated(json: any, ctx: Context) {
     return ctx.emit(`${this.name}.created`, json);
@@ -112,7 +118,7 @@ export default class CardsService extends Service {
    * @param {*} json
    * @param {Context} ctx
    * @returns
-   * @memberof CardsService
+   * @memberof DecksService
    */
   private entityUpdated(json: any, ctx: Context) {
     return ctx.emit(`${this.name}.updated`, json);
@@ -125,7 +131,7 @@ export default class CardsService extends Service {
    * @param {*} json
    * @param {Context} ctx
    * @returns
-   * @memberof CardsService
+   * @memberof DecksService
    */
   private entityRemoved(json: any, ctx: Context) {
     return ctx.emit(`${this.name}.removed`, json);

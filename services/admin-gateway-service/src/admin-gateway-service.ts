@@ -67,6 +67,14 @@ export default class AdminGatewayService extends Service {
                 'PATCH /cards/:id': 'cards.update',
                 'DELETE /cards/:id': 'cards.remove',
 
+                'GET /decks/health': 'decks.health',
+                'GET /decks/:id': 'decks.get',
+                'GET /decks': 'decks.list',
+                'POST /decks/search': 'decks.find',
+                'POST /decks': 'decks.create',
+                'PATCH /decks/:id': 'decks.update',
+                'DELETE /decks/:id': 'decks.remove',
+
                 'GET /clients/health': 'clients.health',
                 'GET /clients/:id': 'clients.get',
                 'GET /clients': 'clients.list',
