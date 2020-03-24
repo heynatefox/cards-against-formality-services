@@ -1,7 +1,8 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import dbMixin from '../mixins/db.mixin';
-import Boom from 'boom';
+import { conflict } from 'boom';
 import jwt from 'jsonwebtoken';
+
+import dbMixin from '../mixins/db.mixin';
 
 /**
  * Interface that represents the Client object.
@@ -85,7 +86,7 @@ export default class ClientsService extends Service {
     const { username } = ctx.params;
     const count: number = await ctx.call(`${this.name}.count`, { query: { username } });
     if (count > 0) {
-      const err = Boom.conflict('Username is already taken. Please try another.', { username }).output;
+      const err = conflict('Username is already taken. Please try another.', { username }).output;
       throw err;
     }
 

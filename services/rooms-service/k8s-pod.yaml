@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: rooms-service
+  name: rooms-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rooms-service
+  template:
+    metadata:
+      labels:
+        app: rooms-service
+    spec:
+      containers:
+        - name: rooms-service
+          image: rooms-service
+          envFrom:
+            - configMapRef:
+                name: base-config
+          env:
+            - name: PORT
+              value: "80"
+      restartPolicy: Always

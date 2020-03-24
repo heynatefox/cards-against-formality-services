@@ -74,6 +74,17 @@ export default class AdminGatewayService extends Service {
                 'POST /clients': 'clients.create',
                 'PATCH /clients/:id': 'clients.update',
                 'DELETE /clients/:id': 'clients.remove',
+
+                'GET /rooms/health': 'rooms.health',
+                'GET /rooms/:id': 'rooms.get',
+                'GET /rooms': 'rooms.list',
+                'POST /rooms/search': 'rooms.find',
+                'POST /rooms': 'rooms.create',
+                'PATCH /rooms/:id': 'rooms.update',
+                'DELETE /rooms/:id': 'rooms.remove',
+                'PUT /rooms/join/players': 'rooms.join-players',
+                'PUT /rooms/join/spectators': 'rooms.join-spectators',
+                'PUT /rooms/leave': 'rooms.leave',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

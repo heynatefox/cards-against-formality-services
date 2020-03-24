@@ -58,6 +58,13 @@ export default class WebGatewayService extends Service {
                 'GET /cards/:id': 'cards.get',
                 'GET /cards': 'cards.list',
                 'POST /cards/search': 'cards.find',
+
+                'GET /rooms': 'rooms.list',
+                'POST /rooms/search': 'rooms.find',
+                'POST /rooms': 'rooms.create',
+                'PUT /rooms/join/players': 'rooms.join-players',
+                'PUT /rooms/join/spectators': 'rooms.join-spectators',
+                'PUT /rooms/leave': 'rooms.leave',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
