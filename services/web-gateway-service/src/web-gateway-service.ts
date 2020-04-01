@@ -38,11 +38,11 @@ export default class WebGatewayService extends Service {
             }
           },
           cors: {
-            origin: '*',
+            origin: 'http://localhost:3000',
             methods: ['GET', 'OPTIONS', 'POST', 'PATCH', 'DELETE'],
             allowedHeaders: [],
             exposedHeaders: [],
-            credentials: false,
+            credentials: true,
             maxAge: 3600
           },
           use: [
@@ -103,7 +103,6 @@ export default class WebGatewayService extends Service {
         const daysToExpire = 0.25;
         const date = new Date();
         date.setDate(date.getDate() + daysToExpire);
-
         res.writeHead(200, {
           'Content-Type': 'application/json',
           'Set-Cookie': `auth=${req.$ctx.meta.token}; Expires=${date.toUTCString()}`

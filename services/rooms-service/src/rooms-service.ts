@@ -62,10 +62,11 @@ export default class RoomsService extends Service {
       type: 'object', strict: true, props: {
         decks: { type: 'array', items: 'string', default: [] },
         target: { type: 'number', min: 5, max: 100, default: 10 },
-        maxPlayers: { type: 'number', default: 10, min: 4, max: 10 }
+        maxPlayers: { type: 'number', default: 10, min: 4, max: 10 },
+        maxSpectators: { type: 'number', default: 10, min: 4, max: 10 }
       },
     },
-    passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },
   };
 
   /**

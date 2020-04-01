@@ -22,7 +22,6 @@ export default class CardsService extends Service {
   private validationSchema = {
     text: 'string',
     cardType: { type: 'enum', values: ['white', 'black'] },
-    deck: { type: 'array', items: 'string' },
     pick: { type: 'number', optional: true },
   };
 

@@ -30,7 +30,7 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private validationSchema = {
-    username: 'string',
+    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     socket: { type: 'string', optional: true }
   };
 
@@ -122,8 +122,8 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private async login(ctx: Context<{ username: string }, any>): Promise<{ message: string }> {
-    await ctx.call(`${this.name}.create`, ctx.params);
-    const token = await this.createJwtToken(ctx.params);
+    const user = await ctx.call(`${this.name}.create`, ctx.params);
+    const token = await this.createJwtToken(user);
     ctx.meta.token = token;
     return { message: 'Login successful' };
   }
