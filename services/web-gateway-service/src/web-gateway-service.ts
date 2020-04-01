@@ -1,6 +1,9 @@
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { unauthorized } from 'boom';
+import { verify } from 'jsonwebtoken';
 
 /**
  * WebGatewayService acts as the core gateway to access any of the internal services.
@@ -46,15 +49,29 @@ export default class WebGatewayService extends Service {
             maxAge: 3600
           },
           use: [
-            compression()
+            compression(),
+            cookieParser(),
           ],
           routes: [
             {
-              path: '/api',
-              authorization: false,
+              path: '/api/login',
               aliases: {
-                'POST /login': this.handleLogin,
-
+                'POST /': this.handleLogin,
+              },
+              mappingPolicy: 'restrict',
+              bodyParsers: {
+                json: {
+                  strict: false
+                },
+                urlencoded: {
+                  extended: false
+                }
+              }
+            },
+            {
+              path: '/api',
+              authorization: true,
+              aliases: {
                 'GET /cards/:id': 'cards.get',
                 'GET /cards': 'cards.list',
                 'POST /cards/search': 'cards.find',
@@ -81,6 +98,9 @@ export default class WebGatewayService extends Service {
               }
             }],
         },
+        methods: {
+          authorize: this.authorize
+        },
         actions: {
           health: this.health
         }
@@ -105,7 +125,7 @@ export default class WebGatewayService extends Service {
         date.setDate(date.getDate() + daysToExpire);
         res.writeHead(200, {
           'Content-Type': 'application/json',
-          'Set-Cookie': `auth=${req.$ctx.meta.token}; Expires=${date.toUTCString()}`
+          'Set-Cookie': `auth=Bearer ${req.$ctx.meta.token}; Expires=${date.toUTCString()}`
         });
         res.write(JSON.stringify(msg));
         res.end();
@@ -117,6 +137,56 @@ export default class WebGatewayService extends Service {
         res.write(JSON.stringify(err));
         res.end();
         return null;
+      });
+  }
+
+  /**
+   * Verify and Decode the JWT token using the Seret.
+   *
+   * @private
+   * @param {string} token
+   * @returns {Promise<any>}
+   * @memberof WebGatewayService
+   */
+  private verifyAndDecode(token: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(decoded);
+        return;
+      });
+    });
+  }
+
+  /**
+   * Authorize the request. Decode the User token and add it to the ctx meta.
+   *
+   * @private
+   * @param {Context<any, any>} ctx
+   * @param {string} route
+   * @param {*} req
+   * @param {*} res
+   * @returns
+   * @memberof WebGatewayService
+   */
+  private authorize(ctx: Context<any, any>, route: string, req: any, res: any) {
+    const auth = req.cookies['auth'];
+    if (!auth || !auth.startsWith('Bearer')) {
+      return Promise.reject(unauthorized('No token found'));
+    }
+
+    const token = auth.slice(7);
+    return this.verifyAndDecode(token)
+      .then(decoded => {
+        ctx.meta.user = decoded;
+        return ctx;
+      })
+      .catch(err => {
+        this.logger.error(err);
+        throw unauthorized('Invalid token. Insufficient privileges');
       });
   }
 

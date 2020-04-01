@@ -10,6 +10,7 @@ import dbMixin from '../mixins/db.mixin';
  * @interface Client
  */
 interface Client {
+  _id: string;
   username: string;
   socket?: string;
 }
@@ -65,6 +66,9 @@ export default class ClientsService extends Service {
             },
             handler: this.login
           }
+        },
+        events: {
+          'websocket-gateway.client.connected': this.onSocketConnection
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
@@ -126,6 +130,22 @@ export default class ClientsService extends Service {
     const token = await this.createJwtToken(user);
     ctx.meta.token = token;
     return { message: 'Login successful' };
+  }
+
+  /**
+   * Update the client with the registered socket id.
+   *
+   * @private
+   * @param {Context<Client>} ctx
+   * @returns {Promise<any>}
+   * @memberof ClientsService
+   */
+  private onSocketConnection(ctx: Context<Client>): Promise<any> {
+    const { _id, socket } = ctx.params;
+    return ctx.call(`${this.name}.update`, { id: _id, socket })
+      .catch(err => {
+        this.logger.error(err);
+      });
   }
 
   /**

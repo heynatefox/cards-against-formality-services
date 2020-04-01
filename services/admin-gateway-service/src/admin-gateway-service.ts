@@ -1,4 +1,5 @@
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { verify } from 'jsonwebtoken';
@@ -48,7 +49,8 @@ export default class AdminGatewayService extends Service {
             maxAge: 3600
           },
           use: [
-            compression()
+            compression(),
+            cookieParser()
           ],
           routes: [
             {
@@ -148,7 +150,7 @@ export default class AdminGatewayService extends Service {
    * @memberof AdminGatewayService
    */
   private authorize(ctx: Context<any, any>, route: string, req: any, res: any) {
-    const auth = req.headers['authorization'];
+    const auth = req.cookies['auth'];
     if (!auth || !auth.startsWith('Bearer')) {
       return Promise.reject(unauthorized('No token found'));
     }
