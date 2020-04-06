@@ -1,5 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import { conflict } from 'boom';
+import { conflict, unauthorized } from 'boom';
 import jwt from 'jsonwebtoken';
 
 import dbMixin from '../mixins/db.mixin';
@@ -12,6 +12,7 @@ import dbMixin from '../mixins/db.mixin';
 interface Client {
   _id: string;
   username: string;
+  displayName: string;
   socket?: string;
 }
 
@@ -32,6 +33,7 @@ export default class ClientsService extends Service {
    */
   private validationSchema = {
     username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    displayName: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     socket: { type: 'string', optional: true }
   };
 
@@ -65,7 +67,8 @@ export default class ClientsService extends Service {
               username: 'string',
             },
             handler: this.login
-          }
+          },
+          renew: this.renew
         },
         events: {
           'websocket-gateway.client.connected': this.onSocketConnection
@@ -87,13 +90,18 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private async beforeCreate(ctx: Context<Client>): Promise<Context<Client>> {
-    const { username } = ctx.params;
+    let { username } = ctx.params;
+    // Ensure we store store the username as lowercase. To avoid duplicates.
+    const displayName = username;
+    username = username.toLocaleLowerCase();
     const count: number = await ctx.call(`${this.name}.count`, { query: { username } });
     if (count > 0) {
       const err = conflict('Username is already taken. Please try another.', { username }).output;
       throw err;
     }
 
+    ctx.params.username = username;
+    ctx.params.displayName = displayName;
     return ctx;
   }
 
@@ -107,7 +115,7 @@ export default class ClientsService extends Service {
    */
   private createJwtToken(payload: any) {
     return new Promise((resolve, reject) => {
-      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '12h' }, (err, token) => {
+      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5m' }, (err, token) => {
         if (err) {
           reject(err);
           return;
@@ -118,18 +126,40 @@ export default class ClientsService extends Service {
   }
 
   /**
+   * Try renew the given token. If the user still exists.
+   *
+   * @private
+   * @param {Context<{}, { user: { _id: string }; token?: any }>} ctx
+   * @returns {Promise<Client>}
+   * @memberof ClientsService
+   */
+  private async renew(ctx: Context<{}, { user: { _id: string }; token?: any }>): Promise<Client> {
+    // generae a new token based on the old token provided.
+    const { _id } = ctx.meta.user;
+    return ctx.call(`${this.name}.get`, { id: _id })
+      .then(async (user: Client) => {
+        const token = await this.createJwtToken(user);
+        ctx.meta.token = token;
+        return user;
+      })
+      .catch(() => {
+        throw unauthorized('Unable to renew token').output;
+      });
+  }
+
+  /**
    * Register a user with the given username.
    *
    * @private
-   * @param {Context<{ username: string }>} ctx
+   * @param {Context<Client>} ctx
    * @returns {Promise<{ message: string }>}
    * @memberof ClientsService
    */
-  private async login(ctx: Context<{ username: string }, any>): Promise<{ message: string }> {
-    const user = await ctx.call(`${this.name}.create`, ctx.params);
+  private async login(ctx: Context<{ username: string }, any>): Promise<Client> {
+    const user: Client = await ctx.call(`${this.name}.create`, ctx.params);
     const token = await this.createJwtToken(user);
     ctx.meta.token = token;
-    return { message: 'Login successful' };
+    return user;
   }
 
   /**

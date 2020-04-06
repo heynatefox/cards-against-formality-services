@@ -1,9 +1,8 @@
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
-import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { Service, Errors, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { verify } from 'jsonwebtoken';
-import { unauthorized } from 'boom';
 
 /**
  * AdminGatewayService exposes all access to admin users.
@@ -150,9 +149,9 @@ export default class AdminGatewayService extends Service {
    * @memberof AdminGatewayService
    */
   private authorize(ctx: Context<any, any>, route: string, req: any, res: any) {
-    const auth = req.cookies['auth'];
-    if (!auth || !auth.startsWith('Bearer')) {
-      return Promise.reject(unauthorized('No token found'));
+    const auth = req.cookies['auth'] || req.headers['authorization'];
+    if (auth === undefined || !auth?.length || !auth.startsWith('Bearer')) {
+      return Promise.reject(new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND'));
     }
 
     const token = auth.slice(7);
@@ -162,8 +161,7 @@ export default class AdminGatewayService extends Service {
         return ctx;
       })
       .catch(err => {
-        this.logger.error(err);
-        unauthorized('Invalid token. Insufficient privileges');
+        throw new Errors.MoleculerError(`Denined access: ${err.message}`, 401, 'ACCESS_DENIED');
       });
   }
 

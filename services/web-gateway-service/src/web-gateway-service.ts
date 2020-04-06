@@ -1,8 +1,7 @@
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
-import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import { unauthorized } from 'boom';
+import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import { verify } from 'jsonwebtoken';
 
 /**
@@ -57,6 +56,7 @@ export default class WebGatewayService extends Service {
               path: '/api/login',
               aliases: {
                 'POST /': this.handleLogin,
+                'GET /renew': this.handleRenew
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
@@ -109,32 +109,86 @@ export default class WebGatewayService extends Service {
   }
 
   /**
+   * Helper method to correctly format a response from a login or renew auth request.
+   *
+   * @private
+   * @param {*} res
+   * @param {*} _err
+   * @returns
+   * @memberof WebGatewayService
+   */
+  private handleAuthError(res: any, _err: any) {
+    let err = _err?.message?.payload ? _err.message.payload : _err;
+    let statusCode = err.statusCode || err.code;
+
+    // If this happens an unexpected internal server error has happened.
+    if (!statusCode) {
+      statusCode = 500;
+      this.logger.error(_err);
+      err = { message: 'Something went wrong...' };
+    }
+
+    if (!err?.message?.length) {
+      err.messge = 'Something went wrong...';
+    }
+
+    res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+    res.write(JSON.stringify(err));
+    res.end();
+    return null;
+  }
+
+  /**
+   * Attempt to renew the jwt token.
+   *
+   * @private
+   * @param {*} req
+   * @param {*} res
+   * @returns
+   * @memberof WebGatewayService
+   */
+  private handleRenew(req: any, res: any) {
+    return this.authorize(req.$ctx, undefined, req)
+      .then(ctx => this.handleClientAuth(ctx, 'renew', req, res))
+      .catch(_err => this.handleAuthError(res, _err));
+  }
+
+  /**
+   * Login.
+   *
+   * @private
+   * @param {*} req
+   * @param {*} res
+   * @returns
+   * @memberof WebGatewayService
+   */
+  private handleLogin(req: any, res: any) {
+    return this.handleClientAuth(req.$ctx, 'login', req, res)
+      .catch(_err => this.handleAuthError(res, _err));
+  }
+
+  /**
    * Handle setting the correct headers with the generated jwt token.
    *
    * @private
+   * @param {Context<any, any>} ctx
+   * @param {string} authRoute
    * @param {*} req
    * @param {*} res
    * @returns {Promise<any>}
    * @memberof WebGatewayService
    */
-  private handleLogin(req: any, res: any): Promise<any> {
-    return req.$ctx.call('clients.login', req.$params)
-      .then(msg => {
+  private handleClientAuth(ctx: Context<any, any>, authRoute: string, req: any, res: any): Promise<any> {
+    return ctx.call(`clients.${authRoute}`, req.$params)
+      .then(data => {
         const daysToExpire = 0.25;
         const date = new Date();
         date.setDate(date.getDate() + daysToExpire);
         res.writeHead(200, {
           'Content-Type': 'application/json',
-          'Set-Cookie': `auth=Bearer ${req.$ctx.meta.token}; Expires=${date.toUTCString()}`
+          'Set-Cookie': `auth=${ctx.meta.token}; HttpOnly; Expires=${date.toUTCString()}`
         });
-        res.write(JSON.stringify(msg));
-        res.end();
-        return null;
-      })
-      .catch(_err => {
-        const err = _err?.message?.payload ? _err.message.payload : _err;
-        res.writeHead(err.statusCode || err.code, { 'Content-Type': 'application/json' });
-        res.write(JSON.stringify(err));
+        res.write(JSON.stringify(data));
         res.end();
         return null;
       });
@@ -168,14 +222,13 @@ export default class WebGatewayService extends Service {
    * @param {Context<any, any>} ctx
    * @param {string} route
    * @param {*} req
-   * @param {*} res
    * @returns
    * @memberof WebGatewayService
    */
-  private authorize(ctx: Context<any, any>, route: string, req: any, res: any) {
-    const auth = req.cookies['auth'];
-    if (!auth || !auth.startsWith('Bearer')) {
-      return Promise.reject(unauthorized('No token found'));
+  private authorize(ctx: Context<any, any>, route: string, req: any): Promise<Context<any, any>> {
+    const auth = req.cookies['auth'] || req.headers['authorization'];
+    if (auth === undefined || !auth?.length || !auth.startsWith('Bearer')) {
+      return Promise.reject(new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND'));
     }
 
     const token = auth.slice(7);
@@ -185,8 +238,7 @@ export default class WebGatewayService extends Service {
         return ctx;
       })
       .catch(err => {
-        this.logger.error(err);
-        throw unauthorized('Invalid token. Insufficient privileges');
+        throw new Errors.MoleculerError(`Denined access: ${err.message}`, 401, 'ACCESS_DENIED');
       });
   }
 
