@@ -1,5 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-
+import { conflict, unauthorized, forbidden } from 'boom';
 import dbMixin from '../mixins/db.mixin';
 
 /**
@@ -60,7 +60,7 @@ export default class RoomsService extends Service {
     status: { type: 'enum', values: ['pending', 'started', 'finished'], default: 'pending' },
     options: {
       type: 'object', strict: true, props: {
-        decks: { type: 'array', items: 'string', default: [] },
+        decks: { type: 'array', items: 'string', min: 1 },
         target: { type: 'number', min: 5, max: 100, default: 10 },
         maxPlayers: { type: 'number', default: 10, min: 4, max: 10 },
         maxSpectators: { type: 'number', default: 10, min: 4, max: 10 }
@@ -85,7 +85,12 @@ export default class RoomsService extends Service {
           dbMixin('rooms')
         ],
         settings: {
-          entityValidator: this.validationSchema
+          entityValidator: this.validationSchema,
+        },
+        hooks: {
+          before: {
+            create: [this.beforeCreate] as any
+          }
         },
         actions: {
           'health': this.health,
@@ -122,6 +127,23 @@ export default class RoomsService extends Service {
   }
 
   /**
+   * Check to see if a Room with the given name already exists, before creating it.
+   *
+   * @private
+   * @param {Context<Room>} ctx
+   * @returns {Promise<Context<Room, any>>}
+   * @memberof RoomsService
+   */
+  private async beforeCreate(ctx: Context<Room>): Promise<Context<Room, any>> {
+    const count = await ctx.call(`${this.name}.count`, { query: { name: ctx.params.name } });
+    if (count > 0) {
+      throw conflict('A room with that name already exists');
+    }
+
+    return ctx;
+  }
+
+  /**
    * Given an _id for the room and client, remove the client from spectators and players.
    *
    * @private
@@ -144,8 +166,10 @@ export default class RoomsService extends Service {
    * @returns {Promise<Room>}
    * @memberof RoomsService
    */
-  private async addPlayer(ctx: Context<{ roomId: string; clientId: string }>, arrayProp: string): Promise<Room> {
-    const { roomId, clientId } = ctx.params;
+  private async addPlayer(ctx: Context<{ roomId: string; clientId: string; passcode?: string }>, arrayProp: string)
+    : Promise<Room> {
+
+    const { roomId, clientId, passcode } = ctx.params;
 
     // Check if the user is currently in a game.
     const count = await ctx.call(
@@ -154,13 +178,16 @@ export default class RoomsService extends Service {
     );
 
     if (count > 0) {
-      throw new Error('User is already in a room');
+      throw forbidden('User is already in a room');
     }
 
     const room: Room = await ctx.call(`${this.name}.get`, { id: roomId });
+    if (room.passcode && room.passcode !== passcode) {
+      throw unauthorized('Incorrect password');
+    }
     // Check whether this client would surpass the max number of players.
     if (room.players.length + 1 > room.options.maxPlayers) {
-      throw new Error('Room is full');
+      throw forbidden('The room you are trying to join is full');
     }
 
     return this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } })

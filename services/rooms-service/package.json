@@ -25,6 +25,7 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
+    "boom": "^7.3.0",
     "moleculer": "^0.14.1",
     "moleculer-db": "^0.8.5",
     "moleculer-db-adapter-mongo": "^0.4.7",
