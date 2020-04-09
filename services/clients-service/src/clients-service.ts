@@ -140,7 +140,7 @@ export default class ClientsService extends Service {
       .then(async (user: Client) => {
         const token = await this.createJwtToken(user);
         ctx.meta.token = token;
-        return user;
+        return Object.assign(user, { jwt: token });
       })
       .catch(() => {
         throw unauthorized('Unable to renew token').output;
@@ -159,7 +159,7 @@ export default class ClientsService extends Service {
     const user: Client = await ctx.call(`${this.name}.create`, ctx.params);
     const token = await this.createJwtToken(user);
     ctx.meta.token = token;
-    return user;
+    return Object.assign(user, { jwt: token });
   }
 
   /**
