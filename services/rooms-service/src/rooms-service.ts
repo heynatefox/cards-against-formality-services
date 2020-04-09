@@ -30,6 +30,7 @@ interface RoomOptions {
  * @interface Room
  */
 interface Room {
+  host: string;
   players: string[];
   spectators: string[];
   name: string;
@@ -54,6 +55,7 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private validationSchema = {
+    host: 'string',
     players: { type: 'array', items: 'string', default: [] },
     spectators: { type: 'array', items: 'string', default: [] },
     name: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
@@ -134,12 +136,15 @@ export default class RoomsService extends Service {
    * @returns {Promise<Context<Room, any>>}
    * @memberof RoomsService
    */
-  private async beforeCreate(ctx: Context<Room>): Promise<Context<Room, any>> {
+  private async beforeCreate(ctx: Context<Room, any>): Promise<Context<Room, any>> {
     const count = await ctx.call(`${this.name}.count`, { query: { name: ctx.params.name } });
     if (count > 0) {
       throw conflict('A room with that name already exists');
     }
 
+    const host = ctx.meta.user._id;
+    ctx.params.players = [host];
+    ctx.params.host = host;
     return ctx;
   }
 
