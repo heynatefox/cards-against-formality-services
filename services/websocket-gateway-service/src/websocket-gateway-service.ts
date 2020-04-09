@@ -1,7 +1,11 @@
 import ApiGateway from 'moleculer-web';
+import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import redis from 'socket.io-redis';
 import SocketIO from 'socket.io';
+import DefaultNamespace from './DefaultNamespace';
+import GameNamespace from './GameNamespace';
 
 /**
  * WebsocketGatewayService exposes all access to websocket users.
@@ -19,7 +23,7 @@ export default class WebsocketGatewayService extends Service {
    * @type {SocketIO.Server}
    * @memberof WebsocketGatewayService
    */
-  private server: SocketIO.Server = null;
+  private socketServer: SocketIO.Server = null;
 
   /**
    * Creates an instance of WebsocketGatewayService.
@@ -36,18 +40,34 @@ export default class WebsocketGatewayService extends Service {
         mixins: [
           ApiGateway
         ],
+        settings: {
+          use: [
+            compression(),
+            cookieParser(),
+          ]
+        },
         started: () => {
-          this.server = SocketIO(this.httpServer, { path: '/socket' });
-          this.server.adapter(redis({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }));
+          this.socketServer = SocketIO(this.server, { path: '/socket' });
+          this.socketServer.adapter(redis({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }));
+          new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger);
+          new GameNamespace(this.socketServer.of('/games'), this.broker, this.logger);
           return null;
         },
         actions: {
           health: this.health
+        },
+        events: {
+          'rooms.created': ctx => this.emit(ctx, '/', 'rooms', 'created'),
+          'rooms.updated': ctx => this.emit(ctx, '/', 'rooms', 'updated'),
+          'rooms.removed': ctx => this.emit(ctx, '/', 'rooms', 'removed'),
         }
       }
     );
   }
 
+  private emit(ctx: Context<any>, namespace: string, event: string, updateType: string) {
+    this.socketServer.nsps[namespace].emit(event, { updateType, payload: ctx.params });
+  }
   /**
    * Get the health data for this service.
    *

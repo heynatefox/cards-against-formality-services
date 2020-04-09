@@ -1,7 +1,7 @@
 {
-  "name": "admin-gateway-service",
+  "name": "websocket-gateway-service",
   "version": "0.0.1",
-  "description": "Admin Gateway to access admin routes and all internal services",
+  "description": "Websocket Gateway to subscribe to data and game events",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "boom": "^7.3.0",
+    "compression": "^1.7.4",
+    "cookie-parser": "^1.4.5",
     "jsonwebtoken": "^8.5.1",
     "moleculer": "^0.14.1",
     "moleculer-web": "^0.8.5",
