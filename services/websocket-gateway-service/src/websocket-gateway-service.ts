@@ -6,6 +6,7 @@ import redis from 'socket.io-redis';
 import SocketIO from 'socket.io';
 import DefaultNamespace from './DefaultNamespace';
 import GameNamespace from './GameNamespace';
+import RoomsNamespace from './RoomsNamespace';
 
 /**
  * WebsocketGatewayService exposes all access to websocket users.
@@ -50,6 +51,7 @@ export default class WebsocketGatewayService extends Service {
           this.socketServer = SocketIO(this.server, { path: '/socket' });
           this.socketServer.adapter(redis({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }));
           new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger);
+          new RoomsNamespace(this.socketServer.of('/rooms'), this.broker, this.logger);
           new GameNamespace(this.socketServer.of('/games'), this.broker, this.logger);
           return null;
         },
@@ -57,9 +59,9 @@ export default class WebsocketGatewayService extends Service {
           health: this.health
         },
         events: {
-          'rooms.created': ctx => this.emit(ctx, '/', 'rooms', 'created'),
-          'rooms.updated': ctx => this.emit(ctx, '/', 'rooms', 'updated'),
-          'rooms.removed': ctx => this.emit(ctx, '/', 'rooms', 'removed'),
+          'rooms.created': ctx => this.emit(ctx, '/rooms', 'rooms', 'created'),
+          'rooms.updated': ctx => this.emit(ctx, '/rooms', 'rooms', 'updated'),
+          'rooms.removed': ctx => this.emit(ctx, '/rooms', 'rooms', 'removed'),
         }
       }
     );
