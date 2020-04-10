@@ -1,5 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import { conflict, unauthorized, forbidden } from 'boom';
+import { conflict, forbidden } from 'boom';
 import dbMixin from '../mixins/db.mixin';
 
 /**
@@ -88,10 +88,29 @@ export default class RoomsService extends Service {
         ],
         settings: {
           entityValidator: this.validationSchema,
+          populates: {
+            players: {
+              action: 'clients.get',
+              params: {
+                fields: ['displayName', '_id']
+              }
+            },
+            spectators: {
+              action: 'clients.get',
+              params: {
+                fields: ['displayName', '_id']
+              }
+            },
+          }
         },
         hooks: {
           before: {
             create: [this.beforeCreate] as any
+          },
+          after: {
+            get: [this.afterGet] as any,
+            list: [this.afterList] as any,
+            find: [this.afterFind] as any
           }
         },
         actions: {
@@ -126,6 +145,70 @@ export default class RoomsService extends Service {
         entityRemoved: this.entityRemoved,
       },
     );
+  }
+
+  /**
+   * Obfuscate password on the way out.
+   *
+   * @private
+   * @param {Context<Room, { internal: boolean }>} ctx
+   * @param {Room} res
+   * @returns
+   * @memberof RoomsService
+   */
+  private afterGet(ctx: Context<Room, { internal: boolean }>, res: Room) {
+    if (ctx.meta.internal) {
+      return res;
+    }
+
+    if (res.passcode) {
+      (res as any).passcode = true;
+    }
+    return res;
+  }
+
+  /**
+   * Obfuscate password on the way out.
+   *
+   * @private
+   * @param {Context<Room, { internal: boolean }>} ctx
+   * @param {{ rows: Room[] }} res
+   * @returns
+   * @memberof RoomsService
+   */
+  private afterList(ctx: Context<Room, { internal: boolean }>, res: { rows: Room[] }) {
+    if (ctx.meta.internal) {
+      return res;
+    }
+
+    res.rows.forEach(row => {
+      if (row.passcode) {
+        (row as any).passcode = true;
+      }
+    });
+    return res;
+  }
+
+  /**
+   * Obfuscate password on the way out.
+   *
+   * @private
+   * @param {Context<Room, { internal: boolean }>} ctx
+   * @param {Room[]} res
+   * @returns
+   * @memberof RoomsService
+   */
+  private afterFind(ctx: Context<Room, { internal: boolean }>, res: Room[]) {
+    if (ctx.meta.internal) {
+      return res;
+    }
+
+    return res.map(room => {
+      if (room.passcode) {
+        (room as any).passcode = true;
+      }
+      return room;
+    });
   }
 
   /**
@@ -176,7 +259,25 @@ export default class RoomsService extends Service {
 
     const { roomId, clientId, passcode } = ctx.params;
 
-    // Check if the user is currently in a game.
+    const room = await ctx.call<Room, any>(
+      `${this.name}.get`,
+      { id: roomId, populate: ['players', 'spectators'] },
+      { meta: { internal: true } }
+    );
+    // If the user is already in the room. Return the room.
+    if (
+      room.players.findIndex((pl: any) => pl._id === clientId) >= 0 ||
+      room.spectators.findIndex((pl: any) => pl._id === clientId) >= 0
+    ) {
+      return Promise.resolve(room);
+    }
+
+    // If the room is passcode protected. Try authorize.
+    if (room.passcode && room.passcode !== passcode) {
+      throw forbidden('Incorrect password');
+    }
+
+    // Check if the user is currently in another game.
     const count = await ctx.call(
       `${this.name}.count`,
       { query: { $or: [{ players: clientId }, { spectators: clientId }] } }
@@ -186,10 +287,6 @@ export default class RoomsService extends Service {
       throw forbidden('User is already in a room');
     }
 
-    const room: Room = await ctx.call(`${this.name}.get`, { id: roomId });
-    if (room.passcode && room.passcode !== passcode) {
-      throw unauthorized('Incorrect password');
-    }
     // Check whether this client would surpass the max number of players.
     if (room.players.length + 1 > room.options.maxPlayers) {
       throw forbidden('The room you are trying to join is full');
@@ -245,6 +342,9 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private entityCreated(json: any, ctx: Context) {
+    if (json.passcode) {
+      json.passcode = true;
+    }
     return ctx.emit(`${this.name}.created`, json);
   }
 
@@ -258,6 +358,9 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private entityUpdated(json: any, ctx: Context) {
+    if (json.passcode) {
+      json.passcode = true;
+    }
     return ctx.emit(`${this.name}.updated`, json);
   }
 
@@ -271,6 +374,9 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private entityRemoved(json: any, ctx: Context) {
+    if (json.passcode) {
+      json.passcode = true;
+    }
     return ctx.emit(`${this.name}.removed`, json);
   }
 }
