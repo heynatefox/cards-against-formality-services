@@ -8,7 +8,7 @@ import dbMixin from '../mixins/db.mixin';
  * @enum {number}
  */
 enum Status {
-  PENDING = 'status',
+  PENDING = 'pending',
   STARTED = 'started',
   FINISHED = 'finished'
 }
@@ -30,6 +30,7 @@ interface RoomOptions {
  * @interface Room
  */
 interface Room {
+  _id: string;
   host: string;
   players: string[];
   spectators: string[];
@@ -132,7 +133,7 @@ export default class RoomsService extends Service {
           'leave': {
             params: {
               roomId: 'string',
-              clientId: 'string',
+              clientId: { optional: true, type: 'string' },
             },
             handler: this.removePlayer
           },
@@ -239,10 +240,16 @@ export default class RoomsService extends Service {
    * @returns {Promise<Room>}
    * @memberof RoomsService
    */
-  private removePlayer(ctx: Context<{ roomId: string; clientId: string }>): Promise<Room> {
-    const { roomId, clientId } = ctx.params;
-    return this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } })
-      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+  private removePlayer(ctx: Context<{ roomId: string; clientId?: string }, { user?: { _id: string } }>): Promise<Room> {
+    const { roomId, } = ctx.params;
+    const clientId = ctx.meta.user._id;
+
+    return ctx.call('clients.update', { id: clientId, roomId: null })
+      .then(() => this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } }))
+      .then(json => this.entityChanged('updated', json, ctx).then(() => {
+        ctx.emit(`${this.name}.players.left`, { clientId, roomId });
+        return json;
+      }));
   }
 
   /**
@@ -260,16 +267,19 @@ export default class RoomsService extends Service {
     const { roomId, clientId, passcode } = ctx.params;
 
     const room = await ctx.call<Room, any>(
-      `${this.name}.get`,
-      { id: roomId, populate: ['players', 'spectators'] },
-      { meta: { internal: true } }
+      `${this.name}.get`, { id: roomId, }, { meta: { internal: true } }
     );
-    // If the user is already in the room. Return the room.
-    if (
-      room.players.findIndex((pl: any) => pl._id === clientId) >= 0 ||
-      room.spectators.findIndex((pl: any) => pl._id === clientId) >= 0
-    ) {
-      return Promise.resolve(room);
+    const user: any = await ctx.call(`clients.get`, { id: clientId });
+
+    // check if the user is in a room.
+    if (user?.roomId?.length) {
+      if (user.roomId === roomId) {
+        // user is already in this room.
+        return Promise.resolve(room);
+      } else {
+        // user must be in another room.
+        throw forbidden('A user is only allowed to join one room at a time');
+      }
     }
 
     // If the room is passcode protected. Try authorize.
@@ -277,23 +287,16 @@ export default class RoomsService extends Service {
       throw forbidden('Incorrect password');
     }
 
-    // Check if the user is currently in another game.
-    const count = await ctx.call(
-      `${this.name}.count`,
-      { query: { $or: [{ players: clientId }, { spectators: clientId }] } }
-    );
-
-    if (count > 0) {
-      throw forbidden('User is already in a room');
-    }
-
     // Check whether this client would surpass the max number of players.
     if (room.players.length + 1 > room.options.maxPlayers) {
       throw forbidden('The room you are trying to join is full');
     }
 
-    return this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } })
-      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+    return ctx.call('clients.update', { id: clientId, roomId })
+      .then(() => this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } }))
+      .then(json => this.entityChanged('updated', json, ctx))
+      .then(() => ctx.emit(`${this.name}.${arrayProp}.joined`, { clientId, roomId }))
+      .then(() => ctx.call(`${this.name}.get`, { id: roomId, populate: ['players', 'spectators'] }));
   }
 
   /**
@@ -357,11 +360,22 @@ export default class RoomsService extends Service {
    * @returns
    * @memberof RoomsService
    */
-  private entityUpdated(json: any, ctx: Context) {
+  private async entityUpdated(json: Room, ctx: Context) {
     if (json.passcode) {
-      json.passcode = true;
+      (json as any).passcode = true;
     }
-    return ctx.emit(`${this.name}.updated`, json);
+
+    // If all players have left. OR the room status is still pending, and the host leaves. Destroy the room.
+    if (!json.players?.length || (json.status === Status.PENDING && !json.players?.includes(json.host))) {
+      // Everyone has left. Destroy the room.
+      try {
+        await ctx.call(`${this.name}.remove`, { id: json._id });
+        return;
+      } catch (e) {
+        this.logger.error(e);
+      }
+    }
+    ctx.emit(`${this.name}.updated`, json);
   }
 
   /**
@@ -373,10 +387,19 @@ export default class RoomsService extends Service {
    * @returns
    * @memberof RoomsService
    */
-  private entityRemoved(json: any, ctx: Context) {
+  private async entityRemoved(json: any, ctx: Context) {
     if (json.passcode) {
       json.passcode = true;
     }
-    return ctx.emit(`${this.name}.removed`, json);
+    await ctx.emit(`${this.name}.removed`, json);
+    if (json?.players?.length) {
+      // Ensure the roomId is removed from each of the clients.
+      json.players.forEach(player => {
+        ctx.call('clients.update', { id: player, roomId: null });
+      });
+      json.spectators.forEach(player => {
+        ctx.call('clients.update', { id: player, roomId: null });
+      });
+    }
   }
 }

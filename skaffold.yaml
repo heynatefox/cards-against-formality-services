@@ -32,6 +32,10 @@ build:
       context: services/rooms-service
       docker:
         dockerfile: dev.Dockerfile
+    - image: games-service
+      context: services/games-service
+      docker:
+        dockerfile: dev.Dockerfile
     - image: nginx-gateway
       context: services/nginx
       docker:
@@ -55,6 +59,8 @@ deploy:
       - services/clients-service/k8s-svc.yaml
       - services/rooms-service/k8s-pod.yaml
       - services/rooms-service/k8s-svc.yaml
+      - services/games-service/k8s-pod.yaml
+      - services/games-service/k8s-svc.yaml
       - services/nginx/k8s-pod.yaml
       - services/nginx/k8s-svc.yaml
   helm:

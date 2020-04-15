@@ -3,6 +3,9 @@ import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import { verify } from 'jsonwebtoken';
+import admin from 'firebase-admin';
+
+import serviceAccount from './auth.json';
 
 /**
  * WebGatewayService acts as the core gateway to access any of the internal services.
@@ -12,7 +15,10 @@ import { verify } from 'jsonwebtoken';
  * @extends {Service}
  */
 export default class WebGatewayService extends Service {
-
+  private admin = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as any),
+    databaseURL: "https://cards-against-formality.firebaseio.com"
+  });
   /**
    * Creates an instance of WebGatewayService.
    *
@@ -86,6 +92,10 @@ export default class WebGatewayService extends Service {
                 'PUT /rooms/join/players': 'rooms.join-players',
                 'PUT /rooms/join/spectators': 'rooms.join-spectators',
                 'PUT /rooms/leave': 'rooms.leave',
+
+                'PUT /games/start': 'games.start',
+                'POST /games/cards': 'games.submit',
+                'POST /games/winner': 'games.winner',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
@@ -203,16 +213,17 @@ export default class WebGatewayService extends Service {
    * @memberof WebGatewayService
    */
   private verifyAndDecode(token: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(decoded);
-        return;
-      });
-    });
+    // return new Promise((resolve, reject) => {
+    //   verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    //     if (err) {
+    //       reject(err);
+    //       return;
+    //     }
+    //     resolve(decoded);
+    //     return;
+    //   });
+    // });
+    return admin.auth().verifyIdToken(token);
   }
 
   /**
@@ -226,12 +237,14 @@ export default class WebGatewayService extends Service {
    * @memberof WebGatewayService
    */
   private authorize(ctx: Context<any, any>, route: string, req: any): Promise<Context<any, any>> {
+    this.logger.info('authorizing')
     const auth = req.cookies['auth'] || req.headers['authorization'];
     if (auth === undefined || !auth?.length || !auth.startsWith('Bearer')) {
-      return Promise.reject(new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND'));
+      throw new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND');
     }
 
     const token = auth.slice(7);
+    this.logger.info(token);
     return this.verifyAndDecode(token)
       .then(decoded => {
         ctx.meta.user = decoded;
