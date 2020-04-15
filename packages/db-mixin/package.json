@@ -1,0 +1,54 @@
+{
+  "name": "@cards-against-formality/db-mixin",
+  "version": "0.0.1",
+  "description": "DB mixin used in Cards against formality",
+  "author": "Jordan Pawlett",
+  "main": "build/db.mixin",
+  "typings": "build/db.mixin.d.ts",
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc -d",
+    "lint": "tslint -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.12",
+    "jest": "^23.6.0",
+    "jest-cli": "^23.6.0",
+    "moleculer-repl": "^0.5.3",
+    "ts-jest": "^23.10.5",
+    "ts-node": "^7.0.1",
+    "ts-node-dev": "^1.0.0-pre.40",
+    "tslint": "^5.11.0",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "moleculer": "^0.14.6",
+    "moleculer-db": "^0.8.7",
+    "moleculer-db-adapter-mongo": "^0.4.8"
+  },
+  "engines": {
+    "node": ">= 8.x.x"
+  },
+  "jest": {
+    "coverageDirectory": "<rootDir>/coverage",
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    },
+    "testMatch": [
+      "**/*.spec.(ts|js)"
+    ],
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.specs.json"
+      }
+    }
+  }
+}
