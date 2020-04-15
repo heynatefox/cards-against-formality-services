@@ -1,6 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { conflict, forbidden } from 'boom';
-import dbMixin from '../mixins/db.mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 
 /**
  * Status is an enumerated value to indicate the status of the room.

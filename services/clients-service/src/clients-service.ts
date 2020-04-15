@@ -2,7 +2,7 @@ import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { conflict, unauthorized } from 'boom';
 import jwt from 'jsonwebtoken';
 
-import dbMixin from '../mixins/db.mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 
 /**
  * Interface that represents the Client object.

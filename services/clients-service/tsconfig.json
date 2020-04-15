@@ -19,8 +19,7 @@
   "include": [
     "./src/**/*.ts",
     "./src/**/*.json",
-    "./src/**/*.d.ts",
-    "./mixins/db.mixin.ts"
+    "./src/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",

@@ -1,6 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 
-import dbMixin from '../mixins/db.mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 // Will remove seeds in prod.
 import cardData from '../seeds/cards.json';
 
