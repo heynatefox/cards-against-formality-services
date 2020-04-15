@@ -50,5 +50,6 @@
         "tsConfig": "tsconfig.specs.json"
       }
     }
-  }
+  },
+  "gitHead": "e2b49d0af5523e837c2b16039177d4ee8a931b66"
 }
