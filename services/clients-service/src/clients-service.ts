@@ -14,6 +14,7 @@ interface Client {
   username: string;
   displayName: string;
   socket?: string;
+  roomId?: string;
 }
 
 /**
@@ -34,7 +35,8 @@ export default class ClientsService extends Service {
   private validationSchema = {
     username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     displayName: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
-    socket: { type: 'string', optional: true }
+    socket: { type: 'string', optional: true },
+    roomId: { type: 'string', optional: true }
   };
 
   /**

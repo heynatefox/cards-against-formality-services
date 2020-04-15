@@ -1,0 +1,27 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: games-service
+  name: games-service
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: games-service
+  template:
+    metadata:
+      labels:
+        app: games-service
+    spec:
+      containers:
+        - name: games-service
+          image: games-service
+          envFrom:
+            - configMapRef:
+                name: base-config
+          env:
+            - name: PORT
+              value: "80"
+      restartPolicy: Always

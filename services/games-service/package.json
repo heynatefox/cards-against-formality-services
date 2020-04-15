@@ -1,7 +1,7 @@
 {
-  "name": "web-gateway-service",
+  "name": "games-service",
   "version": "0.0.1",
-  "description": "Web Gateway to access internal services",
+  "description": "Games service handles storing the state of a game.",
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
@@ -11,8 +11,10 @@
     "lint": "tslint -p tsconfig.json"
   },
   "devDependencies": {
+    "@types/boom": "^7.3.0",
     "@types/jest": "^23.3.14",
-    "@types/node": "^10.17.19",
+    "@types/jsonwebtoken": "^8.3.8",
+    "@types/node": "^10.12.12",
     "jest": "^23.6.0",
     "jest-cli": "^23.6.0",
     "moleculer-repl": "^0.5.3",
@@ -23,13 +25,9 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "boom": "^7.3.0",
-    "compression": "^1.7.4",
-    "cookie-parser": "^1.4.5",
-    "firebase-admin": "^8.10.0",
-    "jsonwebtoken": "^8.5.1",
     "moleculer": "^0.14.1",
-    "moleculer-web": "^0.8.5",
+    "moleculer-db": "^0.8.5",
+    "moleculer-db-adapter-mongo": "^0.4.7",
     "nats": "^1.4.0"
   },
   "engines": {

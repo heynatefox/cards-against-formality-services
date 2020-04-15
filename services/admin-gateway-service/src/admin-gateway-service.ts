@@ -94,6 +94,11 @@ export default class AdminGatewayService extends Service {
                 'PUT /rooms/join/players': 'rooms.join-players',
                 'PUT /rooms/join/spectators': 'rooms.join-spectators',
                 'PUT /rooms/leave': 'rooms.leave',
+
+                'GET /games/health': 'games.health',
+                'PUT /games/start': 'games.start',
+                'POST /games/cards': 'games.submit',
+                'POST /games/winner': 'games.winner',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

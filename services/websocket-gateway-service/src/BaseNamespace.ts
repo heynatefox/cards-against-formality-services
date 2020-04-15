@@ -52,7 +52,6 @@ export default class BaseNamespace {
   protected async authMiddleware(client: CustomSocket, next: (err?: any) => void) {
     // Add it to the headers
     const token = client.handshake.query['auth'];
-    this.logger.info(client.handshake.query);
     if (!token?.length) {
       next(unauthorized('No token found'));
       return;
@@ -77,7 +76,7 @@ export default class BaseNamespace {
     client.once('disconnect', () => this.onDisconnect(client));
   }
 
-  private onDisconnect(client: CustomSocket) {
+  protected onDisconnect(client: CustomSocket) {
     client.emit('disconnect', 'Socket Disconnected');
     client.leaveAll();
     client.removeAllListeners();
