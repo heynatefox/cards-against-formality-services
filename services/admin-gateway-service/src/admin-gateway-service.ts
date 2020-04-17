@@ -28,7 +28,7 @@ export default class AdminGatewayService extends Service {
         name: 'admin-gateway',
         mixins: [
           ApiGateway,
-          HealthMiddleware()
+          HealthMiddleware() as any
         ],
         settings: {
           rateLimit: {

@@ -4,6 +4,7 @@ import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import { verify } from 'jsonwebtoken';
 import admin from 'firebase-admin';
+import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 
 import serviceAccount from './auth.json';
 
@@ -32,7 +33,8 @@ export default class WebGatewayService extends Service {
       {
         name: 'web-gateway',
         mixins: [
-          ApiGateway
+          ApiGateway,
+          HealthCheckMixin() as any,
         ],
         settings: {
           rateLimit: {

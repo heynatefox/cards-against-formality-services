@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@cards-against-formality/health-check-mixin@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@cards-against-formality/health-check-mixin/-/health-check-mixin-0.0.1.tgz#e75e7832812fddf4eb8d2f9e7341f73ed17a0db0"
-  integrity sha512-8eFjB+Ta3htQctDzKvQAoV8M8rxKf7cpFws94efXjq+97OG1MYPtX5ZQTNeUwMZTkYi6IksMzI0ow+/W7eAVMg==
+"@cards-against-formality/health-check-mixin@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@cards-against-formality/health-check-mixin/-/health-check-mixin-0.0.3.tgz#fe9cc42c1ce658b20d79eb749d76b6e8b5fcccd6"
+  integrity sha512-eUHTR3kuOm23dpNz0HixPIdmqq/eoMMxaAPBfoC9pYNVHJDUvczloAsvOGU5BCMmiWa9EeO+mack8MzwCey1Ig==
   dependencies:
     moleculer "^0.14.6"
 

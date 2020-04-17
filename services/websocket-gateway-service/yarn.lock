@@ -18,6 +18,13 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
+"@cards-against-formality/health-check-mixin@^0.0.3":
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/@cards-against-formality/health-check-mixin/-/health-check-mixin-0.0.3.tgz#fe9cc42c1ce658b20d79eb749d76b6e8b5fcccd6"
+  integrity sha512-eUHTR3kuOm23dpNz0HixPIdmqq/eoMMxaAPBfoC9pYNVHJDUvczloAsvOGU5BCMmiWa9EeO+mack8MzwCey1Ig==
+  dependencies:
+    moleculer "^0.14.6"
+
 "@types/boom@^7.3.0":
   version "7.3.0"
   resolved "https://registry.yarnpkg.com/@types/boom/-/boom-7.3.0.tgz#33280c5552d4cfabc21b8b7e0f6d29292decd985"

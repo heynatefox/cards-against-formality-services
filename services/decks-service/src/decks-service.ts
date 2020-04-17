@@ -1,6 +1,7 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 
 import dbMixin from '@cards-against-formality/db-mixin';
+import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 
 /**
  * Decks Service handles collating a set of cards in a deck structure.
@@ -36,7 +37,8 @@ export default class DecksService extends Service {
       {
         name: 'decks',
         mixins: [
-          dbMixin('decks')
+          dbMixin('decks'),
+          HealthCheckMixin() as any,
         ],
         settings: {
           entityValidator: this.validationSchema,

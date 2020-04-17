@@ -1,6 +1,7 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { conflict, forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
+import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 
 /**
  * Status is an enumerated value to indicate the status of the room.
@@ -85,7 +86,8 @@ export default class RoomsService extends Service {
       {
         name: 'rooms',
         mixins: [
-          dbMixin('rooms')
+          dbMixin('rooms'),
+          HealthCheckMixin() as any,
         ],
         settings: {
           entityValidator: this.validationSchema,

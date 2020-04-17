@@ -1,5 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-
+import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 import Game, { Room } from './game';
 
 export default class DecksService extends Service {
@@ -12,7 +12,9 @@ export default class DecksService extends Service {
     this.parseServiceSchema(
       {
         name: 'games',
-        mixins: [],
+        mixins: [
+          HealthCheckMixin() as any,
+        ],
         actions: {
           health: this.health,
           start: {

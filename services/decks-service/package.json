@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@cards-against-formality/db-mixin": "^0.0.1",
+    "@cards-against-formality/health-check-mixin": "^0.0.3",
     "nats": "^1.4.0"
   },
   "engines": {

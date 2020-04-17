@@ -5,7 +5,10 @@
   "version": "independent",
   "command": {
     "publish": {
-      "ignoreChanges": []
+      "ignoreChanges": [
+        "yarn.lock",
+        ".gitignore"
+      ]
     }
   }
 }

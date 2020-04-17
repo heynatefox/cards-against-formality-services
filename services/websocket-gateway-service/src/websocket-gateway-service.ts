@@ -4,6 +4,8 @@ import cookieParser from 'cookie-parser';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import redis from 'socket.io-redis';
 import SocketIO from 'socket.io';
+import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
+
 import DefaultNamespace from './DefaultNamespace';
 import GameNamespace from './GameNamespace';
 import RoomsNamespace from './RoomsNamespace';
@@ -39,7 +41,8 @@ export default class WebsocketGatewayService extends Service {
       {
         name: 'websocket-gateway',
         mixins: [
-          ApiGateway
+          ApiGateway,
+          HealthCheckMixin() as any,
         ],
         settings: {
           use: [

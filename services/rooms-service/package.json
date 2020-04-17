@@ -25,8 +25,9 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "boom": "^7.3.0",
     "@cards-against-formality/db-mixin": "^0.0.1",
+    "@cards-against-formality/health-check-mixin": "^0.0.3",
+    "boom": "^7.3.0",
     "nats": "^1.4.0"
   },
   "engines": {
