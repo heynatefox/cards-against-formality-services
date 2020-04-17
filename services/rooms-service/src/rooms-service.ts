@@ -109,9 +109,12 @@ export default class RoomsService extends Service {
             create: [this.beforeCreate] as any
           },
           after: {
-            get: [this.afterGet] as any,
-            list: [this.afterList] as any,
-            find: [this.afterFind] as any
+            'get': [this.afterGet] as any,
+            'list': [this.afterList] as any,
+            'find': [this.afterFind] as any,
+            'join-players': [this.afterAddPlayer] as any,
+            'join-spectators': [this.afterAddPlayer] as any,
+            'leave': [this.afterRemovePlayer] as any
           }
         },
         actions: {
@@ -213,6 +216,37 @@ export default class RoomsService extends Service {
   }
 
   /**
+   * After a Player is added to a room. Emit an event that a Player has joined, and populate the arrays.
+   *
+   * @private
+   * @param {Context<{ clientId: string; roomId: string }>} ctx
+   * @param {Room} res
+   * @returns
+   * @memberof RoomsService
+   */
+  private async afterAddPlayer(ctx: Context<{ clientId: string; roomId: string }>, res: Room) {
+    const { clientId, roomId } = ctx.params;
+    const prop = ctx.action.name === 'join-players' ? 'player' : 'spectator';
+    await ctx.emit(`${this.name}.${prop}.joined`, { clientId, roomId });
+    return ctx.call(`${this.name}.get`, { id: roomId, populate: ['players', 'spectators'] });
+  }
+
+  /**
+   * After a Player has left the room, emit a player left event.
+   *
+   * @private
+   * @param {Context<{ clientId: string; roomId: string }>} ctx
+   * @param {Room} res
+   * @returns
+   * @memberof RoomsService
+   */
+  private async afterRemovePlayer(ctx: Context<{ clientId: string; roomId: string }>, res: Room) {
+    const { clientId, roomId } = ctx.params;
+    await ctx.emit(`${this.name}.player.left`, { clientId, roomId });
+    return res;
+  }
+
+  /**
    * Check to see if a Room with the given name already exists, before creating it.
    *
    * @private
@@ -226,7 +260,7 @@ export default class RoomsService extends Service {
       throw conflict('A room with that name already exists');
     }
 
-    const host = ctx.meta.user._id;
+    const host = ctx.meta.user.uid;
     ctx.params.players = [host];
     ctx.params.host = host;
     return ctx;
@@ -240,16 +274,12 @@ export default class RoomsService extends Service {
    * @returns {Promise<Room>}
    * @memberof RoomsService
    */
-  private removePlayer(ctx: Context<{ roomId: string; clientId?: string }, { user?: { _id: string } }>): Promise<Room> {
+  private removePlayer(ctx: Context<{ roomId: string; clientId?: string }, { user?: { uid: string } }>): Promise<Room> {
     const { roomId, } = ctx.params;
-    const clientId = ctx.meta.user._id;
+    const clientId = ctx.meta.user.uid;
 
-    return ctx.call('clients.update', { id: clientId, roomId: null })
-      .then(() => this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } }))
-      .then(json => this.entityChanged('updated', json, ctx).then(() => {
-        ctx.emit(`${this.name}.players.left`, { clientId, roomId });
-        return json;
-      }));
+    return this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } })
+      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
   }
 
   /**
@@ -292,11 +322,8 @@ export default class RoomsService extends Service {
       throw forbidden('The room you are trying to join is full');
     }
 
-    return ctx.call('clients.update', { id: clientId, roomId })
-      .then(() => this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } }))
-      .then(json => this.entityChanged('updated', json, ctx))
-      .then(() => ctx.emit(`${this.name}.${arrayProp}.joined`, { clientId, roomId }))
-      .then(() => ctx.call(`${this.name}.get`, { id: roomId, populate: ['players', 'spectators'] }));
+    return this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } })
+      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
   }
 
   /**
@@ -395,10 +422,10 @@ export default class RoomsService extends Service {
     if (json?.players?.length) {
       // Ensure the roomId is removed from each of the clients.
       json.players.forEach(player => {
-        ctx.call('clients.update', { id: player, roomId: null });
+        ctx.call(`${this.name}.player.left`, { clientId: player, roomId: json._id });
       });
       json.spectators.forEach(player => {
-        ctx.call('clients.update', { id: player, roomId: null });
+        ctx.call(`${this.name}.spectator.left`, { clientId: player, roomId: json._id });
       });
     }
   }

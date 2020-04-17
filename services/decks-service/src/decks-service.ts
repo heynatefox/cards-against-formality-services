@@ -1,6 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 
-import dbMixin from '../mixins/db.mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 
 /**
  * Decks Service handles collating a set of cards in a deck structure.

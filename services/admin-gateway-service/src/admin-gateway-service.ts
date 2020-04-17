@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
 import { Service, Errors, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { verify } from 'jsonwebtoken';
+import HealthMiddleware from '@cards-against-formality/health-check-mixin';
 
 /**
  * AdminGatewayService exposes all access to admin users.
@@ -26,7 +27,8 @@ export default class AdminGatewayService extends Service {
       {
         name: 'admin-gateway',
         mixins: [
-          ApiGateway
+          ApiGateway,
+          HealthMiddleware()
         ],
         settings: {
           rateLimit: {
