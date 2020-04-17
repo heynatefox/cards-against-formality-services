@@ -23,6 +23,15 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
+"@cards-against-formality/db-mixin@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@cards-against-formality/db-mixin/-/db-mixin-0.0.1.tgz#9c6b5c47aad35b8bff614b6e8faefae147bb3b54"
+  integrity sha512-72kyqtR++Jmrm0fPh1iEzv94Z2WuqRkKEbSsKEKfdrd+8z+xUINJtolxARV+txXUguWy7mQ+IyIg5rZIzO55jg==
+  dependencies:
+    moleculer "^0.14.6"
+    moleculer-db "^0.8.7"
+    moleculer-db-adapter-mongo "^0.4.8"
+
 "@types/boom@^7.3.0":
   version "7.3.0"
   resolved "https://registry.yarnpkg.com/@types/boom/-/boom-7.3.0.tgz#33280c5552d4cfabc21b8b7e0f6d29292decd985"
@@ -1459,10 +1468,10 @@ event-emitter@~0.3.4:
     d "1"
     es5-ext "~0.10.14"
 
-eventemitter2@^6.0.0:
-  version "6.2.1"
-  resolved "https://registry.yarnpkg.com/eventemitter2/-/eventemitter2-6.2.1.tgz#cec423117a8ce45c471092d0bb01a0aff1ed5e47"
-  integrity sha512-38fV8WMnn95y1ugsY8Iu25hhFTHYSqR+JkDVNSuKmi5/sF79Zt+EpA0N6yCGv/PSCZhIRZlyaIBY3q8ed7ZikA==
+eventemitter2@^6.3.1:
+  version "6.3.1"
+  resolved "https://registry.yarnpkg.com/eventemitter2/-/eventemitter2-6.3.1.tgz#14ec7db8c659aa9b36ad2ce4bfcaba95ad525536"
+  integrity sha512-cxfu3g0IBn/JEhAPV33NZTi8llQQ5j62D0Yf4ir1U9uQ1DlRZLL3Hh2E/+TWDprSy4BETWvrGBZMUexuC2b6Lw==
 
 exec-sh@^0.2.0:
   version "0.2.2"
@@ -1620,10 +1629,10 @@ fast-levenshtein@~2.0.6:
   resolved "https://registry.yarnpkg.com/fast-levenshtein/-/fast-levenshtein-2.0.6.tgz#3d8a5c66883a16a30ca8643e851f19baa7797917"
   integrity sha1-PYpcZog6FqMMqGQ+hR8Zuqd5eRc=
 
-fastest-validator@^1.0.2:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/fastest-validator/-/fastest-validator-1.1.0.tgz#013bbc8758dabc29c4d74ffb992b4e8ceb63fabe"
-  integrity sha512-Mx/TU3lVUo++Ghzc9YPdc/z/3UpRm+M5M0wXsakWap9fbdJLxrvaAC9mx+dJcgdKpWCBYT83RXUg6nFC2vcW0A==
+fastest-validator@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/fastest-validator/-/fastest-validator-1.2.0.tgz#84ca8bd8a5501071885fbcf3a7a9656fa5150d47"
+  integrity sha512-cdO1pb0OGFdz9Hy69Bj+dn6+lfq51S3h2QzYc+vLMJnbaEK6Y1Sg81ylQlhMBz4Ubz40rTD66sZwwmKu2MeUbQ==
 
 fb-watchman@^2.0.0:
   version "2.0.1"
@@ -3335,7 +3344,7 @@ mkdirp@0.x, mkdirp@^0.5.1, mkdirp@~0.5.1:
   dependencies:
     minimist "^1.2.5"
 
-moleculer-db-adapter-mongo@^0.4.7:
+moleculer-db-adapter-mongo@^0.4.8:
   version "0.4.8"
   resolved "https://registry.yarnpkg.com/moleculer-db-adapter-mongo/-/moleculer-db-adapter-mongo-0.4.8.tgz#92db5d17e69454923d17c9112df2e36b6743c2d8"
   integrity sha512-sxi7qwHQmJHH2IeBImusEgpVjSpA6n4lHNh37cYwDvJzztwhC4no5VMA+VNr3DvD1i3vdgfcNCs+60cF0sEKPQ==
@@ -3344,10 +3353,10 @@ moleculer-db-adapter-mongo@^0.4.7:
     fakerator "0.3.0"
     mongodb "^3.3.2"
 
-moleculer-db@^0.8.5:
-  version "0.8.6"
-  resolved "https://registry.yarnpkg.com/moleculer-db/-/moleculer-db-0.8.6.tgz#b6fa46c0002034557bd3eccc93f4ee4f8b95e922"
-  integrity sha512-l5cwrqlQQOtN1xrJm+ddAzSj1PFPBX2R7uPD9iDDUQ+NPS24Fv3COVtU98Buw53MkeL2fukWZ+3GnM07RSTTlQ==
+moleculer-db@^0.8.7:
+  version "0.8.7"
+  resolved "https://registry.yarnpkg.com/moleculer-db/-/moleculer-db-0.8.7.tgz#a12252eda366c6fe9e9d20f1134d9b02b5ffdd32"
+  integrity sha512-9v1dbnU2+h/XW34g9w4xuwJoFOOX79XemPqwU/ZbaQRGiyMvRmAAywIJLceKTB4GKkbddJYYY6rCT/FNdcVyuA==
   dependencies:
     bluebird "^3.5.5"
     lodash "^4.17.15"
@@ -3369,15 +3378,15 @@ moleculer-repl@^0.5.3:
     tiny-human-time "^1.2.0"
     vorpal "^1.12.0"
 
-moleculer@^0.14.1:
-  version "0.14.4"
-  resolved "https://registry.yarnpkg.com/moleculer/-/moleculer-0.14.4.tgz#1068a6f070436194078e01b7f541fbdef8f89d97"
-  integrity sha512-t///CADPTl/Nz9DJ/83vPm8yNOA3wd1ZV7x1zutf67lLgswn1f0HTP9xloIK6tb/a1DZkPPkBVXvv35vO3BHUQ==
+moleculer@^0.14.6:
+  version "0.14.6"
+  resolved "https://registry.yarnpkg.com/moleculer/-/moleculer-0.14.6.tgz#4ac27b2e0486bcadd29083376580fee45fdbcbe4"
+  integrity sha512-a4rh60rpGPtuYpMQ3QC0AiFzuUNZ1eG/78OyIMFItq6vmjLvblVTyqdKvnbnAsU9T8YLcEy5U8ZsddNLc71ezA==
   dependencies:
     args "^5.0.1"
     es6-error "^4.1.1"
-    eventemitter2 "^6.0.0"
-    fastest-validator "^1.0.2"
+    eventemitter2 "^6.3.1"
+    fastest-validator "^1.2.0"
     fn-args "^5.0.0"
     glob "^7.1.6"
     ipaddr.js "^1.9.1"

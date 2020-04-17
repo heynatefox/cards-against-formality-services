@@ -2,7 +2,7 @@ import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { conflict, unauthorized } from 'boom';
 import jwt from 'jsonwebtoken';
 
-import dbMixin from '../mixins/db.mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 
 /**
  * Interface that represents the Client object.
@@ -11,7 +11,6 @@ import dbMixin from '../mixins/db.mixin';
  */
 interface Client {
   _id: string;
-  username: string;
   displayName: string;
   socket?: string;
   roomId?: string;
@@ -33,7 +32,7 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private validationSchema = {
-    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    _id: { type: 'string' },
     displayName: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true }
@@ -57,23 +56,23 @@ export default class ClientsService extends Service {
         settings: {
           entityValidator: this.validationSchema
         },
-        hooks: {
-          before: {
-            create: [this.beforeCreate] as any
-          }
-        },
         actions: {
           health: this.health,
           login: {
             params: {
-              username: 'string',
+              displayName: 'string',
+              _id: 'string',
             },
             handler: this.login
           },
           renew: this.renew
         },
         events: {
-          'websocket-gateway.client.connected': this.onSocketConnection
+          'websocket-gateway.client.connected': this.onSocketConnection,
+          'rooms.player.joined': this.onRoomJoin,
+          'rooms.player.left': this.onRoomLeave,
+          'rooms.spectator.joined': this.onRoomJoin,
+          'rooms.spectator.left': this.onRoomLeave,
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
@@ -83,70 +82,37 @@ export default class ClientsService extends Service {
   }
 
   /**
-   * Called before a client is created, to check if username is alraedy in use.
-   * **This will be deprecated once proper Client auth is in place.**
+   * When a client joins a room, update the roomId to reflect the joined room.
    *
    * @private
-   * @param {Context<Client>} ctx
-   * @returns {Promise<Context<Client>>}
-   * @memberof ClientsService
-   */
-  private async beforeCreate(ctx: Context<Client>): Promise<Context<Client>> {
-    let { username } = ctx.params;
-    // Ensure we store store the username as lowercase. To avoid duplicates.
-    const displayName = username;
-    username = username.toLocaleLowerCase();
-    const count: number = await ctx.call(`${this.name}.count`, { query: { username } });
-    if (count > 0) {
-      const err = conflict('Username is already taken. Please try another.', { username }).output;
-      throw err;
-    }
-
-    ctx.params.username = username;
-    ctx.params.displayName = displayName;
-    return ctx;
-  }
-
-  /**
-   * Given a payload, asynchronously create a jwt token.
-   *
-   * @private
-   * @param {*} payload
+   * @param {Context<{ clientId: string; roomId: string }>} ctx
    * @returns
    * @memberof ClientsService
    */
-  private createJwtToken(payload: any) {
-    return new Promise((resolve, reject) => {
-      jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5m' }, (err, token) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(token);
-      });
-    });
+  private onRoomJoin(ctx: Context<{ clientId: string; roomId: string }>) {
+    const { clientId, roomId } = ctx.params;
+    return ctx.call(`${this.name}.update`, { id: clientId, roomId })
+      .catch(err => { this.logger.error('Unable to add client to room', { clientId, roomId }); });
   }
 
   /**
-   * Try renew the given token. If the user still exists.
+   * When a client leaves a room. Ensure the roomId is removed from the client.
    *
    * @private
-   * @param {Context<{}, { user: { _id: string }; token?: any }>} ctx
-   * @returns {Promise<Client>}
+   * @param {Context<{ clientId: string; roomId: string }>} ctx
+   * @returns
    * @memberof ClientsService
    */
-  private async renew(ctx: Context<{}, { user: { _id: string }; token?: any }>): Promise<Client> {
-    // generae a new token based on the old token provided.
-    const { _id } = ctx.meta.user;
-    return ctx.call(`${this.name}.get`, { id: _id })
-      .then(async (user: Client) => {
-        const token = await this.createJwtToken(user);
-        ctx.meta.token = token;
-        return Object.assign(user, { jwt: token });
-      })
-      .catch(() => {
-        throw unauthorized('Unable to renew token').output;
-      });
+  private async onRoomLeave(ctx: Context<{ clientId: string; roomId: string }>) {
+    const { clientId, roomId } = ctx.params;
+    const count = await ctx.call(`${this.name}.count`, { query: { id: clientId, roomId } });
+    if (count <= 0) {
+      this.logger.warn('Client tried to leave a room its no longer in', { clientId, roomId });
+      return;
+    }
+
+    return ctx.call(`${this.name}.update`, { id: clientId, roomId: null })
+      .catch(err => { this.logger.error(err); });
   }
 
   /**
@@ -157,11 +123,9 @@ export default class ClientsService extends Service {
    * @returns {Promise<{ message: string }>}
    * @memberof ClientsService
    */
-  private async login(ctx: Context<{ username: string }, any>): Promise<Client> {
-    const user: Client = await ctx.call(`${this.name}.create`, ctx.params);
-    const token = await this.createJwtToken(user);
-    ctx.meta.token = token;
-    return Object.assign(user, { jwt: token });
+  private async login(ctx: Context<Client, any>): Promise<Client> {
+    return ctx.call<any, any>(`${this.name}.get`, { id: ctx.params._id })
+      .catch(() => ctx.call<any, any>(`${this.name}.create`, ctx.params));
   }
 
   /**

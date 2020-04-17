@@ -240,7 +240,7 @@ export default class WebGatewayService extends Service {
     this.logger.info('authorizing')
     const auth = req.cookies['auth'] || req.headers['authorization'];
     if (auth === undefined || !auth?.length || !auth.startsWith('Bearer')) {
-      throw new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND');
+      return Promise.reject(new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND'));
     }
 
     const token = auth.slice(7);

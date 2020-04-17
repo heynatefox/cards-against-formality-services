@@ -18,6 +18,14 @@ spec:
       containers:
         - name: games-service
           image: games-service
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 3001
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3001
           envFrom:
             - configMapRef:
                 name: base-config

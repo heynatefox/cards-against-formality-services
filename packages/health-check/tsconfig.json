@@ -9,7 +9,6 @@
     "outDir": "./build",
     "pretty": true,
     "types": [
-      "jest",
       "node"
     ],
     "sourceMap": false,
@@ -17,9 +16,7 @@
     "baseUrl": "."
   },
   "include": [
-    "./src/**/*.ts",
-    "./src/**/*.json",
-    "./src/**/*.d.ts"
+    "./src/*.ts",
   ],
   "exclude": [
     "node_modules",

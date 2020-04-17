@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
-    "start": "node ./build/index.js",
+    "start": "node ./build/src/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
     "lint": "tslint -p tsconfig.json"
@@ -25,12 +25,13 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
+    "@cards-against-formality/health-check-mixin": "^0.0.2",
     "boom": "^7.3.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
     "jsonwebtoken": "^8.5.1",
-    "moleculer": "^0.14.1",
-    "moleculer-web": "^0.8.5",
+    "moleculer": "^0.14.6",
+    "moleculer-web": "^0.9.1",
     "nats": "^1.4.0"
   },
   "engines": {

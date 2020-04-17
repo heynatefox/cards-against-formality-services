@@ -39,16 +39,16 @@ export default class DecksService extends Service {
           }
         },
         events: {
-          'rooms.players.joined': this.handlePlayerJoined,
-          'rooms.players.left': this.handlePlayerLeft,
+          'rooms.player.joined': this.handlePlayerJoined,
+          'rooms.player.left': this.handlePlayerLeft,
         }
       },
     );
   }
 
-  private async startGame(ctx: Context<{ roomId: string }, { user: { _id: string } }>) {
+  private async startGame(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
     const { roomId } = ctx.params;
-    const clientId = ctx.meta.user._id;
+    const clientId = ctx.meta.user.uid;
     // TOOD: add check to ensure only host can start the game.
     // Check if the required number of players are in the game before starting.
     const _room: Room = await ctx.call('rooms.get', { id: roomId });
