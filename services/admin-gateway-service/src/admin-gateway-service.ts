@@ -27,9 +27,9 @@ export default class AdminGatewayService extends Service {
       {
         name: 'admin-gateway',
         mixins: [
-          ApiGateway,
-          HealthMiddleware() as any
+          ApiGateway
         ],
+        middlewares: [HealthMiddleware()],
         settings: {
           rateLimit: {
             limit: process.env.REQUESTS_PER_MINUTE || 100,
