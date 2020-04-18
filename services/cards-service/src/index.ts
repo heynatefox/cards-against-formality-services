@@ -1,5 +1,6 @@
 import { ServiceBroker } from 'moleculer';
 import Service from './cards-service';
+import HealthMiddleware from '@cards-against-formality/health-check-mixin';
 
 const registry = {
   strategy: 'CpuUsage'
@@ -21,6 +22,7 @@ const retryPolicy = {
 
 const broker = new ServiceBroker({
   logger: true,
+  middlewares: [HealthMiddleware()],
   logLevel: 'info',
   logFormatter: 'short',
   metrics: false,

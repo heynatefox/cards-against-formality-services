@@ -3,6 +3,10 @@ kind: Config
 metadata:
   name: cards-against-formality-services
 build:
+  tagPolicy:
+    dateTime:
+      format: "2006-01-02_15-04-05.999_MST"
+      timezone: "Local"
   artifacts:
     - image: admin-gateway-service
       context: services/admin-gateway-service

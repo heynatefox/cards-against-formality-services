@@ -38,7 +38,9 @@ export default class DecksService extends Service {
         name: 'decks',
         mixins: [
           dbMixin('decks'),
-          HealthCheckMixin() as any,
+        ],
+        middlewares: [
+          HealthCheckMixin()
         ],
         settings: {
           entityValidator: this.validationSchema,

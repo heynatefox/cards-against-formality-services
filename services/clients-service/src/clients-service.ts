@@ -1,8 +1,4 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import { conflict, unauthorized } from 'boom';
-import jwt from 'jsonwebtoken';
-
-import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 import dbMixin from '@cards-against-formality/db-mixin';
 
 /**
@@ -52,8 +48,7 @@ export default class ClientsService extends Service {
       {
         name: 'clients',
         mixins: [
-          dbMixin('clients'),
-          HealthCheckMixin() as any
+          dbMixin('clients')
         ],
         settings: {
           entityValidator: this.validationSchema
@@ -67,7 +62,6 @@ export default class ClientsService extends Service {
             },
             handler: this.login
           },
-          renew: this.renew
         },
         events: {
           'websocket-gateway.client.connected': this.onSocketConnection,

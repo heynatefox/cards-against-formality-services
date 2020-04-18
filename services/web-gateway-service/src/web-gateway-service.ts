@@ -34,7 +34,9 @@ export default class WebGatewayService extends Service {
         name: 'web-gateway',
         mixins: [
           ApiGateway,
-          HealthCheckMixin() as any,
+        ],
+        middlewares: [
+          HealthCheckMixin()
         ],
         settings: {
           rateLimit: {

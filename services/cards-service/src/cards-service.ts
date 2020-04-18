@@ -1,5 +1,4 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import HealthMiddleware from '@cards-against-formality/health-check-mixin';
 import dbMixin from '@cards-against-formality/db-mixin';
 // Will remove seeds in prod.
 import cardData from '../seeds/cards.json';
@@ -39,7 +38,6 @@ export default class CardsService extends Service {
         name: 'cards',
         mixins: [
           dbMixin('cards'),
-          HealthMiddleware() as any
         ],
         settings: {
           entityValidator: this.validationSchema
