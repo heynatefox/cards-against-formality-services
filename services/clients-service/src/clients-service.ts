@@ -1,5 +1,8 @@
-import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
+import admin from 'firebase-admin';
 import dbMixin from '@cards-against-formality/db-mixin';
+
+import serviceAccount from './auth.json';
 
 /**
  * Interface that represents the Client object.
@@ -8,7 +11,7 @@ import dbMixin from '@cards-against-formality/db-mixin';
  */
 interface Client {
   _id: string;
-  displayName: string;
+  username: string;
   socket?: string;
   roomId?: string;
 }
@@ -23,6 +26,25 @@ interface Client {
 export default class ClientsService extends Service {
 
   /**
+   * Object used to communicate with the firebase authentication server.
+   *
+   * @private
+   * @memberof ClientsService
+   */
+  private admin = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as any),
+    databaseURL: 'https://cards-against-formality.firebaseio.com'
+  });
+
+  /**
+   * Firestore database connection to store user information.
+   *
+   * @private
+   * @memberof ClientsService
+   */
+  private firestoreDb = this.admin.firestore();
+
+  /**
    * Validation schema for users.
    *
    * @private
@@ -30,7 +52,7 @@ export default class ClientsService extends Service {
    */
   private validationSchema = {
     _id: { type: 'string' },
-    displayName: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true }
   };
@@ -54,14 +76,29 @@ export default class ClientsService extends Service {
           entityValidator: this.validationSchema
         },
         actions: {
-          health: this.health,
-          login: {
+          'health': this.health,
+          'renew': {
+            handler: this.renew
+          },
+          'login': {
             params: {
-              displayName: 'string',
-              _id: 'string',
+              username: { optional: true, type: 'string' },
+              uid: 'string',
+              displayName: { optional: true, type: 'string' },
+              photoURL: { optional: true, type: 'string' },
+              email: { optional: true, type: 'string' },
+              emailVerified: 'boolean',
+              phoneNumber: { optional: true, type: 'number' },
+              isAnonymous: 'boolean'
             },
             handler: this.login
           },
+          'check-username': {
+            params: {
+              username: 'string'
+            },
+            handler: this.checkUsername
+          }
         },
         events: {
           'websocket-gateway.client.connected': this.onSocketConnection,
@@ -78,6 +115,137 @@ export default class ClientsService extends Service {
   }
 
   /**
+   * Given a user object, convert all undefined values to null.
+   *
+   * @private
+   * @template T
+   * @param {T} object
+   * @returns {T}
+   * @memberof ClientsService
+   */
+  private sanitizeFirestoreInput<T>(object: T): T {
+    const entries = Object.entries(object).map(([key, value]) => {
+      if (value === undefined) {
+        value = null;
+      }
+      return [key, value];
+    });
+
+    return Object.fromEntries(entries);
+  }
+
+  /**
+   * Compare the given username against the regex.
+   *
+   * @private
+   * @param {string} username
+   * @returns {boolean}
+   * @memberof ClientsService
+   */
+  private isUsernameValid(username: string): boolean {
+    if (username.length < 4 || username.length > 12) {
+      return false;
+    }
+
+    return /^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$/.test(username);
+  }
+
+  /**
+   * Check if the username passes the regex, and is not current taken.
+   *
+   * @private
+   * @param {Context<{ username: string }>} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private checkUsername(ctx: Context<{ username: string }>) {
+    const { username } = ctx.params;
+    const isValid = this.isUsernameValid(username);
+    if (!isValid) {
+      return Promise.reject(new Errors.MoleculerError('Invalid username', 400, 'USERNAME_INVALID'));
+    }
+
+    return this.firestoreDb
+      .collection('usernames')
+      .doc(username)
+      .get()
+      .then(doc => {
+        if (!doc.exists) {
+          return { message: 'Username does not exist' };
+        }
+        throw new Errors.MoleculerError('Username already exists', 409, 'USERNAME_CONFLICT');
+      });
+  }
+
+  /**
+   * Create a user based on the given user object, and meta associated with
+   * the request.
+   *
+   * @private
+   * @param {Context<any, { user: any }>} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private login(ctx: Context<any, { user: any }>) {
+    if (ctx.params.isAnonymous) {
+      // generate username...
+      ctx.params.username = `Anon-${Math.round(Math.random() * 9999)}`;
+    }
+
+    const { username, displayName, photoURL, email, emailVerified, phoneNumber, isAnonymous } = ctx.params;
+    const { uid } = ctx.meta.user;
+    const data = { username, uid, displayName, photoURL, email, emailVerified, phoneNumber, isAnonymous };
+
+
+    return this.checkUsername(ctx)
+      .then(() => {
+        // username doesn't already exist. continue with signup.
+        return this.firestoreDb
+          .collection('users')
+          .doc(data.uid)
+          .set(this.sanitizeFirestoreInput(data));
+      })
+      .then(() => {
+        return this.firestoreDb
+          .collection('usernames')
+          .doc(username)
+          .set({ uid: data.uid });
+      })
+      .then(() => ctx.call(
+        `${this.name}.create`, { _id: data.uid, isAnonymous: data.isAnonymous, username: data.username }
+      ));
+  }
+
+  /**
+   * Try fetch the user making the request, from the firestore db.
+   *
+   * @private
+   * @param {Context<any, { user: { uid: string } }>} ctx
+   * @returns {Promise<Client>}
+   * @memberof ClientsService
+   */
+  private async renew(ctx: Context<any, { user: { uid: string } }>): Promise<Client> {
+    return this.firestoreDb
+      .collection('users')
+      .doc(ctx.meta.user.uid)
+      .get()
+      .then(doc => {
+        if (doc.exists) {
+          // try get the user from our cluster collection, if it doesn't exist create it.
+          return ctx.call<any, any>(`${this.name}.get`, { id: ctx.meta.user.uid })
+            .catch(() => {
+              const data = doc.data();
+              return ctx.call(
+                `${this.name}.create`, { _id: data.uid, isAnonymous: data.isAnonymous, username: data.username }
+              );
+            });
+        }
+        // user doesn' exist in the firebase store...
+        throw new Errors.MoleculerError('User doesnt exist', 404, 'USERNAME_NON_EXISTENT');
+      });
+  }
+
+  /**
    * When a client joins a room, update the roomId to reflect the joined room.
    *
    * @private
@@ -88,7 +256,7 @@ export default class ClientsService extends Service {
   private onRoomJoin(ctx: Context<{ clientId: string; roomId: string }>) {
     const { clientId, roomId } = ctx.params;
     return ctx.call(`${this.name}.update`, { id: clientId, roomId })
-      .catch(err => { this.logger.error('Unable to add client to room', { clientId, roomId }); });
+      .catch(() => { this.logger.error('Unable to add client to room', { clientId, roomId }); });
   }
 
   /**
@@ -101,7 +269,7 @@ export default class ClientsService extends Service {
    */
   private async onRoomLeave(ctx: Context<{ clientId: string; roomId: string }>) {
     const { clientId, roomId } = ctx.params;
-    const count = await ctx.call(`${this.name}.count`, { query: { id: clientId, roomId } });
+    const count = await ctx.call(`${this.name}.count`, { query: { _id: clientId, roomId } });
     if (count <= 0) {
       this.logger.warn('Client tried to leave a room its no longer in', { clientId, roomId });
       return;
@@ -109,19 +277,6 @@ export default class ClientsService extends Service {
 
     return ctx.call(`${this.name}.update`, { id: clientId, roomId: null })
       .catch(err => { this.logger.error(err); });
-  }
-
-  /**
-   * Register a user with the given username.
-   *
-   * @private
-   * @param {Context<Client>} ctx
-   * @returns {Promise<{ message: string }>}
-   * @memberof ClientsService
-   */
-  private async login(ctx: Context<Client, any>): Promise<Client> {
-    return ctx.call<any, any>(`${this.name}.get`, { id: ctx.params._id })
-      .catch(() => ctx.call<any, any>(`${this.name}.create`, ctx.params));
   }
 
   /**

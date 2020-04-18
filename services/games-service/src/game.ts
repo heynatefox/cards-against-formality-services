@@ -267,8 +267,9 @@ export default class Game extends TurnHandler {
 
   }
 
-  public onPlayerJoin(playerId: string) {
+  public async onPlayerJoin(playerId: string) {
     // Ensure the new player is including in the match.
     this.players[playerId] = { _id: playerId, cards: [], isCzar: false, score: 0 };
+    await this.dealWhiteCards(this.players[playerId]);
   }
 }

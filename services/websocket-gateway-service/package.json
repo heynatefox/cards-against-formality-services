@@ -30,6 +30,7 @@
     "boom": "^7.3.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
+    "firebase-admin": "^8.10.0",
     "jsonwebtoken": "^8.5.1",
     "moleculer": "^0.14.6",
     "moleculer-web": "^0.9.1",

@@ -4,7 +4,9 @@ import cookieParser from 'cookie-parser';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import redis from 'socket.io-redis';
 import SocketIO from 'socket.io';
+import admin from 'firebase-admin';
 
+import serviceAccount from './auth.json';
 import DefaultNamespace from './DefaultNamespace';
 import GameNamespace from './GameNamespace';
 import RoomsNamespace from './RoomsNamespace';
@@ -26,6 +28,17 @@ export default class WebsocketGatewayService extends Service {
    * @memberof WebsocketGatewayService
    */
   private socketServer: SocketIO.Server = null;
+
+  /**
+   * Admin Auth provider.
+   *
+   * @private
+   * @memberof WebsocketGatewayService
+   */
+  private admin = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as any),
+    databaseURL: 'https://cards-against-formality.firebaseio.com'
+  }, 'websocket-gateway');
 
   /**
    * Creates an instance of WebsocketGatewayService.
@@ -51,10 +64,10 @@ export default class WebsocketGatewayService extends Service {
         started: () => {
           this.socketServer = SocketIO(this.server, { path: '/socket' });
           this.socketServer.adapter(redis({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }));
-          new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger);
-          new RoomsNamespace(this.socketServer.of('/rooms'), this.broker, this.logger);
+          new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger, this.admin);
+          new RoomsNamespace(this.socketServer.of('/rooms'), this.broker, this.logger, this.admin);
           // Handles users joining a game room of roomId.
-          new GameNamespace(this.socketServer.of('/games'), this.broker, this.logger);
+          new GameNamespace(this.socketServer.of('/games'), this.broker, this.logger, this.admin);
           return null;
         },
         actions: {
@@ -84,8 +97,8 @@ export default class WebsocketGatewayService extends Service {
     const room = Object.assign({}, ctx.params);
 
     // Get clients from cache, This should have a smaller time complexity than making one request and reducing.
-    const players = await ctx.call('clients.get', { id: room.players, fields: ['displayName', '_id'] });
-    const spectators = await ctx.call('clients.get', { id: room.spectators, fields: ['displayName', '_id'] });
+    const players = await ctx.call('clients.get', { id: room.players, fields: ['username', '_id'] });
+    const spectators = await ctx.call('clients.get', { id: room.spectators, fields: ['username', '_id'] });
     room.players = players;
     room.spectators = spectators;
 

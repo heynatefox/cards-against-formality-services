@@ -1,6 +1,5 @@
 import { Namespace, Socket, Adapter } from 'socket.io';
-import { ServiceBroker, LoggerInstance, Errors } from 'moleculer';
-import { verify } from 'jsonwebtoken';
+import { ServiceBroker, LoggerInstance } from 'moleculer';
 import { unauthorized } from 'boom';
 
 export interface CustomSocket extends Socket {
@@ -21,7 +20,12 @@ export default class BaseNamespace {
 
   protected adapter: RedisAdapter = this.namespace.adapter as any;
 
-  constructor(protected namespace: Namespace, protected broker: ServiceBroker, protected logger: LoggerInstance) {
+  constructor(
+    protected namespace: Namespace,
+    protected broker: ServiceBroker,
+    protected logger: LoggerInstance,
+    private admin: any
+  ) {
   }
 
   protected joinRoom(clientId: string, room: string): Promise<string> {
@@ -37,16 +41,7 @@ export default class BaseNamespace {
   }
 
   private verifyAndDecode(token: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(decoded);
-        return;
-      });
-    });
+    return this.admin.auth().verifyIdToken(token);
   }
 
   protected async authMiddleware(client: CustomSocket, next: (err?: any) => void) {
@@ -64,6 +59,7 @@ export default class BaseNamespace {
           return;
         }
         client.user = user;
+        client.user._id = user.uid;
         next();
       })
       .catch(err => {

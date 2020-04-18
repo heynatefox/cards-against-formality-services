@@ -2,6 +2,10 @@
   "compilerOptions": {
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "lib": [
+      "ESNext.Array",
+      "ES2019"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
     "allowJs": false,

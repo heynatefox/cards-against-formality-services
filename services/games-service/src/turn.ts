@@ -103,7 +103,7 @@ export default class TurnHandler {
   }
 
   // Given a player, deal all the white cards to it.
-  private dealWhiteCards(player: GamePlayer): Promise<void> {
+  protected dealWhiteCards(player: GamePlayer): Promise<void> {
     const cardsNeeded = 10 - player.cards.length;
     if (!cardsNeeded) {
       return;

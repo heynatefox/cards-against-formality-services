@@ -93,13 +93,13 @@ export default class RoomsService extends Service {
             players: {
               action: 'clients.get',
               params: {
-                fields: ['displayName', '_id']
+                fields: ['username', '_id']
               }
             },
             spectators: {
               action: 'clients.get',
               params: {
-                fields: ['displayName', '_id']
+                fields: ['username', '_id']
               }
             },
           }
@@ -240,8 +240,9 @@ export default class RoomsService extends Service {
    * @returns
    * @memberof RoomsService
    */
-  private async afterRemovePlayer(ctx: Context<{ clientId: string; roomId: string }>, res: Room) {
-    const { clientId, roomId } = ctx.params;
+  private async afterRemovePlayer(ctx: Context<{ roomId: string }, any>, res: Room) {
+    const { roomId } = ctx.params;
+    const clientId = ctx.meta.user.uid;
     await ctx.emit(`${this.name}.player.left`, { clientId, roomId });
     return res;
   }
@@ -420,13 +421,15 @@ export default class RoomsService extends Service {
     }
     await ctx.emit(`${this.name}.removed`, json);
     if (json?.players?.length) {
+
       // Ensure the roomId is removed from each of the clients.
-      json.players.forEach(player => {
-        ctx.call(`${this.name}.player.left`, { clientId: player, roomId: json._id });
-      });
-      json.spectators.forEach(player => {
-        ctx.call(`${this.name}.spectator.left`, { clientId: player, roomId: json._id });
-      });
+      for (const player of json.players) {
+        await ctx.emit(`${this.name}.player.left`, { clientId: player, roomId: json._id });
+      }
+
+      for (const spectator of json.spectators) {
+        await ctx.emit(`${this.name}.spectator.left`, { clientId: spectator, roomId: json._id });
+      }
     }
   }
 }
