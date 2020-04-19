@@ -4,6 +4,7 @@ import ApiGateway from 'moleculer-web';
 import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import admin from 'firebase-admin';
 import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 import serviceAccount from './auth.json';
 
@@ -43,7 +44,14 @@ export default class WebGatewayService extends Service {
           ApiGateway,
         ],
         middlewares: [
-          HealthCheckMixin()
+          HealthCheckMixin(),
+          CacheCleaner([
+            'cache.clean.clients',
+            'cache.clean.cards',
+            'cache.clean.decks',
+            'cache.clean.rooms',
+            'cache.clean.games',
+          ])
         ],
         settings: {
           rateLimit: {

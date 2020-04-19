@@ -32,10 +32,6 @@ spec:
           env:
             - name: PORT
               value: "80"
-            - name: REDIS_PORT
-              value: "6379"
-            - name: REDIS_HOST
-              value: websocket-redis-master
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

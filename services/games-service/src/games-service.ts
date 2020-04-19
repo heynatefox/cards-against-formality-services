@@ -1,4 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 import Game, { Room } from './game';
 
@@ -12,6 +13,13 @@ export default class DecksService extends Service {
     this.parseServiceSchema(
       {
         name: 'games',
+        mixins: [
+          CacheCleaner([
+            'cache.clean.cards',
+            'cache.clean.decks',
+            'cache.clean.rooms',
+          ])
+        ],
         actions: {
           health: this.health,
           start: {

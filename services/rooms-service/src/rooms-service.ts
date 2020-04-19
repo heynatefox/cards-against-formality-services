@@ -1,6 +1,7 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { conflict, forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 /**
  * Status is an enumerated value to indicate the status of the room.
@@ -86,6 +87,10 @@ export default class RoomsService extends Service {
         name: 'rooms',
         mixins: [
           dbMixin('rooms'),
+          CacheCleaner([
+            'cache.clean.rooms',
+            'cache.clean.clients'
+          ])
         ],
         settings: {
           entityValidator: this.validationSchema,

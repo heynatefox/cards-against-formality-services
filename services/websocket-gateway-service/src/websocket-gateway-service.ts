@@ -5,6 +5,7 @@ import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import redis from 'socket.io-redis';
 import SocketIO from 'socket.io';
 import admin from 'firebase-admin';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 import serviceAccount from './auth.json';
 import DefaultNamespace from './DefaultNamespace';
@@ -54,6 +55,9 @@ export default class WebsocketGatewayService extends Service {
         name: 'websocket-gateway',
         mixins: [
           ApiGateway,
+          CacheCleaner([
+            'cache.clean.clients'
+          ])
         ],
         settings: {
           use: [

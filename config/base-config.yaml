@@ -6,3 +6,5 @@ data:
   NODE_ENV: development
   TRANSPORTER_URI: nats://nats-client.default.svc.cluster.local:4222
   MONGO_URI: mongodb://mongo-mongodb.default.svc.cluster.local:27017
+  REDIS_HOST: redis-master.default.svc.cluster.local
+  REDIS_PORT: "6379"

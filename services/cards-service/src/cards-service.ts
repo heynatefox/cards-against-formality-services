@@ -1,5 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import dbMixin from '@cards-against-formality/db-mixin';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 // Will remove seeds in prod.
 import cardData from '../seeds/cards.json';
 
@@ -38,6 +39,9 @@ export default class CardsService extends Service {
         name: 'cards',
         mixins: [
           dbMixin('cards'),
+          CacheCleaner([
+            'cache.clean.cards'
+          ]),
         ],
         settings: {
           entityValidator: this.validationSchema

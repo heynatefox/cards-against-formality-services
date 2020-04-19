@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import ApiGateway from 'moleculer-web';
 import { Service, Errors, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import { verify } from 'jsonwebtoken';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 /**
  * AdminGatewayService exposes all access to admin users.
@@ -26,7 +27,14 @@ export default class AdminGatewayService extends Service {
       {
         name: 'admin-gateway',
         mixins: [
-          ApiGateway
+          ApiGateway,
+          CacheCleaner([
+            'cache.clean.cards',
+            'cache.clean.decks',
+            'cache.clean.clients',
+            'cache.clean.rooms',
+            'cache.clean.games',
+          ])
         ],
         settings: {
           rateLimit: {

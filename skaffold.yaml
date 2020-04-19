@@ -73,7 +73,7 @@ deploy:
         chartPath: bitnami/nats
         remote: true
         setValues: { auth.enabled: false }
-      - name: websocket-redis
+      - name: redis
         chartPath: bitnami/redis
         remote: true
         setValues: { usePassword: false }

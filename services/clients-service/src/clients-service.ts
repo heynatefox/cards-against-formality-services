@@ -1,6 +1,7 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import admin from 'firebase-admin';
 import dbMixin from '@cards-against-formality/db-mixin';
+import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 import serviceAccount from './auth.json';
 
@@ -70,7 +71,10 @@ export default class ClientsService extends Service {
       {
         name: 'clients',
         mixins: [
-          dbMixin('clients')
+          dbMixin('clients'),
+          CacheCleaner([
+            'cache.cleaner.clients'
+          ])
         ],
         settings: {
           entityValidator: this.validationSchema
