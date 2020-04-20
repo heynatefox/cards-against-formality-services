@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
-    "start": "node ./build/src/index.js",
+    "start": "node ./build/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
     "lint": "tslint -p tsconfig.json"
