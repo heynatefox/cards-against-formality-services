@@ -27,7 +27,7 @@ const broker = new ServiceBroker({
   logLevel: 'info',
   logFormatter: 'short',
   metrics: false,
-    cacher: {
+  cacher: {
     type: 'Redis',
     prefix: 'GAMES-MOL',
     options: {

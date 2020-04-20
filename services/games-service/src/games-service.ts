@@ -1,5 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
+import dbMixin from '@cards-against-formality/db-mixin';
 
 import Game, { Room } from './game';
 
@@ -14,6 +15,7 @@ export default class DecksService extends Service {
       {
         name: 'games',
         mixins: [
+          dbMixin('games'),
           CacheCleaner([
             'cache.clean.cards',
             'cache.clean.decks',

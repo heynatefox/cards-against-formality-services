@@ -97,6 +97,7 @@ export default class ClientsService extends Service {
             },
             handler: this.login
           },
+          'logout': this.logout,
           'check-username': {
             params: {
               username: 'string'
@@ -200,7 +201,6 @@ export default class ClientsService extends Service {
     const { uid } = ctx.meta.user;
     const data = { username, uid, displayName, photoURL, email, emailVerified, phoneNumber, isAnonymous };
 
-
     return this.checkUsername(ctx)
       .then(() => {
         // username doesn't already exist. continue with signup.
@@ -218,6 +218,22 @@ export default class ClientsService extends Service {
       .then(() => ctx.call(
         `${this.name}.create`, { _id: data.uid, isAnonymous: data.isAnonymous, username: data.username }
       ));
+  }
+
+  /**
+   * Remove the user associated with the logout call.
+   *
+   * @private
+   * @param {Context<any, any>} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private logout(ctx: Context<any, any>) {
+    if (!ctx.meta.user?.uid) {
+      return Promise.reject(new Error('Invalid user'));
+    }
+
+    return ctx.call(`${this.name}.remove`, { id: ctx.meta.user.uid });
   }
 
   /**

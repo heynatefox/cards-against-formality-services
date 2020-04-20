@@ -92,7 +92,8 @@ export default class TurnHandler {
     const index = this.getRandomIndex(this.blackCards.length - 1);
     // Remove the card so it cannot be chosen again.
     this.blackCards.splice(index, 1);
-    return this.broker.call('cards.get', { id: this.blackCards[index] });
+    const id = this.blackCards[index];
+    return this.broker.call('cards.get', { id });
   }
 
   private pickWhiteCard(): string {
@@ -109,7 +110,10 @@ export default class TurnHandler {
       return;
     }
 
-    for (let i = 0; i < cardsNeeded; i++) {
+    // for (let i = 0; i < cardsNeeded; i++) {
+    //   player.cards.push(this.pickWhiteCard());
+    // }
+    while (player.cards?.length !== 10) {
       player.cards.push(this.pickWhiteCard());
     }
 

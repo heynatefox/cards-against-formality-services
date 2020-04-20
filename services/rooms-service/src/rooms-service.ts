@@ -349,7 +349,7 @@ export default class RoomsService extends Service {
     )
       .then(doc => {
         // Client is not in any rooms
-        if (!doc?.values) {
+        if (!doc.value) {
           return null;
         }
         this.entityChanged('updated', doc.value, ctx).then(() => doc.value);

@@ -81,6 +81,7 @@ export default class WebGatewayService extends Service {
               path: '/api',
               authorization: true,
               aliases: {
+                'PUT /logout': 'clients.logout',
                 'PUT /login/renew': 'clients.renew',
                 'POST /login': 'clients.login',
                 'POST /check/username': 'clients.check-username',

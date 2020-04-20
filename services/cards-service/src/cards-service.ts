@@ -55,7 +55,8 @@ export default class CardsService extends Service {
         afterConnected: async () => {
           const count = await this.adapter.count();
           if (count === 0) {
-            this.seedDb();
+            await this.seedDb();
+            await this.broker.broadcast('cache.clean.cards');
           }
         }
       },

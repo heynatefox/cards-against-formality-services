@@ -123,29 +123,34 @@ export default class Game extends TurnHandler {
     this.broker.emit('games.updated', initialData);
   }
 
-  private async handleNextTurn() {
+  private handleNextTurn() {
     // Target should actually be based on the first user score to get to that.
     if (this.turn + 1 > this._room.options.target) {
       this.endGame();
       return;
     }
 
-    const data = await this.startTurn(this.players);
-    this.gameState = GameState.PICKING_CARDS;
+    return this.startTurn(this.players)
+      .then(async data => {
+        this.gameState = GameState.PICKING_CARDS;
 
-    const withState: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      selectedCards: {},
-      winner: null,
-      winningCards: [],
-      ...data,
-      state: GameState.PICKING_CARDS,
-    };
+        const withState: TurnDataWithState = {
+          players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+          roomId: this.room._id,
+          selectedCards: {},
+          winner: null,
+          winningCards: [],
+          ...data,
+          state: GameState.PICKING_CARDS,
+        };
 
-    this.logger.info('Starting turn', withState);
-    this.broker.emit('games.updated', withState);
-    this.setGameTimer();
+        this.logger.info('Starting turn', withState);
+        await this.broker.emit('games.updated', withState);
+        this.setGameTimer();
+      })
+      .catch(err => {
+        this.logger.error(err);
+      });
   }
 
   private async handleWinnerSelection() {
