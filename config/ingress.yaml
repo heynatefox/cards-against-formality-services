@@ -1,0 +1,11 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: default-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: external-ip-address
+    networking.gke.io/managed-certificates: main-certificate
+spec:
+  backend:
+    serviceName: nginx-gateway
+    servicePort: 80

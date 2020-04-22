@@ -5,8 +5,7 @@ metadata:
     app: nginx-gateway
   name: nginx-gateway
   namespace: default
-  annotations:
-    beta.cloud.google.com/backend-config: '{"ports": {"80":"nginx-gateway-backendconfig"}}'
+  annotations: null
 spec:
   ports:
     - name: http
@@ -15,4 +14,4 @@ spec:
       protocol: TCP
   selector:
     app: nginx-gateway
-  type: NodePort
+  type: LoadBalancer

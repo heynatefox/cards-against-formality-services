@@ -76,11 +76,11 @@ export default class TurnHandler {
   private pickCzar(players: { [id: string]: GamePlayer }): string {
     // pick czar and emit update.
     const playersArr = Object.values(players);
-    let index = this.getRandomIndex(playersArr.length - 1);
+    let index = this.getRandomIndex(playersArr.length);
     let selectedPlayer = playersArr[index];
     if (!selectedPlayer) {
       // This should be recurrsive.
-      index = this.getRandomIndex(playersArr.length - 1);
+      index = this.getRandomIndex(playersArr.length);
       selectedPlayer = playersArr[index];
     }
     // mutate by reference.
@@ -89,7 +89,7 @@ export default class TurnHandler {
   }
 
   private pickBlackCard(): Promise<Card> {
-    const index = this.getRandomIndex(this.blackCards.length - 1);
+    const index = this.getRandomIndex(this.blackCards.length);
     // Remove the card so it cannot be chosen again.
     this.blackCards.splice(index, 1);
     const id = this.blackCards[index];
@@ -97,7 +97,7 @@ export default class TurnHandler {
   }
 
   private pickWhiteCard(): string {
-    const index = this.getRandomIndex(this.whiteCards.length - 1);
+    const index = this.getRandomIndex(this.whiteCards.length);
     // Remove the card so it cannot be chosen again.
     this.whiteCards.splice(index, 1);
     return this.whiteCards[index];

@@ -3,11 +3,11 @@ kind: Config
 metadata:
   name: cards-against-formality-services
 build:
-  tagPolicy:
-    dateTime:
-      format: "2006-01-02_15-04-05.999_MST"
-      timezone: "Local"
   artifacts:
+    - image: nginx-gateway
+      context: services/nginx
+      docker:
+        dockerfile: Dockerfile
     - image: admin-gateway-service
       context: services/admin-gateway-service
       docker:
@@ -40,13 +40,11 @@ build:
       context: services/games-service
       docker:
         dockerfile: dev.Dockerfile
-    - image: nginx-gateway
-      context: services/nginx
-      docker:
-        dockerfile: Dockerfile
 deploy:
   kubectl:
     manifests:
+      - services/nginx/k8s-svc.dev.yaml
+      - services/nginx/k8s-pod.yaml
       - config/secret.yaml
       - config/base-config.yaml
       - services/admin-gateway-service/k8s-pod.yaml
@@ -56,17 +54,10 @@ deploy:
       - services/websocket-gateway-service/k8s-pod.yaml
       - services/websocket-gateway-service/k8s-svc.yaml
       - services/cards-service/k8s-pod.yaml
-      - services/cards-service/k8s-svc.yaml
       - services/decks-service/k8s-pod.yaml
-      - services/decks-service/k8s-svc.yaml
       - services/clients-service/k8s-pod.yaml
-      - services/clients-service/k8s-svc.yaml
       - services/rooms-service/k8s-pod.yaml
-      - services/rooms-service/k8s-svc.yaml
       - services/games-service/k8s-pod.yaml
-      - services/games-service/k8s-svc.yaml
-      - services/nginx/k8s-pod.yaml
-      - services/nginx/k8s-svc.yaml
   helm:
     releases:
       - name: nats
@@ -81,3 +72,39 @@ deploy:
         chartPath: bitnami/mongodb
         remote: true
         setValues: { usePassword: false }
+profiles:
+  - name: gcb
+    patches:
+      - op: replace
+        path: /deploy/kubectl/manifests/0
+        value: services/nginx/k8s-svc.yaml
+      - op: replace
+        path: /build/artifacts/1/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/2/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/3/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/4/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/5/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/6/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/7/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/8/docker/dockerfile
+        value: Dockerfile
+    deploy:
+      kubectl:
+        manifests:
+          - config/managed-cert.yaml
+          - config/load-balancer-backend-config.yaml
+          - config/ingress.yaml

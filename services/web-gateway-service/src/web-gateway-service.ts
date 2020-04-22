@@ -65,9 +65,9 @@ export default class WebGatewayService extends Service {
             }
           },
           cors: {
-            origin: 'http://localhost:3000',
+            origin: '*',
             methods: ['GET', 'OPTIONS', 'POST', 'PATCH', 'DELETE'],
-            allowedHeaders: ['Authorization'],
+            allowedHeaders: [],
             exposedHeaders: [],
             credentials: true,
             maxAge: 3600
