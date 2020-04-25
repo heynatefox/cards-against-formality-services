@@ -163,7 +163,11 @@ export default class ClientsService extends Service {
    * @returns
    * @memberof ClientsService
    */
-  private checkUsername(ctx: Context<{ username: string }>) {
+  private checkUsername(ctx: Context<{ username: string }>, isAnonymous?: boolean) {
+    if (isAnonymous) {
+      return Promise.resolve({ message: 'User is anonymous' });
+    }
+
     const { username } = ctx.params;
     const isValid = this.isUsernameValid(username);
     if (!isValid) {
@@ -201,7 +205,7 @@ export default class ClientsService extends Service {
     const { uid } = ctx.meta.user;
     const data = { username, uid, displayName, photoURL, email, emailVerified, phoneNumber, isAnonymous };
 
-    return this.checkUsername(ctx)
+    return this.checkUsername(ctx, isAnonymous)
       .then(() => {
         // username doesn't already exist. continue with signup.
         return this.firestoreDb
@@ -210,6 +214,11 @@ export default class ClientsService extends Service {
           .set(this.sanitizeFirestoreInput(data));
       })
       .then(() => {
+        // Don't add to the collection with a random anonymous username.
+        if (isAnonymous) {
+          return Promise.resolve() as any;
+        }
+
         return this.firestoreDb
           .collection('usernames')
           .doc(username)
