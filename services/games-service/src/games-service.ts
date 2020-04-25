@@ -50,6 +50,7 @@ export default class DecksService extends Service {
         events: {
           'rooms.player.joined': this.handlePlayerJoined,
           'rooms.player.left': this.handlePlayerLeft,
+          'rooms.removed': this.handleRoomRemoved
         }
       },
     );
@@ -107,6 +108,15 @@ export default class DecksService extends Service {
     const foundGame = this.games.find(game => game.room._id === roomId);
     if (foundGame) {
       foundGame.onPlayerLeave(clientId);
+    }
+  }
+
+  private handleRoomRemoved(ctx: Context<{ _id: string }>) {
+    const index = this.games.findIndex(game => game.room._id === ctx.params._id);
+    if (index >= 0) {
+      this.logger.info('Found game, destroying game room');
+      this.games[index].destroy();
+      this.games.splice(index, 1);
     }
   }
 

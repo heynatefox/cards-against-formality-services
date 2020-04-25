@@ -124,6 +124,10 @@ export default class Game extends TurnHandler {
   }
 
   private handleNextTurn() {
+    if (this.nextTurnTimeout) {
+      clearTimeout(this.nextTurnTimeout)
+    }
+
     // Target should actually be based on the first user score to get to that.
     const isTargetReached = Object.values(this.players).some(player => player.score >= this._room.options.target);
     if (isTargetReached) {
@@ -155,7 +159,10 @@ export default class Game extends TurnHandler {
   }
 
   private async handleWinnerSelection() {
-    clearTimeout(this.gameInterval);
+    if (this.gameInterval) {
+      clearTimeout(this.gameInterval);
+    }
+
     // If no users selected any cards to play, skip.
     if (!Object.keys(this.selectedCards).length) {
       this.handleNoWinner();
@@ -215,7 +222,7 @@ export default class Game extends TurnHandler {
 
     this.broker.emit('games.updated', initialData);
 
-    setTimeout(() => {
+    this.nextTurnTimeout = setTimeout(() => {
       this.handleNextTurn();
     }, 10000);
   }
@@ -277,5 +284,18 @@ export default class Game extends TurnHandler {
     // Ensure the new player is including in the match.
     this.players[playerId] = { _id: playerId, cards: [], isCzar: false, score: 0 };
     await this.dealWhiteCards(this.players[playerId]);
+  }
+
+  public destroy() {
+    if (this.gameInterval) {
+      clearTimeout(this.gameInterval);
+    }
+    if (this.nextTurnTimeout) {
+      clearTimeout(this.nextTurnTimeout);
+    }
+
+    this.players = {};
+
+    // handle firing game removed update.
   }
 }
