@@ -254,6 +254,8 @@ export default class Game extends TurnHandler {
       state: GameState.TURN_SETUP,
     };
 
+    // Store the end state of each round in a collection.
+    this.turns.push(initialData);
     // Emit the winning card, and winning player, for front-end display
     await this.broker.emit('games.updated', initialData);
 

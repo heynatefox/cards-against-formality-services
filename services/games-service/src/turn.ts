@@ -33,6 +33,7 @@ export interface TurnDataWithState extends TurnData {
 
 export default class TurnHandler {
 
+  protected turns: TurnDataWithState[] = [];
   private whiteCards: string[] = [];
   private blackCards: string[] = [];
   private _turnData: TurnData = {
@@ -74,18 +75,33 @@ export default class TurnHandler {
   }
 
   private pickCzar(players: { [id: string]: GamePlayer }): string {
+    // get the previous rounds czar.
+    const turnsLength = this.turns.length;
+    let prevCzar;
+    if (turnsLength) {
+      const prevTurn = this.turns[turnsLength - 1];
+      prevCzar = prevTurn.czar;
+    }
+
     // pick czar and emit update.
     const playersArr = Object.values(players);
-    let index = this.getRandomIndex(playersArr.length);
-    let selectedPlayer = playersArr[index];
-    if (!selectedPlayer) {
-      // This should be recurrsive.
-      index = this.getRandomIndex(playersArr.length);
-      selectedPlayer = playersArr[index];
+    let selectedPlayer;
+    if (!prevCzar) {
+      selectedPlayer = playersArr[0];
+    } else {
+      const indexOfLastCzar = playersArr.findIndex(player => player._id === prevCzar);
+      const indexOfNewCzar = indexOfLastCzar + 1;
+
+      // If the array has overspilled. We're back at the start.
+      if (indexOfNewCzar > (playersArr.length - 1)) {
+        selectedPlayer = playersArr[0];
+      } else {
+        selectedPlayer = playersArr[indexOfNewCzar];
+      }
     }
     // mutate by reference.
     selectedPlayer.isCzar = true;
-    return playersArr[index]._id;
+    return selectedPlayer._id;
   }
 
   private pickBlackCard(): Promise<Card> {

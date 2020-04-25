@@ -19,17 +19,17 @@ export default class DefaultNamespace extends BaseNamespace {
     super.onDisconnect(client);
 
     const _id = client.user._id;
-    const timeout = 60 * 1000;
     this.broker.call('clients.update', { id: _id, disconnectedAt: time })
       .then(() => {
         // TODO: Expand upon this, set should clean up timeouts on reconnect.
         // (this requires extra work as the client may connect to a different scaled instance)
         // disconnect time added to client.
+        const timeout = 60 * 1000;
         setTimeout(async () => {
           const user = await this.broker.call('clients.get', { id: _id }) as any;
           const afterTimeoutTime = new Date().getTime();
           // If the user hasn't reconnected. Fire a disconnect event.
-          if (user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > timeout) {
+          if (user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > (timeout - 5000)) {
             this.broker.emit('websocket-gateway.client.disconnected', { _id });
           }
         }, timeout);
