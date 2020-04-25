@@ -231,7 +231,7 @@ export default class RoomsService extends Service {
    */
   private async afterAddPlayer(ctx: Context<{ clientId: string; roomId: string }>, res: Room) {
     const { clientId, roomId } = ctx.params;
-    const prop = ctx.action.name === 'join-players' ? 'player' : 'spectator';
+    const prop = ctx.action.name === 'rooms.join-players' ? 'player' : 'spectator';
     await ctx.emit(`${this.name}.${prop}.joined`, { clientId, roomId });
     return ctx.call(`${this.name}.get`, { id: roomId, populate: ['players', 'spectators'] });
   }

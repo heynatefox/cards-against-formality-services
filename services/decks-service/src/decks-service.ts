@@ -70,7 +70,7 @@ export default class DecksService extends Service {
             }
             await this.broker.broadcast('cache.clean.decks');
             await this.broker.cacher?.clean();
-          }, 1000);
+          }, 5000);
         }
       },
     );

@@ -54,6 +54,7 @@ export default class Game extends TurnHandler {
   private nextTurnTimeout: NodeJS.Timer = null;
   private players: { [id: string]: GamePlayer } = this.initalizePlayers(this._room);
   private gameState = GameState.TURN_SETUP;
+  protected lastGameState = null;
 
   constructor(private _room: Room, broker: ServiceBroker, logger: LoggerInstance) {
     super(broker, logger);
@@ -80,6 +81,7 @@ export default class Game extends TurnHandler {
     return this.fetchCards(this._room.options.decks)
       .then(() => {
         this.logger.info('Game started, sending data', initialData);
+        this.lastGameState = initialData;
         this.broker.emit('games.updated', initialData);
         this.handleNextTurn();
       });
@@ -120,12 +122,13 @@ export default class Game extends TurnHandler {
       state: GameState.ENEDED,
     };
 
+    this.lastGameState = initialData;
     this.broker.emit('games.updated', initialData);
   }
 
   private handleNextTurn() {
     if (this.nextTurnTimeout) {
-      clearTimeout(this.nextTurnTimeout)
+      clearTimeout(this.nextTurnTimeout);
     }
 
     // Target should actually be based on the first user score to get to that.
@@ -150,6 +153,7 @@ export default class Game extends TurnHandler {
         };
 
         this.logger.info('Starting turn', withState);
+        this.lastGameState = withState;
         await this.broker.emit('games.updated', withState);
         this.setGameTimer();
       })
@@ -183,6 +187,8 @@ export default class Game extends TurnHandler {
       winningCards: [],
       state: GameState.SELECTING_WINNER,
     };
+
+    this.lastGameState = initialData;
     await this.broker.emit('games.updated', initialData);
   }
 
@@ -220,6 +226,7 @@ export default class Game extends TurnHandler {
       state: GameState.TURN_SETUP,
     };
 
+    this.lastGameState = initialData;
     this.broker.emit('games.updated', initialData);
 
     this.nextTurnTimeout = setTimeout(() => {
@@ -256,6 +263,7 @@ export default class Game extends TurnHandler {
 
     // Store the end state of each round in a collection.
     this.turns.push(initialData);
+    this.lastGameState = initialData;
     // Emit the winning card, and winning player, for front-end display
     await this.broker.emit('games.updated', initialData);
 
@@ -286,6 +294,11 @@ export default class Game extends TurnHandler {
     // Ensure the new player is including in the match.
     this.players[playerId] = { _id: playerId, cards: [], isCzar: false, score: 0 };
     await this.dealWhiteCards(this.players[playerId]);
+
+    // Implement this.
+    // if (this.lastGameState) {
+    // emit update to only the player that joined.
+    // }
   }
 
   public destroy() {

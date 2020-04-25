@@ -105,7 +105,7 @@ export default class TurnHandler {
   }
 
   private pickBlackCard(): Promise<Card> {
-    const index = this.getRandomIndex(this.blackCards.length);
+    const index = this.getRandomIndex(this.blackCards.length - 1);
     // Remove the card so it cannot be chosen again.
     this.blackCards.splice(index, 1);
     const id = this.blackCards[index];
@@ -113,29 +113,30 @@ export default class TurnHandler {
   }
 
   private pickWhiteCard(): string {
-    const index = this.getRandomIndex(this.whiteCards.length);
+    const index = this.getRandomIndex(this.whiteCards.length - 1);
     // Remove the card so it cannot be chosen again.
     this.whiteCards.splice(index, 1);
     return this.whiteCards[index];
+  }
+
+  private emitCardsToPlayer(player: GamePlayer) {
+    // Get all the cards and deal them to the player.
+    return this.broker.call('cards.get', { id: player.cards })
+      .then(cards => this.broker.emit('games.deal', { clientId: player._id, cards }));
   }
 
   // Given a player, deal all the white cards to it.
   protected dealWhiteCards(player: GamePlayer): Promise<void> {
     const cardsNeeded = 10 - player.cards.length;
     if (!cardsNeeded) {
-      return;
+      return this.emitCardsToPlayer(player);
     }
 
-    // for (let i = 0; i < cardsNeeded; i++) {
-    //   player.cards.push(this.pickWhiteCard());
-    // }
     while (player.cards?.length !== 10) {
       player.cards.push(this.pickWhiteCard());
     }
 
-    // Get all the cards and deal them to the player.
-    return this.broker.call('cards.get', { id: player.cards })
-      .then(cards => this.broker.emit('games.deal', { clientId: player._id, cards }));
+    return this.emitCardsToPlayer(player);
   }
 
   private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }) {

@@ -76,9 +76,6 @@ profiles:
   - name: gcb
     patches:
       - op: replace
-        path: /deploy/kubectl/manifests/0
-        value: services/nginx/k8s-svc.yaml
-      - op: replace
         path: /build/artifacts/1/docker/dockerfile
         value: Dockerfile
       - op: replace
@@ -108,3 +105,19 @@ profiles:
           - config/managed-cert.yaml
           - config/load-balancer-backend-config.yaml
           - config/ingress.yaml
+
+          - services/nginx/k8s-svc.yaml
+          - services/nginx/k8s-pod.yaml
+          - config/secret.yaml
+          - config/base-config.yaml
+          - services/admin-gateway-service/k8s-pod.yaml
+          - services/admin-gateway-service/k8s-svc.yaml
+          - services/web-gateway-service/k8s-pod.yaml
+          - services/web-gateway-service/k8s-svc.yaml
+          - services/websocket-gateway-service/k8s-pod.yaml
+          - services/websocket-gateway-service/k8s-svc.yaml
+          - services/cards-service/k8s-pod.yaml
+          - services/decks-service/k8s-pod.yaml
+          - services/clients-service/k8s-pod.yaml
+          - services/rooms-service/k8s-pod.yaml
+          - services/games-service/k8s-pod.yaml
