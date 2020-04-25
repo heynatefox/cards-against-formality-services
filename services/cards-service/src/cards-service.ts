@@ -52,12 +52,16 @@ export default class CardsService extends Service {
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
         entityRemoved: this.entityRemoved,
-        afterConnected: async () => {
-          const count = await this.adapter.count();
-          if (count === 0) {
-            await this.seedDb();
+        afterConnected: () => {
+          setTimeout(async () => {
+            const count = await this.adapter.count();
+            if (count === 0) {
+              this.logger.info('Cards db empty, seeding...');
+              await this.seedDb();
+            }
             await this.broker.broadcast('cache.clean.cards');
-          }
+            await this.broker.cacher?.clean();
+          }, 1000);
         }
       },
     );

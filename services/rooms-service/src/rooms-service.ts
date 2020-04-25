@@ -1,4 +1,4 @@
-import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
 import { conflict, forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
@@ -320,7 +320,7 @@ export default class RoomsService extends Service {
 
     // If the room is passcode protected. Try authorize.
     if (room.passcode && room.passcode !== passcode) {
-      throw forbidden('Incorrect password');
+      return Promise.reject(new Errors.MoleculerError('Invalid password', 401, 'PASSWORD_INVALID'));
     }
 
     // Check whether this client would surpass the max number of players.

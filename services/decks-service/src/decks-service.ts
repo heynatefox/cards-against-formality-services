@@ -60,12 +60,17 @@ export default class DecksService extends Service {
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
         entityRemoved: this.entityRemoved,
-        afterConnected: async () => {
-          await this.broker.waitForServices('cards');
-          const count = await this.adapter.count();
-          if (count === 0) {
-            this.seedDb();
-          }
+        afterConnected: () => {
+          setTimeout(async () => {
+            await this.broker.waitForServices('cards');
+            const count = await this.adapter.count();
+            if (count === 0) {
+              this.logger.info('Decks DB empty. Seeding...');
+              await this.seedDb();
+            }
+            await this.broker.broadcast('cache.clean.decks');
+            await this.broker.cacher?.clean();
+          }, 1000);
         }
       },
     );

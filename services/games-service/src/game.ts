@@ -125,7 +125,8 @@ export default class Game extends TurnHandler {
 
   private handleNextTurn() {
     // Target should actually be based on the first user score to get to that.
-    if (this.turn + 1 > this._room.options.target) {
+    const isTargetReached = Object.values(this.players).some(player => player.score >= this._room.options.target);
+    if (isTargetReached) {
       this.endGame();
       return;
     }
