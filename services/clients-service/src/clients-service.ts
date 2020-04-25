@@ -15,6 +15,7 @@ interface Client {
   username: string;
   socket?: string;
   roomId?: string;
+  disconnectedAt?: number;
 }
 
 /**
@@ -55,7 +56,8 @@ export default class ClientsService extends Service {
     _id: { type: 'string' },
     username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
     socket: { type: 'string', optional: true },
-    roomId: { type: 'string', optional: true }
+    roomId: { type: 'string', optional: true },
+    disconnectedAt: { type: 'number', optional: true, default: null }
   };
 
   /**
@@ -107,6 +109,7 @@ export default class ClientsService extends Service {
         },
         events: {
           'websocket-gateway.client.connected': this.onSocketConnection,
+          'websocket-gateway.client.disconnected': this.onSocketDisconnect,
           'rooms.player.joined': this.onRoomJoin,
           'rooms.player.left': this.onRoomLeave,
           'rooms.spectator.joined': this.onRoomJoin,
@@ -312,16 +315,30 @@ export default class ClientsService extends Service {
    * Update the client with the registered socket id.
    *
    * @private
-   * @param {Context<Client>} ctx
+   * @param {Context<{ _id: string; socket: string }>} ctx
    * @returns {Promise<any>}
    * @memberof ClientsService
    */
-  private onSocketConnection(ctx: Context<Client>): Promise<any> {
+  private onSocketConnection(ctx: Context<{ _id: string; socket: string }>): Promise<any> {
     const { _id, socket } = ctx.params;
-    return ctx.call(`${this.name}.update`, { id: _id, socket })
+    return ctx.call(`${this.name}.update`, { id: _id, socket, disconnectedAt: null })
       .catch(err => {
         this.logger.error(err);
       });
+  }
+
+  /**
+   * Remove the client if the socket disconnects.
+   *
+   * @private
+   * @param {Context<{ _id: string }>} ctx
+   * @returns {Promise<any>}
+   * @memberof ClientsService
+   */
+  private onSocketDisconnect(ctx: Context<{ _id: string }>): Promise<any> {
+    const { _id } = ctx.params;
+    return ctx.call(`${this.name}.remove`, { id: _id })
+      .catch(() => { });
   }
 
   /**
