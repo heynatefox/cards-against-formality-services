@@ -1,5 +1,4 @@
 FROM node:12.15.0-alpine AS websocket-gateway-service-builder
-ENV NODE_ENV=production
 WORKDIR /home/service/websocket-gateway-service
 COPY . .
 RUN yarn install --frozen-lockfile

@@ -1,5 +1,4 @@
 FROM node:12.15.0-alpine AS clients-service-builder
-ENV NODE_ENV=production
 WORKDIR /home/service/clients-service
 COPY . ./
 RUN yarn install --frozen-lockfile
