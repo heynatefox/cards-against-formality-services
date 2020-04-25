@@ -3,8 +3,6 @@ kind: Config
 metadata:
   name: cards-against-formality-services
 build:
-  tagPolicy:
-    gitCommit: { variant: AbbrevCommitSha }
   artifacts:
     - image: nginx-gateway
       context: services/nginx
