@@ -60,7 +60,7 @@ export default class RoomsService extends Service {
     host: 'string',
     players: { type: 'array', items: 'string', default: [] },
     spectators: { type: 'array', items: 'string', default: [] },
-    name: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    name: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 2, max: 16 },
     status: { type: 'enum', values: ['pending', 'started', 'finished'], default: 'pending' },
     options: {
       type: 'object', strict: true, props: {

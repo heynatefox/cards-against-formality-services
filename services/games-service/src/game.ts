@@ -190,6 +190,12 @@ export default class Game extends TurnHandler {
 
     this.lastGameState = initialData;
     await this.broker.emit('games.updated', initialData);
+
+    // If the czar doesn't pick a winner within 60 seconds. Move on.
+    // should handle a "no winner selected state"
+    this.gameInterval = setTimeout(() => {
+      this.handleNextTurn();
+    }, 60 * 1000);
   }
 
   private setGameTimer() {

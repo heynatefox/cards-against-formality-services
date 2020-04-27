@@ -54,7 +54,7 @@ export default class ClientsService extends Service {
    */
   private validationSchema = {
     _id: { type: 'string' },
-    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12 },
+    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 3, max: 12 },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true },
     disconnectedAt: { type: 'number', optional: true, default: null }
@@ -151,7 +151,7 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private isUsernameValid(username: string): boolean {
-    if (username.length < 4 || username.length > 12) {
+    if (username.length < 3 || username.length > 12) {
       return false;
     }
 
