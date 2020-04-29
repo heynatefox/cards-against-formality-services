@@ -29,6 +29,7 @@ export interface TurnDataWithState extends TurnData {
   selectedCards: { [id: string]: Card[] };
   winner: string | string[];
   winningCards: Card[];
+  errorMessage?: string;
 }
 
 export default class TurnHandler {
@@ -151,6 +152,7 @@ export default class TurnHandler {
     // mutate by reference. ensure we reset the czar.
     Object.values(players).forEach(player => player.isCzar = false);
 
+    this.selectedCards = {};
     this._turnData.turn += 1;
     this._turnData.czar = this.pickCzar(players);
     this._turnData.blackCard = await this.pickBlackCard();

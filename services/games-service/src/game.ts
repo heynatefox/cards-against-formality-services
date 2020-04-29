@@ -169,7 +169,7 @@ export default class Game extends TurnHandler {
 
     // If no users selected any cards to play, skip.
     if (!Object.keys(this.selectedCards).length) {
-      this.handleNoWinner();
+      this.handleNoWinner('No one selected any cards. Everyone loses!');
       return;
     }
 
@@ -194,7 +194,7 @@ export default class Game extends TurnHandler {
     // If the czar doesn't pick a winner within 60 seconds. Move on.
     // should handle a "no winner selected state"
     this.gameInterval = setTimeout(() => {
-      this.handleNextTurn();
+      this.handleNoWinner('The Czar did not pick a winner! He has failed us all...');
     }, 60 * 1000);
   }
 
@@ -221,7 +221,11 @@ export default class Game extends TurnHandler {
     }
   }
 
-  private handleNoWinner() {
+  private handleNoWinner(reason?: string) {
+    if (this.gameInterval) {
+      clearTimeout(this.gameInterval);
+    }
+
     const initialData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
@@ -230,6 +234,7 @@ export default class Game extends TurnHandler {
       winner: null,
       winningCards: [],
       state: GameState.TURN_SETUP,
+      errorMessage: reason?.length ? reason : 'No one selected any cards. Everyone loses!'
     };
 
     this.lastGameState = initialData;
@@ -291,7 +296,7 @@ export default class Game extends TurnHandler {
     if (player.isCzar) {
       clearTimeout(this.gameInterval);
       clearTimeout(this.nextTurnTimeout);
-      this.handleNoWinner();
+      this.handleNoWinner('The Czar left the game');
     }
 
   }
