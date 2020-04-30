@@ -50,8 +50,7 @@ export interface GamePlayer {
 
 export default class Game extends TurnHandler {
 
-  private gameInterval: NodeJS.Timer = null;
-  private nextTurnTimeout: NodeJS.Timer = null;
+  private gameTimeout: NodeJS.Timer = null;
   private players: { [id: string]: GamePlayer } = this.initalizePlayers(this._room);
   private gameState = GameState.TURN_SETUP;
   protected lastGameState = null;
@@ -68,7 +67,7 @@ export default class Game extends TurnHandler {
 
   private onGameStart() {
 
-    const initialData: TurnDataWithState = {
+    const gameData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
       ...this.turnData,
@@ -80,9 +79,9 @@ export default class Game extends TurnHandler {
 
     return this.fetchCards(this._room.options.decks)
       .then(() => {
-        this.logger.info('Game started, sending data', initialData);
-        this.lastGameState = initialData;
-        this.broker.emit('games.updated', initialData);
+        this.logger.info('Game started, sending data', gameData);
+        this.lastGameState = gameData;
+        this.broker.emit('games.updated', gameData);
         this.handleNextTurn();
       });
   }
@@ -94,7 +93,7 @@ export default class Game extends TurnHandler {
     }, {});
   }
 
-  private endGame() {
+  private async endGame() {
     // emit end game, with score tally and info.
     this.gameState = GameState.ENEDED;
 
@@ -112,7 +111,7 @@ export default class Game extends TurnHandler {
       }
     });
 
-    const initialData: TurnDataWithState = {
+    const gameData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
       ...this.turnData,
@@ -122,13 +121,26 @@ export default class Game extends TurnHandler {
       state: GameState.ENEDED,
     };
 
-    this.lastGameState = initialData;
-    this.broker.emit('games.updated', initialData);
+    this.lastGameState = gameData;
+    await this.broker.emit('games.updated', gameData);
+    return this.broker.call<Room, any>('rooms.update', { id: this.room._id, status: 'finished' })
+      .then(() => this.logger.info('Game ended', gameData))
+      .catch((err) => { this.logger.error(err); });
+  }
+
+  private setGameTimeout(cb: () => void, timeout: number = 60 * 1000) {
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
+    }
+
+    this.gameTimeout = setTimeout(() => {
+      cb();
+    }, timeout);
   }
 
   private handleNextTurn() {
-    if (this.nextTurnTimeout) {
-      clearTimeout(this.nextTurnTimeout);
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
     }
 
     // Target should actually be based on the first user score to get to that.
@@ -155,7 +167,8 @@ export default class Game extends TurnHandler {
         this.logger.info('Starting turn', withState);
         this.lastGameState = withState;
         await this.broker.emit('games.updated', withState);
-        this.setGameTimer();
+
+        this.setGameTimeout(() => this.handleWinnerSelection());
       })
       .catch(err => {
         this.logger.error(err);
@@ -163,8 +176,8 @@ export default class Game extends TurnHandler {
   }
 
   private async handleWinnerSelection() {
-    if (this.gameInterval) {
-      clearTimeout(this.gameInterval);
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
     }
 
     // If no users selected any cards to play, skip.
@@ -178,7 +191,7 @@ export default class Game extends TurnHandler {
     // Send all cards for everyone to view.
 
     this.gameState = GameState.SELECTING_WINNER;
-    const initialData: TurnDataWithState = {
+    const gameData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
       ...this.turnData,
@@ -188,21 +201,11 @@ export default class Game extends TurnHandler {
       state: GameState.SELECTING_WINNER,
     };
 
-    this.lastGameState = initialData;
-    await this.broker.emit('games.updated', initialData);
+    this.lastGameState = gameData;
+    await this.broker.emit('games.updated', gameData);
 
     // If the czar doesn't pick a winner within 60 seconds. Move on.
-    // should handle a "no winner selected state"
-    this.gameInterval = setTimeout(() => {
-      this.handleNoWinner('The Czar did not pick a winner! He has failed us all...');
-    }, 60 * 1000);
-  }
-
-  private setGameTimer() {
-    // This should be replaced with a CRON job on a bull queue.
-    this.gameInterval = setTimeout(() => {
-      this.handleWinnerSelection();
-    }, 60 * 1000);
+    this.setGameTimeout(() => this.handleNoWinner('The Czar did not pick a winner! They have failed us all...'));
   }
 
   public onHandSubmitted(playerId: string, whiteCards: string[]) {
@@ -221,12 +224,12 @@ export default class Game extends TurnHandler {
     }
   }
 
-  private handleNoWinner(reason?: string) {
-    if (this.gameInterval) {
-      clearTimeout(this.gameInterval);
+  private async handleNoWinner(reason?: string) {
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
     }
 
-    const initialData: TurnDataWithState = {
+    const gameData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
       ...this.turnData,
@@ -237,15 +240,18 @@ export default class Game extends TurnHandler {
       errorMessage: reason?.length ? reason : 'No one selected any cards. Everyone loses!'
     };
 
-    this.lastGameState = initialData;
-    this.broker.emit('games.updated', initialData);
-
-    this.nextTurnTimeout = setTimeout(() => {
-      this.handleNextTurn();
-    }, 10000);
+    // Store the end state of each round in a collection.
+    this.turns.push(gameData);
+    this.lastGameState = gameData;
+    await this.broker.emit('games.updated', gameData);
+    this.setGameTimeout(() => this.handleNextTurn(), 10000);
   }
 
   public async onWinnerSelected(winner: string, clientId: string) {
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
+    }
+
     if (clientId !== this.turnData.czar) {
       throw new Error('Only the czar is allowed to select the winner');
     }
@@ -262,7 +268,7 @@ export default class Game extends TurnHandler {
     const populatedSelectedCards = await this.populatedSelectedCards();
 
     // This object should be stored in a turns array in the db, for history functionality.
-    const initialData: TurnDataWithState = {
+    const gameData: TurnDataWithState = {
       players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: this.room._id,
       ...this.turnData,
@@ -273,14 +279,12 @@ export default class Game extends TurnHandler {
     };
 
     // Store the end state of each round in a collection.
-    this.turns.push(initialData);
-    this.lastGameState = initialData;
+    this.turns.push(gameData);
+    this.lastGameState = gameData;
     // Emit the winning card, and winning player, for front-end display
-    await this.broker.emit('games.updated', initialData);
+    await this.broker.emit('games.updated', gameData);
 
-    this.nextTurnTimeout = setTimeout(() => {
-      this.handleNextTurn();
-    }, 10000);
+    this.setGameTimeout(() => this.handleNextTurn(), 10000);
   }
 
   public onPlayerLeave(playerId: string) {
@@ -294,8 +298,7 @@ export default class Game extends TurnHandler {
 
     // If the czar leaves the game. End the turn.
     if (player.isCzar) {
-      clearTimeout(this.gameInterval);
-      clearTimeout(this.nextTurnTimeout);
+      clearTimeout(this.gameTimeout);
       this.handleNoWinner('The Czar left the game');
     }
 
@@ -313,11 +316,8 @@ export default class Game extends TurnHandler {
   }
 
   public destroy() {
-    if (this.gameInterval) {
-      clearTimeout(this.gameInterval);
-    }
-    if (this.nextTurnTimeout) {
-      clearTimeout(this.nextTurnTimeout);
+    if (this.gameTimeout) {
+      clearTimeout(this.gameTimeout);
     }
 
     this.players = {};
