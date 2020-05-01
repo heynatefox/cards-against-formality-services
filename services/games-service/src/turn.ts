@@ -1,4 +1,4 @@
-import { GamePlayer } from './game';
+import { GamePlayer, GameInterface } from './game';
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 export interface Card {
@@ -20,13 +20,14 @@ export interface TurnData {
   blackCard: Card;
   turn: number;
   totalTime: number;
+  selectedCards: { [id: string]: Card[] };
 }
 
 export interface TurnDataWithState extends TurnData {
+  gameId: string;
   state: GameState;
   players: GamePlayer[];
   roomId: string;
-  selectedCards: { [id: string]: Card[] };
   winner: string | string[];
   winningCards: Card[];
   errorMessage?: string;
@@ -34,53 +35,34 @@ export interface TurnDataWithState extends TurnData {
 
 export default class TurnHandler {
 
-  protected turns: TurnDataWithState[] = [];
-  private whiteCards: string[] = [];
-  private blackCards: string[] = [];
-  private _turnData: TurnData = {
-    czar: null,
-    blackCard: null,
-    turn: 0,
-    totalTime: 60 * 1000
-  };
-  public selectedCards: { [id: string]: string[] } = {};
-
   constructor(protected broker: ServiceBroker, protected logger: LoggerInstance) {
 
   }
 
-  get turnData() {
-    return this._turnData;
-  }
-
-  get turn() {
-    return this.turnData.turn;
-  }
-
-  protected async fetchCards(deckIds: string[]) {
-    try {
-      // tslint:disable-next-line: max-line-length
-      const decks: Array<{ whiteCards: string[]; blackCards: string[] }> = await this.broker.call('decks.get', { id: deckIds });
-      decks.forEach(deck => {
-        const { whiteCards, blackCards } = deck;
-        this.whiteCards.push(...whiteCards);
-        this.blackCards.push(...blackCards);
+  protected fetchCards(deckIds: string[]): Promise<{ whiteCards: string[]; blackCards: string[] }> {
+    const _whiteCards = [];
+    const _blackCards = [];
+    return this.broker.call<Array<{ whiteCards: string[]; blackCards: string[] }>, any>('decks.get', { id: deckIds })
+      .then(decks => {
+        decks.forEach(deck => {
+          const { whiteCards, blackCards } = deck;
+          _whiteCards.push(...whiteCards);
+          _blackCards.push(...blackCards);
+        });
+        return { whiteCards: _whiteCards, blackCards: _blackCards };
       });
-    } catch (e) {
-      this.logger.error('Fatal: failed to fetch decks to initialize game');
-    }
   }
 
   private getRandomIndex(upperLimit: number): number {
-    return Math.floor(Math.random() * upperLimit);
+    return Math.round(Math.random() * upperLimit);
   }
 
-  private pickCzar(players: { [id: string]: GamePlayer }): string {
+  private pickCzar(turns: TurnDataWithState[], players: { [id: string]: GamePlayer }): string {
     // get the previous rounds czar.
-    const turnsLength = this.turns.length;
+    const turnsLength = turns.length;
     let prevCzar;
     if (turnsLength) {
-      const prevTurn = this.turns[turnsLength - 1];
+      const prevTurn = turns[turnsLength - 1];
       prevCzar = prevTurn.czar;
     }
 
@@ -105,19 +87,19 @@ export default class TurnHandler {
     return selectedPlayer._id;
   }
 
-  private pickBlackCard(): Promise<Card> {
-    const index = this.getRandomIndex(this.blackCards.length - 1);
+  private pickBlackCard(blackCards: string[]): Promise<Card> {
+    const index = this.getRandomIndex(blackCards.length - 1);
     // Remove the card so it cannot be chosen again.
-    this.blackCards.splice(index, 1);
-    const id = this.blackCards[index];
+    blackCards.splice(index, 1);
+    const id = blackCards[index];
     return this.broker.call('cards.get', { id });
   }
 
-  private pickWhiteCard(): string {
-    const index = this.getRandomIndex(this.whiteCards.length - 1);
+  private pickWhiteCard(whiteCards: string[]): string {
+    const index = this.getRandomIndex(whiteCards.length - 1);
     // Remove the card so it cannot be chosen again.
-    this.whiteCards.splice(index, 1);
-    return this.whiteCards[index];
+    whiteCards.splice(index, 1);
+    return whiteCards[index];
   }
 
   private emitCardsToPlayer(player: GamePlayer) {
@@ -127,74 +109,99 @@ export default class TurnHandler {
   }
 
   // Given a player, deal all the white cards to it.
-  protected dealWhiteCards(player: GamePlayer): Promise<void> {
+  protected dealWhiteCards(player: GamePlayer, whiteCards: string[]): Promise<void> {
     const cardsNeeded = 10 - player.cards.length;
     if (!cardsNeeded) {
       return this.emitCardsToPlayer(player);
     }
 
     while (player.cards?.length !== 10) {
-      player.cards.push(this.pickWhiteCard());
+      player.cards.push(this.pickWhiteCard(whiteCards));
     }
 
     return this.emitCardsToPlayer(player);
   }
 
-  private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }) {
-    const cardPlayers = Object.values(players).map(player => this.dealWhiteCards(player));
+  private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[]) {
+    const cardPlayers = Object.values(players).map(player => this.dealWhiteCards(player, whiteCards));
     return Promise.all(cardPlayers);
   }
 
-  protected async startTurn(players: { [id: string]: GamePlayer }): Promise<TurnData> {
-    this._turnData.blackCard = null;
-    this._turnData.czar = null;
-
+  protected async startTurn(game: GameInterface): Promise<TurnDataWithState> {
+    const { turnData, players, room, turns, whiteCards, blackCards } = game;
     // mutate by reference. ensure we reset the czar.
     Object.values(players).forEach(player => player.isCzar = false);
 
-    this.selectedCards = {};
-    this._turnData.turn += 1;
-    this._turnData.czar = this.pickCzar(players);
-    this._turnData.blackCard = await this.pickBlackCard();
-    await this.ensurePlayersHaveCards(players);
-    return this._turnData;
+    turnData.turn += 1;
+    // players mutated by reference.
+    turnData.czar = this.pickCzar(turns, players);
+    // mutate black and white cards by reference
+    this.logger.info('Black card length before', blackCards.length);
+    turnData.blackCard = await this.pickBlackCard(blackCards);
+    this.logger.info('Black card length after', blackCards.length);
+    await this.ensurePlayersHaveCards(players, whiteCards);
+
+    // tslint:disable-next-line: max-line-length
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards, blackCards, turnData });
+    return {
+      gameId: game._id,
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      selectedCards: {},
+      winner: null,
+      winningCards: [],
+      ...turnData,
+      state: GameState.PICKING_CARDS,
+    };
   }
 
-  protected submitCards(clientId: string, cards: string[]): void {
-    if (this.turnData.czar === clientId) {
+  protected async submitCards(game: GameInterface, clientId: string, cards: string[]): Promise<GameInterface> {
+    const { selectedCards, turnData, players } = game;
+
+    if (turnData.czar === clientId) {
       throw new Error('The czar is not allowed to play the round.');
     }
-    if (clientId in this.selectedCards) {
+    if (clientId in selectedCards) {
       throw new Error('You have already submitted your cards.');
     }
 
-    if (this.turnData.blackCard.pick !== cards.length) {
-      throw new Error(`You must select exactly ${this.turnData.blackCard.pick} cards.`);
+    if (turnData.blackCard.pick !== cards.length) {
+      throw new Error(`You must select exactly ${turnData.blackCard.pick} cards.`);
     }
-    this.selectedCards[clientId] = cards;
+    // TODO: emit placement 'card selected' for each selection to display on the front-end.
+    const playersCards = players[clientId].cards;
+    // make a new array of cards, excluding the ones the player just played.
+    const newCards = playersCards.filter(card => !cards.includes(card));
+
+    const playersProp = `players.${clientId}.cards`;
+    const selectedCardsProp = `selectedCards.${clientId}`;
+    // NOT CONFIDENT THAT THIS WILL WORK. DOUBLE CHECK
+    await this.broker.call('games.update', {
+      id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards
+    });
+    return this.broker.call('games.get', { id: game._id, populate: ['room'] });
   }
 
-  protected selectWinner(winner: string): Promise<Card[]> {
-    const winningCards = this.selectedCards[winner];
-    // reset selected cards.
-    this.selectedCards = {};
+  protected selectWinner(selectedCards: { [id: string]: string[] }, winner: string): Promise<Card[]> {
+    const winningCards = selectedCards[winner];
     return this.broker.call('cards.get', { id: winningCards });
   }
 
-  protected async populatedSelectedCards() {
-    const allSelectedCards = Object.values(this.selectedCards).flat(1);
+  protected async populatedSelectedCards(selectedCards: { [id: string]: string[] }) {
+    const allSelectedCards = Object.values(selectedCards).flat(1);
     const cards: Card[] = await this.broker.call('cards.get', { id: allSelectedCards });
-    const entries = Object.entries(this.selectedCards).map(([key, value]) => {
+    const entries = Object.entries(selectedCards).map(([key, value]) => {
       const populatedCards = value.map(v => cards.find(c => c._id === v));
       return [key, populatedCards];
     });
     return Object.fromEntries(entries);
   }
 
-  protected hasEveryoneSelected(players: { [id: string]: GamePlayer }): boolean {
+  protected hasEveryoneSelected(game: GameInterface): boolean {
+    const { players, selectedCards, turnData } = game;
     // ensure every player, has a property in the selected cards map.
     return Object.keys(players).every(player => {
-      return player in this.selectedCards || this.turnData.czar === player;
+      return player in selectedCards || turnData.czar === player;
     });
   }
 }

@@ -81,7 +81,7 @@ export default class WebsocketGatewayService extends Service {
           'rooms.created': ctx => this.emitRoomUpdate(ctx, 'created'),
           'rooms.updated': ctx => this.emitRoomUpdate(ctx, 'updated'),
           'rooms.removed': ctx => this.emitRoomUpdate(ctx, 'removed'),
-          'games.updated': ctx => this.handleGameUpdate(ctx),
+          'games.turn.updated': ctx => this.handleGameUpdate(ctx),
           'games.deal': ctx => this.handleCardDealing(ctx)
         }
       }

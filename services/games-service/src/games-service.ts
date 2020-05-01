@@ -2,11 +2,11 @@ import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 import dbMixin from '@cards-against-formality/db-mixin';
 
-import Game, { Room } from './game';
+import Game, { Room, GameInterface } from './game';
 
-export default class DecksService extends Service {
+export default class GameService extends Service {
 
-  private games: Game[] = [];
+  private gameService: Game = null;
 
   constructor(_broker: ServiceBroker) {
     super(_broker);
@@ -17,11 +17,19 @@ export default class DecksService extends Service {
         mixins: [
           dbMixin('games'),
           CacheCleaner([
+            'cache.clean.games',
             'cache.clean.cards',
             'cache.clean.decks',
             'cache.clean.rooms',
           ])
         ],
+        settings: {
+          populates: {
+            room: {
+              action: 'rooms.get',
+            }
+          }
+        },
         actions: {
           health: this.health,
           start: {
@@ -50,7 +58,15 @@ export default class DecksService extends Service {
         events: {
           'rooms.player.joined': this.handlePlayerJoined,
           'rooms.player.left': this.handlePlayerLeft,
-          'rooms.removed': this.handleRoomRemoved
+          'rooms.removed': this.handleRoomRemoved,
+          'games.turn.updated': ctx => this.gameService.onTurnUpdated(ctx.params)
+        },
+        entityCreated: this.entityCreated,
+        entityUpdated: this.entityUpdated,
+        entityRemoved: this.entityRemoved,
+        started: () => {
+          this.gameService = new Game(this.broker, this.logger);
+          return null;
         }
       },
     );
@@ -70,54 +86,74 @@ export default class DecksService extends Service {
       throw new Error('Only the host can start the game');
     }
 
-    return ctx.call<Room, any>('rooms.update', { id: roomId, status: 'started' })
-      .then(room => {
-        this.games.push(new Game(room, this.broker, this.logger));
-        return { message: 'Game successfully started' };
-      })
+    return this.gameService.onGameStart(_room)
+      .then(() => ({ message: 'Game successfully started' }))
       .catch(err => {
         this.logger.error(err);
         throw new Error('Failed to start game');
       });
   }
 
-  private submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }>) {
+  private getGameMatchingRoom(ctx: Context, roomId: string): Promise<GameInterface> {
+    return ctx.call(`${this.name}.find`, { query: { room: roomId }, populate: ['room'] })
+      .then((games: GameInterface[]) => {
+        if (!games?.length) {
+          throw new Error('Unable to find game');
+        }
+        this.logger.info(games[0].room);
+        return games[0];
+      })
+      .catch(err => {
+        this.logger.error(err);
+        throw err;
+      });
+  }
+
+  private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }>) {
     const { roomId, cards, clientId } = ctx.params;
-    const foundGame = this.games.find(game => game.room._id === roomId);
-    foundGame.onHandSubmitted(clientId, cards);
+
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+    await this.gameService.onHandSubmitted(game, clientId, cards);
     return { message: 'Cards successfully submitted' };
   }
 
-  private selectWinner(ctx: Context<{ clientId: string; roomId: string; winnerId: string }>) {
+  private async selectWinner(ctx: Context<{ clientId: string; roomId: string; winnerId: string }>) {
     const { clientId, roomId, winnerId } = ctx.params;
-    const foundGame = this.games.find(game => game.room._id === roomId);
-    foundGame.onWinnerSelected(winnerId, clientId);
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+    await this.gameService.onWinnerSelected(game, winnerId, clientId);
     return { message: 'Winner selected' };
   }
 
-  private handlePlayerJoined(ctx: Context<{ clientId: string; roomId: string }>) {
+  private async handlePlayerJoined(ctx: Context<{ clientId: string; roomId: string }>) {
     const { clientId, roomId } = ctx.params;
-    const foundGame = this.games.find(game => game.room._id === roomId);
-    if (foundGame) {
-      foundGame.onPlayerJoin(clientId);
-    }
+    return this.getGameMatchingRoom(ctx, roomId)
+      .then((game) => {
+        return this.gameService.onPlayerJoin(game._id, clientId);
+      })
+      .catch(err => {
+        // game must not have started yet.
+      });
   }
 
   private handlePlayerLeft(ctx: Context<{ clientId: string; roomId: string }>) {
     const { clientId, roomId } = ctx.params;
-    const foundGame = this.games.find(game => game.room._id === roomId);
-    if (foundGame) {
-      foundGame.onPlayerLeave(clientId);
-    }
+    return this.getGameMatchingRoom(ctx, roomId)
+      .then((game) => {
+        return this.gameService.onPlayerLeave(
+          game,
+          clientId,
+          this.adapter,
+          json => this.entityChanged('updated', json, ctx).then(() => json)
+        );
+      })
+      .catch(err => {
+        // game must not have started yet.
+      });
   }
 
-  private handleRoomRemoved(ctx: Context<{ _id: string }>) {
-    const index = this.games.findIndex(game => game.room._id === ctx.params._id);
-    if (index >= 0) {
-      this.logger.info('Found game, destroying game room');
-      this.games[index].destroy();
-      this.games.splice(index, 1);
-    }
+  private async handleRoomRemoved(ctx: Context<{ _id: string }>) {
+    const game: any = await this.getGameMatchingRoom(ctx, ctx.params._id);
+    return this.gameService.destroyGame(game._id);
   }
 
   /**
@@ -132,4 +168,42 @@ export default class DecksService extends Service {
     return ctx.call('$node.health');
   }
 
+  /**
+   * Emit an event when a Card is created.
+   *
+   * @private
+   * @param {*} json
+   * @param {Context} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private entityCreated(json: any, ctx: Context) {
+    return ctx.emit(`${this.name}.created`, json);
+  }
+
+  /**
+   * Emit an event when a card is updated.
+   *
+   * @private
+   * @param {*} json
+   * @param {Context} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private entityUpdated(json: any, ctx: Context) {
+    return ctx.emit(`${this.name}.updated`, json);
+  }
+
+  /**
+   * Emit an event when a Card is removed.
+   *
+   * @private
+   * @param {*} json
+   * @param {Context} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private entityRemoved(json: any, ctx: Context) {
+    return ctx.emit(`${this.name}.removed`, json);
+  }
 }

@@ -1,6 +1,6 @@
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 
-import TurnHandler, { GameState, TurnDataWithState } from './turn';
+import TurnHandler, { GameState, TurnDataWithState, TurnData } from './turn';
 
 // turn-setup -> playing cards -> selecting winner -> repeat. -> end-game.
 /**
@@ -48,42 +48,68 @@ export interface GamePlayer {
   cards?: string[];
 }
 
+export interface GameInterface {
+  _id: string;
+  room: Room;
+  players: { [id: string]: GamePlayer };
+  gameState: GameState;
+  prevTurnData: TurnDataWithState;
+  turns: TurnDataWithState[];
+  whiteCards: string[];
+  blackCards: string[];
+  turnData: TurnData;
+  selectedCards: { [id: string]: string[] };
+}
+
 export default class Game extends TurnHandler {
 
-  private gameTimeout: NodeJS.Timer = null;
-  private players: { [id: string]: GamePlayer } = this.initalizePlayers(this._room);
-  private gameState = GameState.TURN_SETUP;
-  protected lastGameState = null;
+  private gameTimeout: { [gameId: string]: NodeJS.Timer } = {};
 
-  constructor(private _room: Room, broker: ServiceBroker, logger: LoggerInstance) {
+  constructor(broker: ServiceBroker, logger: LoggerInstance) {
     super(broker, logger);
-
-    this.onGameStart();
   }
 
-  get room() {
-    return this._room;
+  private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number = 60 * 1000) {
+    if (this.gameTimeout[gameId]) {
+      clearTimeout(this.gameTimeout[gameId]);
+    }
+
+    this.gameTimeout[gameId] = setTimeout(async () => {
+      const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+      cb(game);
+    }, timeout);
   }
 
-  private onGameStart() {
+  public destroyGame(id: string) {
+    return this.broker.call('games.remove', { id });
+  }
 
-    const gameData: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      ...this.turnData,
-      selectedCards: {},
-      winner: null,
-      winningCards: [],
-      state: this.gameState,
-    };
+  public async onTurnUpdated(updatedTurn: TurnDataWithState) {
+    try {
+      // Try update the games prevState.
+      // tslint:disable-next-line: max-line-length
+      await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state });
+    } catch (e) {
+      this.logger.error(e);
+    }
 
-    return this.fetchCards(this._room.options.decks)
-      .then(() => {
-        this.logger.info('Game started, sending data', gameData);
-        this.lastGameState = gameData;
-        this.broker.emit('games.updated', gameData);
-        this.handleNextTurn();
-      });
+    this.logger.info('Turn update found, setting timer for next turn', updatedTurn.state);
+    switch (updatedTurn.state) {
+      case GameState.TURN_SETUP:
+        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), 10000);
+      case GameState.PICKING_CARDS:
+        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleWinnerSelection(game));
+      case GameState.SELECTING_WINNER:
+        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'));
+      case GameState.ENEDED:
+        return this.setGameTimeout(updatedTurn.gameId, (game) => {
+          // kick everyone out and end the game;
+          this.destroyGame(game._id);
+        });
+      default:
+        this.logger.error('Not sure which state to call');
+        return;
+    }
   }
 
   private initalizePlayers(room: Room): { [id: string]: GamePlayer } {
@@ -93,12 +119,65 @@ export default class Game extends TurnHandler {
     }, {});
   }
 
-  private async endGame() {
+  public onGameStart(room: Room) {
+    const players = this.initalizePlayers(room);
+    const initalTurnData = {
+      czar: null,
+      blackCard: null,
+      turn: 0,
+      totalTime: 60 * 1000
+    };
+    const initalGameState = GameState.TURN_SETUP;
+    const gameData: TurnDataWithState = {
+      gameId: '',
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      ...initalTurnData,
+      selectedCards: {},
+      winner: null,
+      winningCards: [],
+      state: initalGameState
+    };
+
+    return this.fetchCards(room.options.decks)
+      .then(({ whiteCards, blackCards }) => {
+        return this.broker.call('games.create', {
+          room: room._id,
+          players,
+          gameState: initalGameState,
+          prevTurnData: initalGameState,
+          turns: [],
+          whiteCards,
+          blackCards,
+          turnData: initalTurnData,
+          selectedCards: {},
+        });
+      })
+      .then((game: GameInterface) => {
+        gameData.gameId = game._id;
+        this.logger.info('game created');
+        return this.broker.call<Room, any>('rooms.update', { id: room._id, status: 'started' });
+      })
+      .then(() => {
+        this.logger.info('Game started, sending data');
+        return this.broker.emit('games.turn.updated', gameData);
+      })
+      .catch(err => {
+        this.logger.error(err);
+      });
+  }
+
+  private async endGame(game: GameInterface) {
+    if (this.gameTimeout[game._id]) {
+      clearTimeout(this.gameTimeout[game._id]);
+    }
+
+    this.logger.info('End game triggered');
+    const { players, turnData, room } = game;
     // emit end game, with score tally and info.
-    this.gameState = GameState.ENEDED;
 
     let winners = { _ids: [], score: 0 };
-    Object.values(this.players).forEach(({ _id, score }) => {
+    Object.values(players).forEach(({ _id, score }) => {
       // Player has a largest score. Take all the glory!
       if (score > winners.score) {
         winners = { _ids: [_id], score };
@@ -112,127 +191,101 @@ export default class Game extends TurnHandler {
     });
 
     const gameData: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      ...this.turnData,
+      gameId: game._id,
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      ...turnData,
       selectedCards: {},
       winner: winners._ids,
       winningCards: [],
       state: GameState.ENEDED,
     };
 
-    this.lastGameState = gameData;
-    await this.broker.emit('games.updated', gameData);
-    return this.broker.call<Room, any>('rooms.update', { id: this.room._id, status: 'finished' })
+    await this.broker.emit('games.turn.updated', gameData);
+    return this.broker.call<Room, any>('rooms.update', { id: room._id, status: 'finished' })
       .then(() => this.logger.info('Game ended', gameData))
       .catch((err) => { this.logger.error(err); });
   }
 
-  private setGameTimeout(cb: () => void, timeout: number = 60 * 1000) {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
+  private handleNextTurn(game: GameInterface) {
+    if (this.gameTimeout[game._id]) {
+      clearTimeout(this.gameTimeout[game._id]);
     }
 
-    this.gameTimeout = setTimeout(() => {
-      cb();
-    }, timeout);
-  }
-
-  private handleNextTurn() {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
-    }
-
+    const { players, room } = game;
     // Target should actually be based on the first user score to get to that.
-    const isTargetReached = Object.values(this.players).some(player => player.score >= this._room.options.target);
+    const isTargetReached = Object.values(players).some(player => player.score >= room.options.target);
     if (isTargetReached) {
-      this.endGame();
+      this.endGame(game);
       return;
     }
 
-    return this.startTurn(this.players)
-      .then(async data => {
-        this.gameState = GameState.PICKING_CARDS;
-
-        const withState: TurnDataWithState = {
-          players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-          roomId: this.room._id,
-          selectedCards: {},
-          winner: null,
-          winningCards: [],
-          ...data,
-          state: GameState.PICKING_CARDS,
-        };
-
-        this.logger.info('Starting turn', withState);
-        this.lastGameState = withState;
-        await this.broker.emit('games.updated', withState);
-
-        this.setGameTimeout(() => this.handleWinnerSelection());
+    // mutate players by reference
+    Object.values(players).forEach(player => player.isCzar = false);
+    return this.startTurn(game)
+      .then(dataWithState => {
+        this.logger.info('Starting round', dataWithState);
+        return this.broker.emit('games.turn.updated', dataWithState);
       })
       .catch(err => {
         this.logger.error(err);
       });
   }
 
-  private async handleWinnerSelection() {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
+  private async handleWinnerSelection(game: GameInterface) {
+    if (this.gameTimeout[game._id]) {
+      clearTimeout(this.gameTimeout[game._id]);
     }
 
+    const { selectedCards, players, turnData, room } = game;
     // If no users selected any cards to play, skip.
-    if (!Object.keys(this.selectedCards).length) {
-      this.handleNoWinner('No one selected any cards. Everyone loses!');
+    if (!Object.keys(selectedCards).length) {
+      this.handleNoWinner(game, 'No one selected any cards. Everyone loses!');
       return;
     }
 
     this.logger.info('Round time up. Entering winner selection stage');
-    const populatedSelectedCards = await this.populatedSelectedCards();
+    const populatedSelectedCards = await this.populatedSelectedCards(selectedCards);
     // Send all cards for everyone to view.
 
-    this.gameState = GameState.SELECTING_WINNER;
     const gameData: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      ...this.turnData,
+      gameId: game._id,
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      ...turnData,
       selectedCards: populatedSelectedCards,
       winner: null,
       winningCards: [],
       state: GameState.SELECTING_WINNER,
     };
 
-    this.lastGameState = gameData;
-    await this.broker.emit('games.updated', gameData);
-
-    // If the czar doesn't pick a winner within 60 seconds. Move on.
-    this.setGameTimeout(() => this.handleNoWinner('The Czar did not pick a winner! They have failed us all...'));
+    await this.broker.emit('games.turn.updated', gameData);
   }
 
-  public onHandSubmitted(playerId: string, whiteCards: string[]) {
+  public async onHandSubmitted(game: GameInterface, playerId: string, whiteCards: string[]) {
+    const { gameState } = game;
     // Ignore cards if the game state is no longer picking cards.
-    if (this.gameState !== GameState.PICKING_CARDS) {
+    if (gameState !== GameState.PICKING_CARDS) {
       throw new Error('Not allowed to select cards at this time');
     }
 
-    this.submitCards(playerId, whiteCards);
-    // TODO: emit placement 'card selected' for each selection to display on the front-end.
-    const playersCards = this.players[playerId].cards;
-    // make a new array of cards, excluding the ones the player just played.
-    this.players[playerId].cards = playersCards.filter(card => !whiteCards.includes(card));
-    if (this.hasEveryoneSelected(this.players)) {
-      this.handleWinnerSelection();
+    const updatedGame = await this.submitCards(game, playerId, whiteCards);
+    if (this.hasEveryoneSelected(updatedGame)) {
+      this.handleWinnerSelection(updatedGame);
     }
   }
 
-  private async handleNoWinner(reason?: string) {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
+  private async handleNoWinner(game: GameInterface, reason?: string) {
+    if (this.gameTimeout[game._id]) {
+      clearTimeout(this.gameTimeout[game._id]);
     }
 
+    const { players, turnData, room, turns } = game;
     const gameData: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      ...this.turnData,
+      gameId: game._id,
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      ...turnData,
       selectedCards: {},
       winner: null,
       winningCards: [],
@@ -241,37 +294,40 @@ export default class Game extends TurnHandler {
     };
 
     // Store the end state of each round in a collection.
-    this.turns.push(gameData);
-    this.lastGameState = gameData;
-    await this.broker.emit('games.updated', gameData);
-    this.setGameTimeout(() => this.handleNextTurn(), 10000);
+    turns.push(gameData);
+    await this.broker.call('games.update', { id: game._id, turns });
+    await this.broker.emit('games.turn.updated', gameData);
   }
 
-  public async onWinnerSelected(winner: string, clientId: string) {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
+  public async onWinnerSelected(game: GameInterface, winner: string, clientId: string) {
+    if (this.gameTimeout[game._id]) {
+      clearTimeout(this.gameTimeout[game._id]);
     }
 
-    if (clientId !== this.turnData.czar) {
+    const { turnData, gameState, players, turns, room, selectedCards } = game;
+    if (clientId !== turnData.czar) {
       throw new Error('Only the czar is allowed to select the winner');
     }
 
     // Only allow one winning card to be selected.
-    if (this.gameState !== GameState.SELECTING_WINNER) {
+    if (gameState !== GameState.SELECTING_WINNER) {
       throw new Error('This is not the correct round to select a winner');
     }
 
-    const winningCards = await this.selectWinner(winner);
+    const winningCards = await this.selectWinner(selectedCards, winner);
+    // reset selected cards.
     // emit winning cards.
-    this.players[winner].score += 1;
-    this.gameState = GameState.TURN_SETUP;
-    const populatedSelectedCards = await this.populatedSelectedCards();
+    const winningPlayer = players[winner];
+    if (winningPlayer) {
+      winningPlayer.score += 1;
+    }
+    const populatedSelectedCards = await this.populatedSelectedCards(selectedCards);
 
-    // This object should be stored in a turns array in the db, for history functionality.
     const gameData: TurnDataWithState = {
-      players: Object.values(this.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-      roomId: this.room._id,
-      ...this.turnData,
+      gameId: game._id,
+      players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+      roomId: room._id,
+      ...turnData,
       selectedCards: populatedSelectedCards,
       winner: winner,
       winningCards,
@@ -279,48 +335,53 @@ export default class Game extends TurnHandler {
     };
 
     // Store the end state of each round in a collection.
-    this.turns.push(gameData);
-    this.lastGameState = gameData;
+    turns.push(gameData);
+    await this.broker.call('games.update', { id: game._id, turns, players });
     // Emit the winning card, and winning player, for front-end display
-    await this.broker.emit('games.updated', gameData);
-
-    this.setGameTimeout(() => this.handleNextTurn(), 10000);
+    await this.broker.emit('games.turn.updated', gameData);
   }
 
-  public onPlayerLeave(playerId: string) {
-    const player = this.players[playerId];
-    delete this.players[playerId];
+  public async onPlayerLeave(game: GameInterface, playerId: string, adapter: any, onUpdated: any) {
+    const player = game.players[playerId];
 
-    if (!Object.keys(this.players).length) {
-      this.endGame();
+    // delete this.players[playerId];
+    const prop = `players.${playerId}`;
+    const newGameObj = await adapter.updateById(game._id, { $unset: { [prop]: 1 } });
+    onUpdated(newGameObj);
+    newGameObj._id = newGameObj._id.toString();
+    // if that was the last player to leave. End the game.
+    if (!Object.keys(newGameObj.players).length) {
+      this.destroyGame(game._id);
       return;
     }
 
+    newGameObj.room = { _id: newGameObj.room };
     // If the czar leaves the game. End the turn.
     if (player.isCzar) {
-      clearTimeout(this.gameTimeout);
-      this.handleNoWinner('The Czar left the game');
+      this.handleNoWinner(newGameObj, 'The Czar left the game');
     }
 
   }
 
-  public async onPlayerJoin(playerId: string) {
-    // Ensure the new player is including in the match.
-    this.players[playerId] = { _id: playerId, cards: [], isCzar: false, score: 0 };
-    await this.dealWhiteCards(this.players[playerId]);
+  public async onPlayerJoin(gameId: string, playerId: string) {
+    // Ensure the new player is included in the match.
+    const newPlayer = { _id: playerId, cards: [], isCzar: false, score: 0 };
+    const playersProp = `players.${playerId}`;
+    return this.broker.call('games.update', { id: gameId, [playersProp]: newPlayer });
 
     // Implement this.
     // if (this.lastGameState) {
     // emit update to only the player that joined.
+    // await this.dealWhiteCards(newPlayer, game.whiteCards);
     // }
   }
 
   public destroy() {
-    if (this.gameTimeout) {
-      clearTimeout(this.gameTimeout);
-    }
+    // if (this.gameTimeout) {
+    //   clearTimeout(this.gameTimeout);
+    // }
 
-    this.players = {};
+    // this.players = {};
 
     // handle firing game removed update.
   }

@@ -107,6 +107,12 @@ export default class AdminGatewayService extends Service {
                 'PUT /games/start': 'games.start',
                 'POST /games/cards': 'games.submit',
                 'POST /games/winner': 'games.winner',
+                'GET /games/:id': 'games.get',
+                'GET /games': 'games.list',
+                'POST /games/search': 'games.find',
+                'POST /games': 'games.create',
+                'PATCH /games/:id': 'games.update',
+                'DELETE /games/:id': 'games.remove',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
