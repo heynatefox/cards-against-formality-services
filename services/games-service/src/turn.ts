@@ -31,6 +31,7 @@ export interface TurnDataWithState extends TurnData {
   winner: string | string[];
   winningCards: Card[];
   errorMessage?: string;
+  initializing?: boolean;
 }
 
 export default class TurnHandler {

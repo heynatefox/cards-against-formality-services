@@ -128,7 +128,7 @@ export default class GameService extends Service {
     const { clientId, roomId } = ctx.params;
     return this.getGameMatchingRoom(ctx, roomId)
       .then((game) => {
-        return this.gameService.onPlayerJoin(game._id, clientId);
+        return this.gameService.onPlayerJoin(game, clientId);
       })
       .catch(err => {
         // game must not have started yet.

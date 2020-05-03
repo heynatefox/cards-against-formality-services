@@ -14,6 +14,7 @@ export interface RedisAdapter extends Adapter {
   clients: (callback: (error: Error, clients: string[]) => void) => void;
   clientRooms: (id: string, callback: (error: Error, rooms: string[]) => void) => void;
   remoteJoin: (id: string, room: string, callback: (error: Error) => void) => void;
+  remoteDisconnect: (id: string, close: boolean, callback: (error: Error) => void) => void;
 }
 
 export default class BaseNamespace {
@@ -35,6 +36,18 @@ export default class BaseNamespace {
           reject(err);
         } else {
           resolve(`${clientId} joined room: ${room}`);
+        }
+      });
+    });
+  }
+
+  protected remoteDisconnect(clientId: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.adapter.remoteDisconnect(clientId, true, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(`${clientId} forcefully disconnected`);
         }
       });
     });

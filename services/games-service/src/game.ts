@@ -88,27 +88,28 @@ export default class Game extends TurnHandler {
     try {
       // Try update the games prevState.
       // tslint:disable-next-line: max-line-length
-      await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state });
+      const updatedGame: GameInterface = await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state });
+
+      this.logger.info('Turn update found, setting timer for next turn', updatedTurn.state);
+      switch (updatedTurn.state) {
+        case GameState.TURN_SETUP:
+          const timeout = updatedGame.prevTurnData.initializing ? 0 : 10000;
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout);
+        case GameState.PICKING_CARDS:
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleWinnerSelection(game));
+        case GameState.SELECTING_WINNER:
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'));
+        case GameState.ENEDED:
+          return this.setGameTimeout(updatedTurn.gameId, (game) => {
+            // kick everyone out and end the game;
+            this.destroyGame(game._id);
+          });
+        default:
+          this.logger.error('Not sure which state to call');
+          return;
+      }
     } catch (e) {
       this.logger.error(e);
-    }
-
-    this.logger.info('Turn update found, setting timer for next turn', updatedTurn.state);
-    switch (updatedTurn.state) {
-      case GameState.TURN_SETUP:
-        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), 10000);
-      case GameState.PICKING_CARDS:
-        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleWinnerSelection(game));
-      case GameState.SELECTING_WINNER:
-        return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'));
-      case GameState.ENEDED:
-        return this.setGameTimeout(updatedTurn.gameId, (game) => {
-          // kick everyone out and end the game;
-          this.destroyGame(game._id);
-        });
-      default:
-        this.logger.error('Not sure which state to call');
-        return;
     }
   }
 
@@ -136,7 +137,8 @@ export default class Game extends TurnHandler {
       selectedCards: {},
       winner: null,
       winningCards: [],
-      state: initalGameState
+      state: initalGameState,
+      initializing: true
     };
 
     return this.fetchCards(room.options.decks)
@@ -363,11 +365,16 @@ export default class Game extends TurnHandler {
 
   }
 
-  public async onPlayerJoin(gameId: string, playerId: string) {
+  public async onPlayerJoin(game: GameInterface, playerId: string) {
+    if (playerId in game.players) {
+      // player is already in the game, must've the refreshed page.
+      return null;
+    }
+
     // Ensure the new player is included in the match.
     const newPlayer = { _id: playerId, cards: [], isCzar: false, score: 0 };
     const playersProp = `players.${playerId}`;
-    return this.broker.call('games.update', { id: gameId, [playersProp]: newPlayer });
+    return this.broker.call('games.update', { id: game._id, [playersProp]: newPlayer });
 
     // Implement this.
     // if (this.lastGameState) {

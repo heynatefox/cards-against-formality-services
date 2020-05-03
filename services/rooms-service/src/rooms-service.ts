@@ -347,12 +347,13 @@ export default class RoomsService extends Service {
       { $pull: { players: _id, spectators: _id } },
       { returnOriginal: false }
     )
-      .then(doc => {
+      .then(async doc => {
         // Client is not in any rooms
         if (!doc.value) {
           return null;
         }
-        this.entityChanged('updated', doc.value, ctx).then(() => doc.value);
+        await ctx.emit(`${this.name}.player.left`, { clientId: _id, roomId: doc.value?._id });
+        return this.entityChanged('updated', doc.value, ctx).then(() => doc.value);
       });
   }
 
