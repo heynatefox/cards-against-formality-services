@@ -137,9 +137,7 @@ export default class TurnHandler {
     // players mutated by reference.
     turnData.czar = this.pickCzar(turns, players);
     // mutate black and white cards by reference
-    this.logger.info('Black card length before', blackCards.length);
     turnData.blackCard = await this.pickBlackCard(blackCards);
-    this.logger.info('Black card length after', blackCards.length);
     await this.ensurePlayersHaveCards(players, whiteCards);
 
     // tslint:disable-next-line: max-line-length

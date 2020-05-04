@@ -90,7 +90,6 @@ export default class Game extends TurnHandler {
       // tslint:disable-next-line: max-line-length
       const updatedGame: GameInterface = await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state });
 
-      this.logger.info('Turn update found, setting timer for next turn', updatedTurn.state);
       switch (updatedTurn.state) {
         case GameState.TURN_SETUP:
           const timeout = updatedGame.prevTurnData.initializing ? 0 : 10000;
@@ -157,11 +156,9 @@ export default class Game extends TurnHandler {
       })
       .then((game: GameInterface) => {
         gameData.gameId = game._id;
-        this.logger.info('game created');
         return this.broker.call<Room, any>('rooms.update', { id: room._id, status: 'started' });
       })
       .then(() => {
-        this.logger.info('Game started, sending data');
         return this.broker.emit('games.turn.updated', gameData);
       })
       .catch(err => {
@@ -226,7 +223,6 @@ export default class Game extends TurnHandler {
     Object.values(players).forEach(player => player.isCzar = false);
     return this.startTurn(game)
       .then(dataWithState => {
-        this.logger.info('Starting round', dataWithState);
         return this.broker.emit('games.turn.updated', dataWithState);
       })
       .catch(err => {

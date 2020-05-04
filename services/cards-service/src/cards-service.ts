@@ -1,8 +1,6 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
-// Will remove seeds in prod.
-import cardData from '../seeds/cards.json';
 
 /**
  * CardsService acts as a data store with a transactional outbox, for playing cards.
@@ -51,40 +49,9 @@ export default class CardsService extends Service {
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
-        entityRemoved: this.entityRemoved,
-        afterConnected: () => {
-          setTimeout(async () => {
-            const count = await this.adapter.count();
-            if (count === 0) {
-              this.logger.info('Cards db empty, seeding...');
-              await this.seedDb();
-            }
-            await this.broker.broadcast('cache.clean.cards');
-            await this.broker.cacher?.clean();
-          }, 1000);
-        }
+        entityRemoved: this.entityRemoved
       },
     );
-  }
-
-  /**
-   * Seed the db. **Remove in prod**.
-   *
-   * @private
-   * @returns
-   * @memberof CardsService
-   */
-  private seedDb() {
-    const { blackCards, whiteCards } = cardData;
-    const blackCardPromises = blackCards.map(card => {
-      return Object.assign(card, { cardType: 'black' });
-    });
-
-    const whiteCardPromises = whiteCards.map(card => {
-      return { text: card, cardType: 'white' };
-    });
-
-    return this.adapter.insertMany([...blackCardPromises, ...whiteCardPromises]);
   }
 
   /**

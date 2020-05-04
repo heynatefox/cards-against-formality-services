@@ -59,41 +59,9 @@ export default class DecksService extends Service {
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
-        entityRemoved: this.entityRemoved,
-        afterConnected: () => {
-          setTimeout(async () => {
-            await this.broker.waitForServices('cards');
-            const count = await this.adapter.count();
-            if (count === 0) {
-              this.logger.info('Decks DB empty. Seeding...');
-              await this.seedDb();
-            }
-            await this.broker.broadcast('cache.clean.decks');
-            await this.broker.cacher?.clean();
-          }, 5000);
-        }
+        entityRemoved: this.entityRemoved
       },
     );
-  }
-
-  /**
-   * Seed the db. **Remove in prod**.
-   *
-   * @private
-   * @returns
-   * @memberof DecksService
-   */
-  private async seedDb() {
-    const _cards: any[] = await this.broker.call('cards.find', { query: {} });
-    const { whiteCards, blackCards } = _cards.reduce((acc, card) => {
-      if (card.cardType === 'black') {
-        acc.blackCards.push(card._id);
-      } else {
-        acc.whiteCards.push(card._id);
-      }
-      return acc;
-    }, { whiteCards: [], blackCards: [] });
-    return this.broker.call(`${this.name}.create`, { name: 'Base cards', whiteCards, blackCards });
   }
 
   /**
