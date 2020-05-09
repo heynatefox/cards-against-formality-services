@@ -152,8 +152,11 @@ export default class GameService extends Service {
   }
 
   private async handleRoomRemoved(ctx: Context<{ _id: string }>) {
-    const game: any = await this.getGameMatchingRoom(ctx, ctx.params._id);
-    return this.gameService.destroyGame(game._id);
+    return this.getGameMatchingRoom(ctx, ctx.params._id)
+      .then((game) => this.gameService.destroyGame(game._id))
+      .catch(() => {
+        // game must not have started yet.
+      });
   }
 
   /**

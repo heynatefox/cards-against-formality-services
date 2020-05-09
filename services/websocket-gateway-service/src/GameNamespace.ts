@@ -15,14 +15,15 @@ export default class GameNamespace extends BaseNamespace {
   }
 
   protected async onClientConnect(client: CustomSocket) {
-    const user: any = await this.broker.call('clients.get', { id: client.user._id });
-    return this.joinRoom(client.id, user.roomId)
+    return this.broker.call('clients.get', { id: client.user._id })
+      .then((user: any) => this.joinRoom(client.id, user.roomId))
       .then((res) => {
         super.onClientConnect(client);
         this.logger.info(res);
         return null;
       })
       .catch(err => {
+        this.logger.error(err);
         // Disconnect the client. Failed to add it to the room.
         this.onDisconnect(client);
       });

@@ -24,7 +24,7 @@ const postCard = (data, i) => {
 }
 
 const postDeck = (data) => {
-  return axios.post('http://localhost/admin/decks', data)
+  return axios.post('http://localhost:8000/admin/decks', data)
     .then(res => res.data)
     .catch(err => {
       console.log(err.message);
@@ -40,33 +40,35 @@ const run = async () => {
   const populatedWhiteCards = await populateDeck(whiteCards);
   const populatedBlackCards = await populateDeck(blackCards);
 
-  const promises = Object.values(decks)
-    .map(deck => {
-      const populatedDeck = deck;
-      //
-      const blackCardIds = [];
-      populatedDeck.black.map(index => {
-        if (populatedBlackCards[index]) {
-          blackCardIds.push(populatedBlackCards[index]._id);
-        }
-      });
-      delete populatedDeck.black;
-      populatedDeck.blackCards = blackCardIds;
-      //
-      const whiteCardIds = [];
-      populatedDeck.white.map(index => {
-        if (populatedWhiteCards[index]) {
-          whiteCardIds.push(populatedWhiteCards[index]._id);
-        }
-      });
-      delete populatedDeck.white
-      populatedDeck.whiteCards = whiteCardIds;
+  for (const deck of Object.values(decks)) {
+    const populatedDeck = deck;
+    //
+    const blackCardIds = [];
+    populatedDeck.black.map(index => {
+      if (populatedBlackCards[index]) {
+        blackCardIds.push(populatedBlackCards[index]._id);
+      }
+    });
+    delete populatedDeck.black;
+    populatedDeck.blackCards = blackCardIds;
+    //
+    const whiteCardIds = [];
+    populatedDeck.white.map(index => {
+      if (populatedWhiteCards[index]) {
+        whiteCardIds.push(populatedWhiteCards[index]._id);
+      }
+    });
+    delete populatedDeck.white
+    populatedDeck.whiteCards = whiteCardIds;
 
 
-      return postDeck(populatedDeck).catch(err => console.log(err.message));
-    })
+    try {
+      await postDeck(populatedDeck)
+    } catch (e) {
+      console.log(e.message);
+    }
+  }
 
-  await Promise.all(promises);
   console.log('done');
 }
 

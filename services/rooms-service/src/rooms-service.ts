@@ -314,7 +314,7 @@ export default class RoomsService extends Service {
         return Promise.resolve(room);
       } else {
         // user must be in another room.
-        throw forbidden('A user is only allowed to join one room at a time');
+        throw forbidden('You are already in a room.');
       }
     }
 

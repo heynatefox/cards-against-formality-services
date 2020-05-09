@@ -26,13 +26,15 @@ export default class DefaultNamespace extends BaseNamespace {
         // disconnect time added to client.
         const timeout = 60 * 1000;
         setTimeout(async () => {
-          const user = await this.broker.call('clients.get', { id: _id }) as any;
-          const afterTimeoutTime = new Date().getTime();
-          // If the user hasn't changed socketid or reconnected. Fire a disconnect event.
-          // tslint:disable-next-line: max-line-length
-          if (user.socket === client.id && user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > (timeout - 5000)) {
-            this.broker.emit('websocket-gateway.client.disconnected', { _id });
-          }
+          this.broker.call('clients.get', { id: _id })
+            .then((user: any) => {
+              const afterTimeoutTime = new Date().getTime();
+              // If the user hasn't changed socketid or reconnected. Fire a disconnect event.
+              // tslint:disable-next-line: max-line-length
+              if (user.socket === client.id && user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > (timeout - 5000)) {
+                this.broker.emit('websocket-gateway.client.disconnected', { _id });
+              }
+            });
         }, timeout);
       })
       // If error, client must have logged out.
