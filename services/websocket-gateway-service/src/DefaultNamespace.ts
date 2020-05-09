@@ -34,7 +34,8 @@ export default class DefaultNamespace extends BaseNamespace {
               if (user.socket === client.id && user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > (timeout - 5000)) {
                 this.broker.emit('websocket-gateway.client.disconnected', { _id });
               }
-            });
+            })
+            .catch(() => this.broker.emit('websocket-gateway.client.disconnected', { _id }));
         }, timeout);
       })
       // If error, client must have logged out.
