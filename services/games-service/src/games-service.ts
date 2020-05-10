@@ -104,7 +104,6 @@ export default class GameService extends Service {
         return games[0];
       })
       .catch(err => {
-        this.logger.error(err);
         throw err;
       });
   }

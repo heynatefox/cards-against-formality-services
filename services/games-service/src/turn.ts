@@ -19,7 +19,6 @@ export interface TurnData {
   czar: string;
   blackCard: Card;
   turn: number;
-  totalTime: number;
   selectedCards: { [id: string]: Card[] };
 }
 

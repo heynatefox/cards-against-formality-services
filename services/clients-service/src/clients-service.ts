@@ -308,7 +308,7 @@ export default class ClientsService extends Service {
     }
 
     return ctx.call(`${this.name}.update`, { id: clientId, roomId: null })
-      .catch(err => { this.logger.error(err); });
+      .catch(() => { });
   }
 
   /**

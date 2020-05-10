@@ -100,6 +100,7 @@ export default class WebGatewayService extends Service {
                 'PUT /rooms/join/players': 'rooms.join-players',
                 'PUT /rooms/join/spectators': 'rooms.join-spectators',
                 'PUT /rooms/leave': 'rooms.leave',
+                'PUT /rooms/kick': 'rooms.kick',
 
                 'PUT /games/start': 'games.start',
                 'POST /games/cards': 'games.submit',

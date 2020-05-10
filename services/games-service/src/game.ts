@@ -23,6 +23,7 @@ interface RoomOptions {
   decks: string[];
   target: number;
   maxPlayers: number;
+  roundTime: number;
 }
 
 /**
@@ -50,6 +51,7 @@ export interface GamePlayer {
 
 export interface GameInterface {
   _id: string;
+  roundTime: number;
   room: Room;
   players: { [id: string]: GamePlayer };
   gameState: GameState;
@@ -69,7 +71,7 @@ export default class Game extends TurnHandler {
     super(broker, logger);
   }
 
-  private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number = 60 * 1000) {
+  private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number) {
     if (this.gameTimeout[gameId]) {
       clearTimeout(this.gameTimeout[gameId]);
     }
@@ -77,7 +79,7 @@ export default class Game extends TurnHandler {
     this.gameTimeout[gameId] = setTimeout(async () => {
       const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
       cb(game);
-    }, timeout);
+    }, timeout * 1000);
   }
 
   public destroyGame(id: string) {
@@ -92,17 +94,18 @@ export default class Game extends TurnHandler {
 
       switch (updatedTurn.state) {
         case GameState.TURN_SETUP:
-          const timeout = updatedGame.prevTurnData.initializing ? 0 : 10000;
+          const timeout = updatedGame.prevTurnData.initializing ? 0 : 10;
           return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout);
         case GameState.PICKING_CARDS:
-          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleWinnerSelection(game));
+          return this.setGameTimeout(updatedTurn.gameId, (game) =>
+            this.handleWinnerSelection(game), updatedGame.roundTime);
         case GameState.SELECTING_WINNER:
-          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'));
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), updatedGame.roundTime);
         case GameState.ENEDED:
           return this.setGameTimeout(updatedTurn.gameId, (game) => {
             // kick everyone out and end the game;
             this.destroyGame(game._id);
-          });
+          }, updatedGame.roundTime);
         default:
           this.logger.error('Not sure which state to call');
           return;
@@ -124,8 +127,7 @@ export default class Game extends TurnHandler {
     const initalTurnData = {
       czar: null,
       blackCard: null,
-      turn: 0,
-      totalTime: 60 * 1000
+      turn: 0
     };
     const initalGameState = GameState.TURN_SETUP;
     const gameData: TurnDataWithState = {
@@ -152,6 +154,7 @@ export default class Game extends TurnHandler {
           blackCards,
           turnData: initalTurnData,
           selectedCards: {},
+          roundTime: room.options.roundTime
         });
       })
       .then((game: GameInterface) => {
