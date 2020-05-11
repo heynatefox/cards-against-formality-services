@@ -298,6 +298,21 @@ export default class RoomsService extends Service {
   }
 
   /**
+   * Given the room id and client id. Remove the client from the room.
+   *
+   * @private
+   * @param {Context} ctx
+   * @param {string} roomId
+   * @param {string} clientId
+   * @returns
+   * @memberof RoomsService
+   */
+  private removeClientFromRoom(ctx: Context, roomId: string, clientId: string) {
+    return this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } })
+      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+  }
+
+  /**
    * Given an _id for the room and client, remove the client from spectators and players.
    *
    * @private
@@ -309,8 +324,7 @@ export default class RoomsService extends Service {
     const { roomId, } = ctx.params;
     const clientId = ctx.meta.user.uid;
 
-    return this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } })
-      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+    return this.removeClientFromRoom(ctx, roomId, clientId);
   }
 
   /**
@@ -333,8 +347,7 @@ export default class RoomsService extends Service {
       return Promise.reject(new Error('Only the host can kick players.'));
     }
 
-    return this.adapter.updateById(roomId, { $pull: { players: clientId, spectators: clientId } })
-      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+    return this.removeClientFromRoom(ctx, roomId, clientId);
   }
 
   /**
@@ -362,8 +375,10 @@ export default class RoomsService extends Service {
         // user is already in this room.
         return Promise.resolve(room);
       } else {
-        // user must be in another room.
-        throw forbidden('You are already in a game.');
+        // user must be in another room. Leave the other room.
+        try {
+          await this.removeClientFromRoom(ctx, user.roomId, clientId);
+        } catch (e) { }
       }
     }
 
