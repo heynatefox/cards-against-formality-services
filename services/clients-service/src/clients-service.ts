@@ -38,6 +38,9 @@ export default class ClientsService extends Service {
     databaseURL: 'https://cards-against-formality.firebaseio.com'
   });
 
+  // Two days.
+  private readonly MAX_LOG_OUT_TIME = 60000 * 2880;
+
   /**
    * Firestore database connection to store user information.
    *
@@ -68,7 +71,7 @@ export default class ClientsService extends Service {
    */
   constructor(_broker: ServiceBroker) {
     super(_broker);
-
+    this.deleteAnonymousUsers()
     this.parseServiceSchema(
       {
         name: 'clients',
@@ -398,5 +401,56 @@ export default class ClientsService extends Service {
    */
   private entityRemoved(json: any, ctx: Context) {
     return ctx.emit(`${this.name}.removed`, json);
+  }
+
+  private deleteAnonymousUsers() {
+    // this.firestoreDb
+    //   .collection('users')
+    //   .get
+    //   .listUsers(20, nextPageToken)
+    //   .then(function (listUsersResult) {
+    //     listUsersResult.users.forEach(function (userRecord) {
+    //       // updated condition from = 0 to === 0
+    //       if (userRecord.providerData.length === 0) { //this user is anonymous
+    //         console.log(userRecord); // do your delete here
+    //         adminApp.auth().deleteUser(userRecord.uid)
+    //           .then(function () {
+    //             console.log("Successfully deleted user");
+    //           })
+    //           .catch(function (error) {
+    //             console.log("Error deleting user:", error);
+    //           });
+    //       }
+    //     });
+    //     if (listUsersResult.pageToken) {
+    //       // List next batch of users.
+    //       deleteAnonymousUsers(listUsersResult.pageToken);
+    //     }
+    //   })
+    //   .catch(function (error) {
+    //     console.log('Error listing users:', error);
+    //   });
+    // admin.auth()
+    // .deleteUser()
+    //   .listUsers(20)
+    //   .then((res) => {
+    //     res.users.forEach(ur => console.log(ur));
+    //   });
+    const usersToDelete = [];
+    const max = +new Date() - 100;
+    this.firestoreDb
+      .collection('users')
+      .where('isAnonymous', '==', true)
+      .where('lastLoggedIn', '<', max)
+      .get()
+      .then(users => {
+        users.forEach(user => {
+          const fields = user['_fieldsProto'];
+          // if (fields.lastLoggedIn && (+new Date() - fields.lastLoggedIn) > this.MAX_LOG_OUT_TIME) {
+          if (fields.lastLoggedIn) {
+            console.log(user);
+          }
+        });
+      });
   }
 }
