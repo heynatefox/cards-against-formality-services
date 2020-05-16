@@ -109,22 +109,27 @@ export default class TurnHandler {
   }
 
   // Given a player, deal all the white cards to it.
-  protected dealWhiteCards(player: GamePlayer, whiteCards: string[]): Promise<void> {
+  protected async dealWhiteCards(player: GamePlayer, whiteCards: string[]): Promise<string[]> {
     const cardsNeeded = 10 - player.cards.length;
     if (!cardsNeeded) {
-      return this.emitCardsToPlayer(player);
+      await this.emitCardsToPlayer(player);
+      return whiteCards;
     }
 
     while (player.cards?.length !== 10) {
       player.cards.push(this.pickWhiteCard(whiteCards));
     }
 
-    return this.emitCardsToPlayer(player);
+    await this.emitCardsToPlayer(player);
+    return whiteCards;
   }
 
   private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[]) {
-    const cardPlayers = Object.values(players).map(player => this.dealWhiteCards(player, whiteCards));
-    return Promise.all(cardPlayers);
+    for (const player of Object.values(players)) {
+      whiteCards = await this.dealWhiteCards(player, whiteCards);
+    }
+
+    return whiteCards;
   }
 
   protected async startTurn(game: GameInterface): Promise<TurnDataWithState> {
@@ -137,10 +142,10 @@ export default class TurnHandler {
     turnData.czar = this.pickCzar(turns, players);
     // mutate black and white cards by reference
     turnData.blackCard = await this.pickBlackCard(blackCards);
-    await this.ensurePlayersHaveCards(players, whiteCards);
+    const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards);
 
     // tslint:disable-next-line: max-line-length
-    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards, blackCards, turnData });
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData });
     return {
       gameId: game._id,
       players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
@@ -173,7 +178,7 @@ export default class TurnHandler {
 
     const playersProp = `players.${clientId}.cards`;
     const selectedCardsProp = `selectedCards.${clientId}`;
-    // NOT CONFIDENT THAT THIS WILL WORK. DOUBLE CHECK
+
     await this.broker.call('games.update', {
       id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards
     });
@@ -182,7 +187,11 @@ export default class TurnHandler {
 
   protected selectWinner(selectedCards: { [id: string]: string[] }, winner: string): Promise<Card[]> {
     const winningCards = selectedCards[winner];
-    return this.broker.call('cards.get', { id: winningCards });
+    return this.broker.call('cards.get', { id: winningCards })
+      .then((cards: Card[]) => {
+        // ensure the cards are in the correct order.
+        return winningCards.map(id => cards.find(card => card._id === id));
+      });
   }
 
   protected async populatedSelectedCards(selectedCards: { [id: string]: string[] }) {

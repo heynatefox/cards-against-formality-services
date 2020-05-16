@@ -77,8 +77,13 @@ export default class Game extends TurnHandler {
     }
 
     this.gameTimeout[gameId] = setTimeout(async () => {
-      const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
-      cb(game);
+      return this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] })
+        .then((game) => {
+          cb(game);
+        })
+        .catch(() => {
+          this.logger.warn('Game no longer exists.');
+        });
     }, timeout * 1000);
   }
 
@@ -111,7 +116,7 @@ export default class Game extends TurnHandler {
           return;
       }
     } catch (e) {
-      this.logger.error(e);
+      this.logger.warn(e);
     }
   }
 
@@ -164,8 +169,8 @@ export default class Game extends TurnHandler {
       .then(() => {
         return this.broker.emit('games.turn.updated', gameData);
       })
-      .catch(err => {
-        this.logger.error(err);
+      .catch(() => {
+        this.logger.error('Failed to create game');
       });
   }
 
