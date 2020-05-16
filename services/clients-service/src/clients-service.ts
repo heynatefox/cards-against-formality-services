@@ -114,6 +114,7 @@ export default class ClientsService extends Service {
           'rooms.player.left': this.onRoomLeave,
           'rooms.spectator.joined': this.onRoomJoin,
           'rooms.spectator.left': this.onRoomLeave,
+          'client.login': this.onClientLoggedIn
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
@@ -166,11 +167,7 @@ export default class ClientsService extends Service {
    * @returns
    * @memberof ClientsService
    */
-  private checkUsername(ctx: Context<{ username: string }>, isAnonymous?: boolean) {
-    if (isAnonymous) {
-      return Promise.resolve({ message: 'User is anonymous' });
-    }
-
+  private checkUsername(ctx: Context<{ username: string }>) {
     const { username } = ctx.params;
     const isValid = this.isUsernameValid(username);
     if (!isValid) {
@@ -199,8 +196,8 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private login(ctx: Context<any, { user: any }>) {
-    if (ctx.params.isAnonymous) {
-      // generate username...
+    if (ctx.params.isAnonymous && !ctx.params.username?.length) {
+      // support legacy anon username.
       ctx.params.username = `Anon-${Math.round(Math.random() * 9999)}`;
     }
 
@@ -208,20 +205,15 @@ export default class ClientsService extends Service {
     const { uid } = ctx.meta.user;
     const data = { username, uid, displayName, photoURL, email, emailVerified, phoneNumber, isAnonymous };
 
-    return this.checkUsername(ctx, isAnonymous)
+    return this.checkUsername(ctx)
       .then(() => {
         // username doesn't already exist. continue with signup.
         return this.firestoreDb
           .collection('users')
           .doc(data.uid)
-          .set(this.sanitizeFirestoreInput(data));
+          .set(this.sanitizeFirestoreInput(Object.assign({}, data, { lastLoggedIn: +new Date() })));
       })
-      .then(() => {
-        // Don't add to the collection with a random anonymous username.
-        if (isAnonymous) {
-          return Promise.resolve() as any;
-        }
-
+      .then(async () => {
         return this.firestoreDb
           .collection('usernames')
           .doc(username)
@@ -261,8 +253,9 @@ export default class ClientsService extends Service {
       .collection('users')
       .doc(ctx.meta.user.uid)
       .get()
-      .then(doc => {
+      .then(async doc => {
         if (doc.exists) {
+          await ctx.emit('client.login', { uid: ctx.meta.user.uid });
           // try get the user from our cluster collection, if it doesn't exist create it.
           return ctx.call<any, any>(`${this.name}.get`, { id: ctx.meta.user.uid })
             .catch(() => {
@@ -309,6 +302,21 @@ export default class ClientsService extends Service {
 
     return ctx.call(`${this.name}.update`, { id: clientId, roomId: null })
       .catch(() => { });
+  }
+
+  /**
+   * On Client logged in. Store the last logged in time. Mainly to clean up anonymous users.
+   *
+   * @private
+   * @param {Context<{ uid: string }>} ctx
+   * @returns
+   * @memberof ClientsService
+   */
+  private onClientLoggedIn(ctx: Context<{ uid: string }>) {
+    return this.firestoreDb
+      .collection('users')
+      .doc(ctx.params.uid)
+      .update({ lastLoggedIn: +new Date() });
   }
 
   /**
