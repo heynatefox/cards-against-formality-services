@@ -51,8 +51,8 @@ export default class DefaultNamespace extends BaseNamespace {
     client.once('disconnect', () => this.onDisconnect(client));
 
     this.broker.call('clients.get', { id: _id })
-      // catch, client might not exist.
-      .catch((err) => null)
+      // Client might not exist. Try renew.
+      .catch(() => this.broker.call('clients.renew', {}, { meta: { user: client.user } }))
       .then(async (user: any) => {
         // Update the user with the newly connected socket, before disconnecting previous. To reduce TTL.
         await this.broker.emit('websocket-gateway.client.connected', { _id, socket: client.id });
@@ -62,7 +62,6 @@ export default class DefaultNamespace extends BaseNamespace {
         }
         return null;
       })
-      // previous socket may not have been able to be disconnected. user may have closed the tab
       .catch((err) => null);
   }
 }
