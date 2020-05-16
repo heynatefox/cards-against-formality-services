@@ -367,33 +367,37 @@ export default class RoomsService extends Service {
     const room = await ctx.call<Room, any>(
       `${this.name}.get`, { id: roomId, }, { meta: { internal: true } }
     );
-    const user: any = await ctx.call(`clients.get`, { id: clientId });
+    return ctx.call(`clients.get`, { id: clientId })
+      // If the client cannot be found, try renew their subscription. They may have disconnected.
+      .catch(() => ctx.call('clients.renew'))
+      .then(async (user: any) => {
+        // check if the user is in a room.
+        if (user?.roomId?.length) {
+          if (user.roomId === roomId) {
+            // user is already in this room.
+            return Promise.resolve(room);
+          } else {
+            // user must be in another room. Leave the other room.
+            try {
+              await this.removeClientFromRoom(ctx, user.roomId, clientId);
+            } catch (e) { }
+          }
+        }
 
-    // check if the user is in a room.
-    if (user?.roomId?.length) {
-      if (user.roomId === roomId) {
-        // user is already in this room.
-        return Promise.resolve(room);
-      } else {
-        // user must be in another room. Leave the other room.
-        try {
-          await this.removeClientFromRoom(ctx, user.roomId, clientId);
-        } catch (e) { }
-      }
-    }
+        // If the room is passcode protected. Try authorize.
+        if (room.passcode && room.passcode !== passcode) {
+          return Promise.reject(new Errors.MoleculerError('Invalid password', 401, 'PASSWORD_INVALID'));
+        }
 
-    // If the room is passcode protected. Try authorize.
-    if (room.passcode && room.passcode !== passcode) {
-      return Promise.reject(new Errors.MoleculerError('Invalid password', 401, 'PASSWORD_INVALID'));
-    }
+        // Check whether this client would surpass the max number of players.
+        if (room.players.length + 1 > room.options.maxPlayers) {
+          throw forbidden('The room you are trying to join is full');
+        }
 
-    // Check whether this client would surpass the max number of players.
-    if (room.players.length + 1 > room.options.maxPlayers) {
-      throw forbidden('The room you are trying to join is full');
-    }
+        return this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } })
+          .then(json => this.entityChanged('updated', json, ctx).then(() => json));
+      });
 
-    return this.adapter.updateById(roomId, { $addToSet: { [arrayProp]: clientId } })
-      .then(json => this.entityChanged('updated', json, ctx).then(() => json));
   }
 
   /**
