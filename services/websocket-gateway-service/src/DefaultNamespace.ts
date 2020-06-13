@@ -3,8 +3,24 @@ import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 import BaseNamespace, { CustomSocket } from './BaseNamespace';
 
+/**
+ * Class that controls the default namespace.
+ *
+ * @export
+ * @class DefaultNamespace
+ * @extends {BaseNamespace}
+ */
 export default class DefaultNamespace extends BaseNamespace {
 
+  /**
+   * Creates an instance of DefaultNamespace.
+   *
+   * @param {Namespace} namespace
+   * @param {ServiceBroker} broker
+   * @param {LoggerInstance} logger
+   * @param {*} admin
+   * @memberof DefaultNamespace
+   */
   constructor(namespace: Namespace, broker: ServiceBroker, logger: LoggerInstance, admin: any) {
     super(namespace, broker, logger, admin);
 
@@ -14,6 +30,14 @@ export default class DefaultNamespace extends BaseNamespace {
       .on('error', (err) => { this.logger.error(err); });
   }
 
+  /**
+   * Handle users disconnecting from the default namespace.
+   * This namespace dictates their connection state to the platform.
+   *
+   * @protected
+   * @param {CustomSocket} client
+   * @memberof DefaultNamespace
+   */
   protected onDisconnect(client: CustomSocket): void {
     const time = new Date().getTime();
     super.onDisconnect(client);
@@ -45,6 +69,13 @@ export default class DefaultNamespace extends BaseNamespace {
 
   }
 
+  /**
+   * Handle the user connecting to the default namespace and registering them as a client within the system.
+   *
+   * @protected
+   * @param {CustomSocket} client
+   * @memberof DefaultNamespace
+   */
   protected async onClientConnect(client: CustomSocket) {
     const _id = client.user._id;
     this.logger.info('Client Connected', client.id, 'to:', client.nsp.name);
