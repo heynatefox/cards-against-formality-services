@@ -27,10 +27,10 @@ const broker = new ServiceBroker({
   logLevel: 'info',
   logFormatter: 'short',
   metrics: false,
-    cacher: {
+  cacher: {
     type: 'Redis',
-    prefix: 'DECKS-MOL',
     options: {
+      prefix: 'DECKS-MOL',
       redis: {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,

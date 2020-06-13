@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -32,6 +32,8 @@ spec:
           env:
             - name: PORT
               value: "80"
+            - name: MONGO_URI
+              value: mongodb://clients-mongo-mongodb.default.svc.cluster.local:27017
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

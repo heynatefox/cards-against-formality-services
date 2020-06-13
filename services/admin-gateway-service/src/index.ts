@@ -29,8 +29,8 @@ const broker = new ServiceBroker({
   metrics: false,
   cacher: {
     type: 'Redis',
-    prefix: 'ADMIN-MOL',
     options: {
+      prefix: 'ADMIN-MOL',
       redis: {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,

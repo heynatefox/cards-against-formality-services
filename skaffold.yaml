@@ -68,7 +68,23 @@ deploy:
         chartPath: bitnami/redis
         remote: true
         setValues: { usePassword: false }
-      - name: mongo
+      - name: cards-mongo
+        chartPath: bitnami/mongodb
+        remote: true
+        setValues: { usePassword: false }
+      - name: clients-mongo
+        chartPath: bitnami/mongodb
+        remote: true
+        setValues: { usePassword: false }
+      - name: decks-mongo
+        chartPath: bitnami/mongodb
+        remote: true
+        setValues: { usePassword: false }
+      - name: games-mongo
+        chartPath: bitnami/mongodb
+        remote: true
+        setValues: { usePassword: false }
+      - name: rooms-mongo
         chartPath: bitnami/mongodb
         remote: true
         setValues: { usePassword: false }

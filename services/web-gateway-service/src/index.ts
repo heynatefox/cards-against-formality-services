@@ -27,10 +27,10 @@ const broker = new ServiceBroker({
   logLevel: 'info',
   logFormatter: 'short',
   metrics: false,
-    cacher: {
+  cacher: {
     type: 'Redis',
-    prefix: 'WEB-G-MOL',
     options: {
+      prefix: 'WEB-G-MOL',
       redis: {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,
