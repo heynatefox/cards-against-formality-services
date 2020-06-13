@@ -89,15 +89,41 @@ export default class WebsocketGatewayService extends Service {
     );
   }
 
+  /**
+   * Propagate the payload from the given context, to a namespace with the given event type.
+   *
+   * @private
+   * @param {Context<any>} ctx
+   * @param {string} namespace
+   * @param {string} event
+   * @param {string} updateType
+   * @memberof WebsocketGatewayService
+   */
   private emit(ctx: Context<any>, namespace: string, event: string, updateType: string) {
     this.socketServer.nsps[namespace].emit(event, { updateType, payload: ctx.params });
   }
 
+  /**
+   * Pass the room update to the relevant namespaces.
+   *
+   * @private
+   * @param {Context<any>} ctx
+   * @param {string} updateType
+   * @memberof WebsocketGatewayService
+   */
   private emitRoomUpdate(ctx: Context<any>, updateType: string) {
     this.emit(ctx, '/rooms', 'rooms', updateType);
     this.sendRoomChangeToGame(ctx, updateType);
   }
 
+  /**
+   * Populate the given room update and send an event to the corresponding room.
+   *
+   * @private
+   * @param {Context<any>} ctx
+   * @param {string} updateType
+   * @memberof WebsocketGatewayService
+   */
   private async sendRoomChangeToGame(ctx: Context<any>, updateType: string) {
     const room = Object.assign({}, ctx.params);
 
@@ -110,6 +136,13 @@ export default class WebsocketGatewayService extends Service {
     this.socketServer.nsps['/games'].to(ctx.params._id).emit('room', { updateType, payload: room });
   }
 
+  /**
+   * Handle passing the cards to the correct client.
+   *
+   * @private
+   * @param {Context<{ clientId: string; cards: any[] }>} ctx
+   * @memberof WebsocketGatewayService
+   */
   private async handleCardDealing(ctx: Context<{ clientId: string; cards: any[] }>) {
     const { clientId, cards } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });
@@ -117,11 +150,26 @@ export default class WebsocketGatewayService extends Service {
     this.socketServer.nsps['/games'].to(socketId).emit('deal', { payload: cards });
   }
 
+  /**
+   * Send the game update to the players that are in the game.
+   *
+   * @private
+   * @param {Context<any>} ctx
+   * @memberof WebsocketGatewayService
+   */
   private handleGameUpdate(ctx: Context<any>) {
     // Only emit to the players in the room associated with the game.
     this.socketServer.nsps['/games'].to(ctx.params.roomId).emit('game', { payload: ctx.params });
   }
 
+  /**
+   * Send a payload to a specific client as a message event.
+   *
+   * @private
+   * @param {Context<{ clientId: string }>} ctx
+   * @param {*} payload
+   * @memberof WebsocketGatewayService
+   */
   private async sendMessageToClient(ctx: Context<{ clientId: string }>, payload: any) {
     const { clientId } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });

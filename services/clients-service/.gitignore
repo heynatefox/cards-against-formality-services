@@ -3,3 +3,4 @@ build
 node_modules
 data
 /src/auth.json
+src/clean-up.js

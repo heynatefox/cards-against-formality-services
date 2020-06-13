@@ -28,8 +28,8 @@ const broker = new ServiceBroker({
   metrics: false,
   cacher: {
     type: 'Redis',
-    prefix: 'CARDS-MOL',
     options: {
+      prefix: 'CARDS-MOL',
       redis: {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,

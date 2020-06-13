@@ -29,8 +29,8 @@ const broker = new ServiceBroker({
   metrics: false,
   cacher: {
     type: 'Redis',
-    prefix: 'GAMES-MOL',
     options: {
+      prefix: 'GAMES-MOL',
       redis: {
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,
