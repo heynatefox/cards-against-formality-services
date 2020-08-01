@@ -30,6 +30,7 @@ const broker = new ServiceBroker({
   cacher: {
     type: 'Redis',
     options: {
+      ttl: 3600 ,
       prefix: 'ROOMS-MOL',
       redis: {
         host: process.env.REDIS_HOST,

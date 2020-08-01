@@ -39,6 +39,11 @@ spec:
                 secretKeyRef:
                   name: app-auth
                   key: jwtSecret
+          resources:
+            requests:
+              cpu: 40m
+            limits:
+              cpu: 70m
           ports:
             - containerPort: 80
       restartPolicy: Always

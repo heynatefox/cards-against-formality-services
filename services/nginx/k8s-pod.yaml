@@ -20,4 +20,9 @@ spec:
           image: nginx-gateway
           ports:
             - containerPort: 80
+          resources:
+            requests:
+              cpu: 40m
+            limits:
+              cpu: 70m
       restartPolicy: Always

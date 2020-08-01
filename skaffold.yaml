@@ -79,7 +79,9 @@ deploy:
       - name: clients-mongo
         chartPath: bitnami/mongodb
         remote: true
-        setValues: { usePassword: false }
+        setValues: 
+          persistence.enabled: false
+          usePassword: false
       - name: decks-mongo
         chartPath: bitnami/mongodb
         remote: true
@@ -87,11 +89,15 @@ deploy:
       - name: games-mongo
         chartPath: bitnami/mongodb
         remote: true
-        setValues: { usePassword: false }
+        setValues: 
+          persistence.enabled: false
+          usePassword: false
       - name: rooms-mongo
         chartPath: bitnami/mongodb
         remote: true
-        setValues: { usePassword: false }
+        setValues: 
+          persistence.enabled: false
+          usePassword: false
 profiles:
   - name: gcb
     patches:

@@ -34,4 +34,9 @@ spec:
               value: "80"
             - name: MONGO_URI
               value: mongodb://decks-mongo-mongodb.default.svc.cluster.local:27017
+          resources:
+            requests:
+              cpu: 40m
+            limits:
+              cpu: 70m
       restartPolicy: Always
