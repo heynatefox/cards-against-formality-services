@@ -4,7 +4,7 @@
   "description": "Decks service handles storing a serving playing decks",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
+    "dev": "ts-node-dev --inspect --respawn ./src/index.ts",
     "start": "node ./build/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
@@ -26,8 +26,8 @@
   },
   "dependencies": {
     "@cards-against-formality/cache-clean-mixin": "^0.0.1",
-    "@cards-against-formality/db-mixin": "^0.0.1",
-    "@cards-against-formality/health-check-mixin": "^0.0.3",
+    "@cards-against-formality/db-mixin": "^0.0.2",
+    "@cards-against-formality/health-check-mixin": "^0.0.4",
     "ioredis": "^4.16.2",
     "nats": "^1.4.0"
   },

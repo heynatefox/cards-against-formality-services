@@ -1,6 +1,6 @@
 {
   "name": "@cards-against-formality/db-mixin",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "DB mixin used in Cards against formality",
   "author": "Jordan Pawlett",
   "main": "build/db.mixin",
@@ -24,9 +24,9 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "moleculer": "^0.14.6",
-    "moleculer-db": "^0.8.7",
-    "moleculer-db-adapter-mongo": "^0.4.8"
+    "moleculer": "^0.14.11",
+    "moleculer-db": "^0.8.8",
+    "moleculer-db-adapter-mongo": "^0.4.10"
   },
   "engines": {
     "node": ">= 8.x.x"

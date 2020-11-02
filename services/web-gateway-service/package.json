@@ -4,7 +4,7 @@
   "description": "Web Gateway to access internal services",
   "scripts": {
     "build": "tsc",
-    "dev": "ts-node-dev --inspect --respawn --transpileOnly ./src/index.ts",
+    "dev": "ts-node-dev --inspect --respawn ./src/index.ts",
     "start": "node ./build/index.js",
     "ci": "jest --watch",
     "test": "jest --coverage",
@@ -24,14 +24,14 @@
   },
   "dependencies": {
     "@cards-against-formality/cache-clean-mixin": "^0.0.1",
-    "@cards-against-formality/health-check-mixin": "^0.0.3",
+    "@cards-against-formality/health-check-mixin": "^0.0.4",
     "boom": "^7.3.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
     "firebase-admin": "^8.10.0",
     "ioredis": "^4.16.2",
     "jsonwebtoken": "^8.5.1",
-    "moleculer": "^0.14.7",
+    "moleculer": "^0.14.11",
     "moleculer-web": "^0.9.1",
     "nats": "^1.4.0"
   },

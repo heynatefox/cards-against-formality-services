@@ -24,7 +24,6 @@ const broker = new ServiceBroker({
   logger: true,
   middlewares: [HealthMiddleware()],
   logLevel: 'info',
-  logFormatter: 'short',
   metrics: false,
   cacher: {
     type: 'Redis',

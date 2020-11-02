@@ -13,13 +13,13 @@ whiteCards = whiteCards.map(card => {
 const postCard = (data, i) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      return axios.post('http://localhost/admin/cards', data)
+      return axios.post('http://localhost:8000/admin/cards', data)
         .then(res => { resolve(res.data) })
         .catch(err => {
           console.log(err);
           return resolve(null);
         })
-    }, 30 * i);
+    }, 80 * i);
   })
 }
 
