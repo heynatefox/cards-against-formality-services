@@ -278,7 +278,7 @@ export default class RoomsService extends Service {
   }
 
   /**
-   * Check to see if a Room with the given name already exists, before creating it.
+   * Check to see if a host already owns some Rooms. Delete all existing rooms.
    *
    * @private
    * @param {Context<Room>} ctx
@@ -286,10 +286,10 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private async beforeCreate(ctx: Context<Room, any>): Promise<Context<Room, any>> {
-    const count = await ctx.call(`${this.name}.count`, { query: { name: ctx.params.name } });
-    if (count > 0) {
-      throw conflict('A room with that name already exists');
-    }
+    const rooms = await ctx.call<Room[], any>(`${this.name}.find`, { query: { host: ctx.meta.user.uid } });
+
+    // A player can only have one room. Remove all previously existing rooms for that host.
+    await Promise.all(rooms.map(room => ctx.call(`${this.name}.remove`, { id: room._id }).catch(() => { })));
 
     const host = ctx.meta.user.uid;
     ctx.params.players = [host];
@@ -438,7 +438,7 @@ export default class RoomsService extends Service {
   }
 
   /**
-   * Emit an event when a Card is created.
+   * Emit an event when a room is created.
    *
    * @private
    * @param {*} json
@@ -454,7 +454,7 @@ export default class RoomsService extends Service {
   }
 
   /**
-   * Emit an event when a card is updated.
+   * Emit an event when a room is updated.
    *
    * @private
    * @param {*} json
@@ -463,6 +463,11 @@ export default class RoomsService extends Service {
    * @memberof RoomsService
    */
   private async entityUpdated(json: Room, ctx: Context) {
+    // occassionally json is null.
+    if (!json) {
+      return null;
+    }
+
     if (json.passcode) {
       (json as any).passcode = true;
     }
@@ -481,7 +486,7 @@ export default class RoomsService extends Service {
   }
 
   /**
-   * Emit an event when a Card is removed.
+   * Emit an event when a room is removed.
    *
    * @private
    * @param {*} json
