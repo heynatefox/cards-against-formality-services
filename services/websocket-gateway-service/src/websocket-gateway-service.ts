@@ -83,7 +83,8 @@ export default class WebsocketGatewayService extends Service {
           'rooms.removed': ctx => this.emitRoomUpdate(ctx, 'removed'),
           'rooms.player.kicked': ctx => this.sendMessageToClient(ctx, { type: 'kicked' }),
           'games.turn.updated': ctx => this.handleGameUpdate(ctx),
-          'games.deal': ctx => this.handleCardDealing(ctx)
+          'games.deal': ctx => this.handleCardDealing(ctx),
+          'games.turn.updated.client': ctx => this.handleGameUpdate(ctx),
         }
       }
     );
@@ -157,7 +158,15 @@ export default class WebsocketGatewayService extends Service {
    * @param {Context<any>} ctx
    * @memberof WebsocketGatewayService
    */
-  private handleGameUpdate(ctx: Context<any>) {
+  private async handleGameUpdate(ctx: Context<any>) {
+    // if a client id is specified, this is intended for a single client.
+    if (ctx.params.clientId && ctx.params.gameData) {
+      const client: any = await ctx.call('clients.get', { id: ctx.params.clientId });
+      const socketId = `/games#${client.socket}`;
+      this.socketServer.nsps['/games'].to(socketId).emit('game', { payload: ctx.params.gameData });
+      return;
+    }
+
     // Only emit to the players in the room associated with the game.
     this.socketServer.nsps['/games'].to(ctx.params.roomId).emit('game', { payload: ctx.params });
   }

@@ -222,7 +222,9 @@ export default class Game extends TurnHandler {
     const { players, room } = game;
     // Target should actually be based on the first user score to get to that.
     const isTargetReached = Object.values(players).some(player => player.score >= room.options.target);
-    if (isTargetReached) {
+    // if not enough cards to continue. End game.
+    const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards);
+    if (isTargetReached || !hasEnoughCards) {
       this.endGame(game);
       return;
     }
@@ -370,21 +372,29 @@ export default class Game extends TurnHandler {
   }
 
   public async onPlayerJoin(game: GameInterface, playerId: string) {
-    if (playerId in game.players) {
-      // player is already in the game, must've the refreshed page.
-      return null;
+    let player = game.players[playerId];
+    if (!player) {
+      // Ensure the new player is included in the match.
+      player = { _id: playerId, cards: [], isCzar: false, score: 0 };
+      const playersProp = `players.${playerId}`;
+      game = await this.broker.call('games.update', { id: game._id, [playersProp]: player });
+
+      // add the new player to the state.
+      game.prevTurnData.players.push(player);
     }
 
-    // Ensure the new player is included in the match.
-    const newPlayer = { _id: playerId, cards: [], isCzar: false, score: 0 };
-    const playersProp = `players.${playerId}`;
-    return this.broker.call('games.update', { id: game._id, [playersProp]: newPlayer });
+    if (game.gameState !== GameState.TURN_SETUP) {
+      // This needs to be implemented in a better way... User may not have a registered socekt id yet.
+      setTimeout(async () => {
+        // send game state to recently joined user.
+        await this.broker.emit('games.turn.updated.client', { clientId: player._id, gameData: game.prevTurnData });
 
-    // Implement this.
-    // if (this.lastGameState) {
-    // emit update to only the player that joined.
-    // await this.dealWhiteCards(newPlayer, game.whiteCards);
-    // }
+        // if picking cards, ensure the user is delt their cards.
+        if (game.gameState === GameState.PICKING_CARDS) {
+          await this.dealWhiteCards(player, game.whiteCards);
+        }
+      }, 2000);
+    }
   }
 
   public destroy() {
