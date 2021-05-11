@@ -31,7 +31,7 @@
     "@cards-against-formality/health-check-mixin": "^0.0.4",
     "ioredis": "^4.16.2",
     "nats": "^1.4.0",
-    "lodash": "4.17.20"
+    "lodash": "4.17.21"
   },
   "engines": {
     "node": ">= 8.x.x"
