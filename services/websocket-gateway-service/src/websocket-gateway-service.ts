@@ -2,8 +2,8 @@ import ApiGateway from 'moleculer-web';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import redis from 'socket.io-redis';
-import SocketIO from 'socket.io';
+import { createAdapter } from 'socket.io-redis';
+import { Server } from 'socket.io';
 import admin from 'firebase-admin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
@@ -28,7 +28,7 @@ export default class WebsocketGatewayService extends Service {
    * @type {SocketIO.Server}
    * @memberof WebsocketGatewayService
    */
-  private socketServer: SocketIO.Server = null;
+  private socketServer: Server = null;
 
   /**
    * Admin Auth provider.
@@ -66,8 +66,12 @@ export default class WebsocketGatewayService extends Service {
           ]
         },
         started: () => {
-          this.socketServer = SocketIO(this.server, { path: '/socket' });
-          this.socketServer.adapter(redis({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT }));
+          this.socketServer = new Server(
+            this.server,
+            { path: '/socket', allowEIO3: true, cors: { origin: '*', methods: ['*'], allowedHeaders: ['*'] } }
+          );
+          // tslint:disable-next-line: max-line-length
+          this.socketServer.adapter(createAdapter({ host: process.env.REDIS_HOST, port: process.env.REDIS_PORT } as any));
           new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger, this.admin);
           new RoomsNamespace(this.socketServer.of('/rooms'), this.broker, this.logger, this.admin);
           // Handles users joining a game room of roomId.
@@ -101,7 +105,7 @@ export default class WebsocketGatewayService extends Service {
    * @memberof WebsocketGatewayService
    */
   private emit(ctx: Context<any>, namespace: string, event: string, updateType: string) {
-    this.socketServer.nsps[namespace].emit(event, { updateType, payload: ctx.params });
+    this.socketServer._nsps.get(namespace).emit(event, { updateType, payload: ctx.params });
   }
 
   /**
@@ -134,7 +138,7 @@ export default class WebsocketGatewayService extends Service {
     room.players = players;
     room.spectators = spectators;
 
-    this.socketServer.nsps['/games'].to(ctx.params._id).emit('room', { updateType, payload: room });
+    this.socketServer._nsps.get('/games').to(ctx.params._id).emit('room', { updateType, payload: room });
   }
 
   /**
@@ -148,7 +152,7 @@ export default class WebsocketGatewayService extends Service {
     const { clientId, cards } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });
     const socketId = `/games#${client.socket}`;
-    this.socketServer.nsps['/games'].to(socketId).emit('deal', { payload: cards });
+    this.socketServer._nsps.get('/games').to(socketId).emit('deal', { payload: cards });
   }
 
   /**
@@ -163,12 +167,12 @@ export default class WebsocketGatewayService extends Service {
     if (ctx.params.clientId && ctx.params.gameData) {
       const client: any = await ctx.call('clients.get', { id: ctx.params.clientId });
       const socketId = `/games#${client.socket}`;
-      this.socketServer.nsps['/games'].to(socketId).emit('game', { payload: ctx.params.gameData });
+      this.socketServer._nsps.get('/games').to(socketId).emit('game', { payload: ctx.params.gameData });
       return;
     }
 
     // Only emit to the players in the room associated with the game.
-    this.socketServer.nsps['/games'].to(ctx.params.roomId).emit('game', { payload: ctx.params });
+    this.socketServer._nsps.get('/games').to(ctx.params.roomId).emit('game', { payload: ctx.params });
   }
 
   /**
@@ -182,8 +186,8 @@ export default class WebsocketGatewayService extends Service {
   private async sendMessageToClient(ctx: Context<{ clientId: string }>, payload: any) {
     const { clientId } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });
-    this.socketServer.nsps['/'].to(client.socket).emit('message', { payload });
-    this.socketServer.nsps['/games'].to(`/games#${client.socket}`).emit('message', { payload });
+    this.socketServer._nsps.get('/').to(client.socket).emit('message', { payload });
+    this.socketServer._nsps.get('/games').to(`/games#${client.socket}`).emit('message', { payload });
   }
 
   /**

@@ -55,7 +55,7 @@ export default class DefaultNamespace extends BaseNamespace {
               const afterTimeoutTime = new Date().getTime();
               // If the user hasn't changed socketid or reconnected. Fire a disconnect event.
               // tslint:disable-next-line: max-line-length
-              if (user.socket === client.id && user.disconnectedAt && afterTimeoutTime - user.disconnectedAt > (timeout - 5000)) {
+              if (user.socket === client.id && user.disconnectedAt && (afterTimeoutTime - user.disconnectedAt) > (timeout - 10000)) {
                 this.broker.emit('websocket-gateway.client.disconnected', { _id });
               }
             })
