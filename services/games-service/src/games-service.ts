@@ -1,4 +1,4 @@
-import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
+import { Errors, Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 import dbMixin from '@cards-against-formality/db-mixin';
 
@@ -108,8 +108,11 @@ export default class GameService extends Service {
       });
   }
 
-  private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }>) {
+  private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }, any>) {
     const { roomId, cards, clientId } = ctx.params;
+    if (clientId !== ctx.meta.user.uid) {
+      return Promise.reject(new Errors.MoleculerError('You cannot submit a card for another user.', 401))
+    }
 
     const game: any = await this.getGameMatchingRoom(ctx, roomId);
     await this.gameService.onHandSubmitted(game, clientId, cards);

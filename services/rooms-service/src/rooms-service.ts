@@ -1,5 +1,5 @@
 import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
-import { conflict, forbidden } from 'boom';
+import { forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
@@ -112,21 +112,24 @@ export default class RoomsService extends Service {
         },
         hooks: {
           before: {
-            create: [this.beforeCreate] as any
+            create: [this.beforeCreate] as any,
+            'join-players': [this.confirmUserAction] as any,
+            'join-spectators': [this.confirmUserAction] as any
           },
           after: {
             'get': [this.afterGet] as any,
             'list': [this.afterList] as any,
             'find': [this.afterFind] as any,
-            'join-players': [this.afterAddPlayer] as any,
-            'join-spectators': [this.afterAddPlayer] as any,
-            'leave': [this.afterRemovePlayer] as any,
-            'kick': [this.afterKickPlayer] as any
+            'join-players': [this.afterAddPlayer, this.sanitizeRoomPasscode] as any,
+            'join-spectators': [this.afterAddPlayer, this.sanitizeRoomPasscode] as any,
+            'leave': [this.afterRemovePlayer, this.sanitizeRoomPasscode] as any,
+            'kick': [this.afterKickPlayer, this.sanitizeRoomPasscode] as any
           }
         },
         actions: {
           'health': this.health,
           'join-players': {
+            cache: false,
             params: {
               roomId: 'string',
               clientId: 'string',
@@ -134,6 +137,7 @@ export default class RoomsService extends Service {
             handler: ctx => this.addPlayer(ctx, 'players')
           },
           'join-spectators': {
+            cache: false,
             params: {
               roomId: 'string',
               clientId: 'string',
@@ -141,6 +145,7 @@ export default class RoomsService extends Service {
             handler: ctx => this.addPlayer(ctx, 'spectators')
           },
           'leave': {
+            cache: false,
             params: {
               roomId: 'string',
               clientId: { optional: true, type: 'string' },
@@ -148,6 +153,7 @@ export default class RoomsService extends Service {
             handler: this.removePlayer
           },
           'kick': {
+            cache: false,
             params: {
               roomId: 'string',
               clientId: 'string',
@@ -163,6 +169,38 @@ export default class RoomsService extends Service {
         entityRemoved: this.entityRemoved,
       },
     );
+  }
+
+  /**
+   * Ensure the user the action is being performed on is the user making the action.
+   *
+   * @private
+   * @param {Context<{ clientId }, any>} ctx
+   * @return {*}  {Promise<Context<any, any>>}
+   * @memberof RoomsService
+   */
+  private confirmUserAction(ctx: Context<{ clientId }, any>): Promise<Context<any, any>> {
+    const userIdOfRequest = ctx.meta.user.uid;
+    if (userIdOfRequest !== ctx.params.clientId) {
+      return Promise.reject(new Errors.MoleculerError('You do not have privilages to perform this action', 401))
+    }
+    return Promise.resolve(ctx);
+  }
+
+  /**
+   * Remove the passcode from the room returned to the user.
+   *
+   * @private
+   * @param {Context} _
+   * @param {{ passcode?: any }} res
+   * @return {*}  {*}
+   * @memberof RoomsService
+   */
+  private sanitizeRoomPasscode(_: Context, res: { passcode?: any }): any {
+    if (res?.passcode) {
+      res.passcode = true;
+    }
+    return res;
   }
 
   /**
