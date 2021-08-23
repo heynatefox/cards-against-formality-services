@@ -1,4 +1,5 @@
-import { Namespace, Socket, Adapter } from 'socket.io';
+import { Namespace, Socket } from 'socket.io';
+import { Adapter } from 'socket.io-adapter';
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 import { unauthorized } from 'boom';
 
@@ -132,10 +133,14 @@ export default class BaseNamespace {
    */
   protected async authMiddleware(client: CustomSocket, next: (err?: any) => void) {
     // Add it to the headers
-    const token = client.handshake.query['auth'];
+    let token = client.handshake.query['auth'];
     if (!token?.length) {
       next(unauthorized('No token found'));
       return;
+    }
+
+    if (Array.isArray(token)) {
+      token = token[0];
     }
 
     return this.verifyAndDecode(token)
@@ -173,8 +178,6 @@ export default class BaseNamespace {
    * @memberof BaseNamespace
    */
   protected onDisconnect(client: CustomSocket) {
-    client.emit('disconnect', 'Socket Disconnected');
-    client.leaveAll();
     client.removeAllListeners();
   }
 }
