@@ -36,7 +36,7 @@ spec:
               value: mongodb://games-mongo-mongodb.default.svc.cluster.local:27017
           resources:
             requests:
-              cpu: 40m
+              cpu: 100m
             limits:
-              cpu: 70m
+              cpu: 140m
       restartPolicy: Always
