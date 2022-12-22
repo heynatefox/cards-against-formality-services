@@ -33,7 +33,7 @@
     "cookie-parser": "^1.4.5",
     "firebase-admin": "^8.10.0",
     "ioredis": "^4.27.8",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "moleculer": "^0.14.16",
     "moleculer-web": "^0.10.0",
     "nats": "^1.4.0",
