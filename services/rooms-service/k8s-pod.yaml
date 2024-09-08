@@ -19,6 +19,7 @@ spec:
         - name: rooms-service
           image: rooms-service
           livenessProbe:
+            initialDelaySeconds: 30
             httpGet:
               path: /live
               port: 3001
@@ -38,5 +39,5 @@ spec:
             requests:
               cpu: 40m
             limits:
-              cpu: 70m
+              cpu: 700m
       restartPolicy: Always

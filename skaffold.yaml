@@ -1,9 +1,23 @@
-apiVersion: skaffold/v2alpha4
+apiVersion: skaffold/v2beta9
 kind: Config
 metadata:
   name: cards-against-formality-services
 build:
+  local: 
+    concurrency: 0
   artifacts:
+    - image: cache-mixin
+      context: packages/cache-mixin
+      docker:
+        dockerfile: Dockerfile
+    - image: db-mixin
+      context: packages/db-mixin
+      docker:
+        dockerfile: Dockerfile
+    - image: health-check
+      context: packages/health-check
+      docker:
+        dockerfile: Dockerfile
     - image: nginx-gateway
       context: services/nginx
       docker:
@@ -12,34 +26,84 @@ build:
       context: services/admin-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: web-gateway-service
       context: services/web-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: websocket-gateway-service
       context: services/websocket-gateway-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: cards-service
       context: services/cards-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: db-mixin
+          alias: DB_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: decks-service
       context: services/decks-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: db-mixin
+          alias: DB_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: clients-service
       context: services/clients-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: db-mixin
+          alias: DB_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: rooms-service
       context: services/rooms-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: db-mixin
+          alias: DB_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
     - image: games-service
       context: services/games-service
       docker:
         dockerfile: dev.Dockerfile
+      requires:
+        - image: cache-mixin
+          alias: CACHE_MIXIN
+        - image: db-mixin
+          alias: DB_MIXIN
+        - image: health-check
+          alias: HEALTH_CHECK
 deploy:
   kubectl:
     manifests:
@@ -61,12 +125,14 @@ deploy:
   helm:
     releases:
       - name: nats
-        chartPath: bitnami/nats
+        chartPath: bitnami-full-index/nats
+        version: 6.1.1
         remote: true
         setValues:
           auth.enabled: false
       - name: redis
-        chartPath: bitnami/redis
+        chartPath: bitnami-full-index/redis
+        version: 12.6.2
         remote: true
         setValues:
           usePassword: false
@@ -74,33 +140,38 @@ deploy:
           master.persistence.enabled: false
           slave.persistence.enabled: false
       - name: cards-mongo
-        chartPath: bitnami/mongodb
+        chartPath: bitnami-full-index/mongodb
+        version: 10.4.1
         remote: true
         setValues: 
           usePassword: false
           auth.enabled: false
       - name: clients-mongo
-        chartPath: bitnami/mongodb
+        chartPath: bitnami-full-index/mongodb
+        version: 10.4.1
         remote: true
         setValues: 
           persistence.enabled: false
           usePassword: false
           auth.enabled: false
       - name: decks-mongo
-        chartPath: bitnami/mongodb
+        chartPath: bitnami-full-index/mongodb
+        version: 10.4.1
         remote: true
         setValues: 
           usePassword: false
           auth.enabled: false
       - name: games-mongo
-        chartPath: bitnami/mongodb
+        chartPath: bitnami-full-index/mongodb
+        version: 10.4.1
         remote: true
         setValues: 
           persistence.enabled: false
           usePassword: false
           auth.enabled: false
       - name: rooms-mongo
-        chartPath: bitnami/mongodb
+        chartPath: bitnami-full-index/mongodb
+        version: 10.4.1
         remote: true
         setValues: 
           persistence.enabled: false
@@ -109,15 +180,6 @@ deploy:
 profiles:
   - name: gcb
     patches:
-      - op: replace
-        path: /build/artifacts/1/docker/dockerfile
-        value: Dockerfile
-      - op: replace
-        path: /build/artifacts/2/docker/dockerfile
-        value: Dockerfile
-      - op: replace
-        path: /build/artifacts/3/docker/dockerfile
-        value: Dockerfile
       - op: replace
         path: /build/artifacts/4/docker/dockerfile
         value: Dockerfile
@@ -132,6 +194,15 @@ profiles:
         value: Dockerfile
       - op: replace
         path: /build/artifacts/8/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/9/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/10/docker/dockerfile
+        value: Dockerfile
+      - op: replace
+        path: /build/artifacts/11/docker/dockerfile
         value: Dockerfile
     deploy:
       kubectl:

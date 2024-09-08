@@ -26,9 +26,9 @@
     "typescript": "^3.2.2"
   },
   "dependencies": {
-    "@cards-against-formality/cache-clean-mixin": "^0.0.1",
-    "@cards-against-formality/db-mixin": "^0.0.2",
-    "@cards-against-formality/health-check-mixin": "^0.0.4",
+    "@cards-against-formality/cache-clean-mixin": "link:../../packages/cache-mixin",
+    "@cards-against-formality/db-mixin": "link:../../packages/db-mixin",
+    "@cards-against-formality/health-check-mixin": "link:../../packages/health-check",
     "ioredis": "^4.16.2",
     "nats": "^1.4.0",
     "lodash": "4.17.20"
