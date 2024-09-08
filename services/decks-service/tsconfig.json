@@ -5,6 +5,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "allowJs": false,
+    "skipLibCheck": true,
     "noImplicitAny": false,
     "outDir": "./build",
     "pretty": true,

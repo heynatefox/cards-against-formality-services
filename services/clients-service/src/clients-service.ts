@@ -294,7 +294,7 @@ export default class ClientsService extends Service {
    */
   private async onRoomLeave(ctx: Context<{ clientId: string; roomId: string }>) {
     const { clientId, roomId } = ctx.params;
-    const count = await ctx.call(`${this.name}.count`, { query: { _id: clientId, roomId } });
+    const count: number = await ctx.call(`${this.name}.count`, { query: { _id: clientId, roomId } });
     if (count <= 0) {
       this.logger.warn('Client tried to leave a room its no longer in', { clientId, roomId });
       return;

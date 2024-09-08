@@ -32,7 +32,7 @@ Once you've insured you have installed all the above dependencies, follow these 
 
 Clone the repository
 ```sh
-git clone https://github.com/JordanPawlett/cards-against-formality-services.git
+git clone https://github.com/heynatefox/cards-against-formality-services.git
 ```
 
 Run the dev server!

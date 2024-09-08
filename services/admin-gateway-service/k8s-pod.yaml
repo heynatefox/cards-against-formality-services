@@ -19,6 +19,7 @@ spec:
         - name: admin-gateway-service
           image: admin-gateway-service
           livenessProbe:
+            initialDelaySeconds: 30
             httpGet:
               path: /live
               port: 3001
@@ -43,7 +44,7 @@ spec:
             requests:
               cpu: 40m
             limits:
-              cpu: 70m
+              cpu: 700m
           ports:
             - containerPort: 80
       restartPolicy: Always

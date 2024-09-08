@@ -1,4 +1,4 @@
-import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'moleculer';
+import { Service, ServiceBroker, ServiceSchema, Context, NodeHealthStatus, Errors } from 'moleculer';
 import { forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';

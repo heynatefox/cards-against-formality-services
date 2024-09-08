@@ -1,11 +1,28 @@
-FROM node:12.15.0-alpine AS games-service-builder
+ARG CACHE_MIXIN
+ARG DB_MIXIN
+ARG HEALTH_CHECK
+
+FROM $CACHE_MIXIN AS cache-mixin
+FROM $DB_MIXIN AS db-mixin
+FROM $HEALTH_CHECK AS health-check
+
+FROM scratch AS deps
+COPY --link --from=cache-mixin / /
+COPY --link --from=db-mixin / /
+COPY --link --from=health-check / /
+
+FROM node:22.6.0-alpine AS games-service-builder
+WORKDIR /home/packages
+COPY --link --from=deps / .
 WORKDIR /home/service/games-service
 COPY . ./
 RUN yarn install --frozen-lockfile
 RUN yarn run build
 
-FROM node:12.15.0-alpine
+FROM node:22.6.0-alpine
 ENV NODE_ENV=production
+WORKDIR /home/packages
+COPY --link --from=deps / .
 WORKDIR /home/service/games-service
 COPY --from=games-service-builder /home/service/games-service/build ./build
 COPY package.json yarn.lock ./

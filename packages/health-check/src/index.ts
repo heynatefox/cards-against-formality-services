@@ -56,7 +56,6 @@ export default function (opts?: Options) {
       state = "starting";
 
       server = http.createServer(handler);
-      server.on("request", handler);
       server.listen(opts.port, err => {
         if (err) {
           return broker.logger.error("Unable to start health-check server", err);
