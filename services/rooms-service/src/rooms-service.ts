@@ -451,7 +451,7 @@ export default class RoomsService extends Service {
     return this.adapter.collection.findOneAndUpdate(
       { $or: [{ players: _id }, { spectators: _id }] },
       { $pull: { players: _id, spectators: _id } },
-      { returnOriginal: false }
+      { new: true }
     )
       .then(async doc => {
         // Client is not in any rooms

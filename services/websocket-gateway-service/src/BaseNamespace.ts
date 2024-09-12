@@ -1,5 +1,4 @@
 import { Namespace, Socket } from 'socket.io';
-import { Adapter } from 'socket.io-adapter';
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 import { unauthorized } from 'boom';
 
@@ -20,21 +19,6 @@ export interface CustomSocket extends Socket {
 }
 
 /**
- * RedisAdapter is an interface that extends the default socket io adapter.
- * Exposing functions to allow cross instance client control.
- *
- * @export
- * @interface RedisAdapter
- * @extends {Adapter}
- */
-export interface RedisAdapter extends Adapter {
-  clients: (callback: (error: Error, clients: string[]) => void) => void;
-  clientRooms: (id: string, callback: (error: Error, rooms: string[]) => void) => void;
-  remoteJoin: (id: string, room: string, callback: (error: Error) => void) => void;
-  remoteDisconnect: (id: string, close: boolean, callback: (error: Error) => void) => void;
-}
-
-/**
  * The BaseNamespace class implements the minimum amount of logic required for a namespace
  * to function.
  *
@@ -42,16 +26,6 @@ export interface RedisAdapter extends Adapter {
  * @class BaseNamespace
  */
 export default class BaseNamespace {
-
-  /**
-   * Socket.io Redis adapter for scaling between multiple instances.
-   *
-   * @protected
-   * @type {RedisAdapter}
-   * @memberof BaseNamespace
-   */
-  protected adapter: RedisAdapter = this.namespace.adapter as any;
-
   /**
    * Creates an instance of BaseNamespace.
    *
@@ -77,16 +51,9 @@ export default class BaseNamespace {
    * @returns {Promise<string>}
    * @memberof BaseNamespace
    */
-  protected joinRoom(clientId: string, room: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      this.adapter.remoteJoin(clientId, room, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(`${clientId} joined room: ${room}`);
-        }
-      });
-    });
+  protected async joinRoom(clientId: string, room: string): Promise<string> {
+    await this.namespace.in(clientId).socketsJoin(room);
+    return `${clientId} joined room: ${room}`;
   }
 
   /**
@@ -97,16 +64,11 @@ export default class BaseNamespace {
    * @returns {Promise<string>}
    * @memberof BaseNamespace
    */
-  protected remoteDisconnect(clientId: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      this.adapter.remoteDisconnect(clientId, true, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(`${clientId} forcefully disconnected`);
-        }
-      });
-    });
+  protected async remoteDisconnect(clientId: string): Promise<string> {
+    const oldClient = this.namespace.in(clientId);
+    await oldClient.emit("Connected elsewhere.")
+    await oldClient.disconnectSockets(true);
+    return `${clientId} forcefully disconnected`;
   }
 
   /**
@@ -165,9 +127,33 @@ export default class BaseNamespace {
    * @param {CustomSocket} client
    * @memberof BaseNamespace
    */
-  protected onClientConnect(client: CustomSocket) {
+  protected async onClientConnect(client: CustomSocket) {
+    const _id = client.user._id;
     this.logger.info('Client Connected', client.id, 'to:', client.nsp.name);
     client.once('disconnect', () => this.onDisconnect(client));
+
+    // Client might not exist. Try renew.
+    const getOrRenew = async (): Promise<any> => {
+      try {
+        return await this.broker.call('clients.get', { id: _id });
+      } catch {
+        return await this.broker.call('clients.renew', {}, { meta: { user: client.user } });
+      }
+    };
+
+    try {
+      const user = await getOrRenew();
+      // Update the user with the newly connected socket, before disconnecting previous. To reduce TTL.
+      await this.broker.emit('websocket-gateway.client.connected', { _id, socket: client.id });
+      if (user && user.socket && user.socket !== client.id) {
+        this.logger.info('Disconnecting previous connection', user.socket, 'to:', client.nsp.name);
+        // user already has a tab open. Forcefully disconnect it.
+        return await this.remoteDisconnect(user.socket);
+      }
+      return null;
+    } catch (err) {
+      // Nothing.
+    }
   }
 
   /**
@@ -177,7 +163,33 @@ export default class BaseNamespace {
    * @param {CustomSocket} client
    * @memberof BaseNamespace
    */
-  protected onDisconnect(client: CustomSocket) {
+  protected async onDisconnect(client: CustomSocket) {
+    const time = new Date().getTime();
     client.removeAllListeners();
+
+    const _id = client.user._id;
+    await this.broker.call('clients.update', { id: _id, disconnectedAt: time })
+      .then(() => {
+        // TODO: Expand upon this, set should clean up timeouts on reconnect.
+        // (this requires extra work as the client may connect to a different scaled instance)
+        // disconnect time added to client.
+        const timeout = 60 * 1000;
+        setTimeout(async () => {
+          await this.broker.call('clients.get', { id: _id })
+            .then(async (user: any) => {
+              const afterTimeoutTime = new Date().getTime();
+              // If the user hasn't changed socketid or reconnected. Fire a disconnect event.
+              // tslint:disable-next-line: max-line-length
+              if (user.socket === client.id && user.disconnectedAt && (afterTimeoutTime - user.disconnectedAt) > (timeout - 10000)) {
+                await this.broker.emit('websocket-gateway.client.disconnected', { _id });
+              }
+            })
+            .catch(async () => await this.broker.emit('websocket-gateway.client.disconnected', { _id }));
+        }, timeout);
+      })
+      // If error, client must have logged out.
+      .catch(async () => {
+        await this.broker.emit('websocket-gateway.client.disconnected', { _id });
+      });
   }
 }

@@ -11,7 +11,6 @@ import BaseNamespace from './BaseNamespace';
  * @extends {BaseNamespace}
  */
 export default class RoomsNamespace extends BaseNamespace {
-
   /**
    * Creates an instance of RoomsNamespace.
    *
