@@ -2,13 +2,13 @@ import ApiGateway from 'moleculer-web';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import { Service, ServiceBroker, Context, NodeHealthStatus } from 'moleculer';
-import { createAdapter } from 'socket.io-redis';
 import { Server } from 'socket.io';
+import { Redis } from 'ioredis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import admin from 'firebase-admin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
 import serviceAccount from './auth.json';
-import DefaultNamespace from './DefaultNamespace';
 import GameNamespace from './GameNamespace';
 import RoomsNamespace from './RoomsNamespace';
 
@@ -66,17 +66,18 @@ export default class WebsocketGatewayService extends Service {
           ]
         },
         started: () => {
+          const pubClient = new Redis(parseInt(process.env.REDIS_PORT), process.env.REDIS_HOST);
+          const subClient = pubClient.duplicate();
           this.socketServer = new Server(
             this.server,
             { path: '/socket', allowEIO3: true, cors: { origin: '*', methods: ['*'], allowedHeaders: ['*'] } }
-          );
-          this.socketServer.adapter(createAdapter(
-            `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}/0`, 
+          ).adapter(createAdapter(
+            pubClient,
+            subClient,
             { 
               requestsTimeout: 10000,
             }
           ));
-          new DefaultNamespace(this.socketServer.of('/'), this.broker, this.logger, this.admin);
           new RoomsNamespace(this.socketServer.of('/rooms'), this.broker, this.logger, this.admin);
           // Handles users joining a game room of roomId.
           new GameNamespace(this.socketServer.of('/games'), this.broker, this.logger, this.admin);
@@ -155,8 +156,7 @@ export default class WebsocketGatewayService extends Service {
   private async handleCardDealing(ctx: Context<{ clientId: string; cards: any[] }>) {
     const { clientId, cards } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });
-    const socketId = `/games#${client.socket}`;
-    this.socketServer._nsps.get('/games').to(socketId).emit('deal', { payload: cards });
+    this.socketServer._nsps.get('/games').to(client.socket).emit('deal', { payload: cards });
   }
 
   /**
@@ -170,8 +170,7 @@ export default class WebsocketGatewayService extends Service {
     // if a client id is specified, this is intended for a single client.
     if (ctx.params.clientId && ctx.params.gameData) {
       const client: any = await ctx.call('clients.get', { id: ctx.params.clientId });
-      const socketId = `/games#${client.socket}`;
-      this.socketServer._nsps.get('/games').to(socketId).emit('game', { payload: ctx.params.gameData });
+      this.socketServer._nsps.get('/games').to(client.socket).emit('game', { payload: ctx.params.gameData });
       return;
     }
 
@@ -191,7 +190,7 @@ export default class WebsocketGatewayService extends Service {
     const { clientId } = ctx.params;
     const client: any = await ctx.call('clients.get', { id: clientId });
     this.socketServer._nsps.get('/').to(client.socket).emit('message', { payload });
-    this.socketServer._nsps.get('/games').to(`/games#${client.socket}`).emit('message', { payload });
+    this.socketServer._nsps.get('/games').to(client.socket).emit('message', { payload });
   }
 
   /**

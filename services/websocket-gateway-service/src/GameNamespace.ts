@@ -11,7 +11,6 @@ import BaseNamespace, { CustomSocket } from './BaseNamespace';
  * @extends {BaseNamespace}
  */
 export default class GameNamespace extends BaseNamespace {
-
   /**
    * Creates an instance of GameNamespace.
    *
