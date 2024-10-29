@@ -39,5 +39,5 @@ spec:
             requests:
               cpu: 40m
             limits:
-              cpu: 700m
+              cpu: 70m
       restartPolicy: Always

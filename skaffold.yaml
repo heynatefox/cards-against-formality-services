@@ -3,7 +3,7 @@ kind: Config
 metadata:
   name: cards-against-formality-services
 build:
-  local: 
+  local:
     concurrency: 0
   artifacts:
     - image: cache-mixin
@@ -143,14 +143,14 @@ deploy:
         chartPath: bitnami-full-index/mongodb
         version: 10.4.1
         remote: true
-        setValues: 
+        setValues:
           usePassword: false
           auth.enabled: false
       - name: clients-mongo
         chartPath: bitnami-full-index/mongodb
         version: 10.4.1
         remote: true
-        setValues: 
+        setValues:
           persistence.enabled: false
           usePassword: false
           auth.enabled: false
@@ -158,14 +158,14 @@ deploy:
         chartPath: bitnami-full-index/mongodb
         version: 10.4.1
         remote: true
-        setValues: 
+        setValues:
           usePassword: false
           auth.enabled: false
       - name: games-mongo
         chartPath: bitnami-full-index/mongodb
         version: 10.4.1
         remote: true
-        setValues: 
+        setValues:
           persistence.enabled: false
           usePassword: false
           auth.enabled: false
@@ -173,7 +173,7 @@ deploy:
         chartPath: bitnami-full-index/mongodb
         version: 10.4.1
         remote: true
-        setValues: 
+        setValues:
           persistence.enabled: false
           usePassword: false
           auth.enabled: false
