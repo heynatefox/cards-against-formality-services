@@ -24,4 +24,4 @@ WORKDIR /home/service/admin-gateway-service
 COPY --from=admin-gateway-service-builder /home/service/admin-gateway-service/build ./build
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --no-cache --production
-CMD yarn start
+CMD node ./build/index.js

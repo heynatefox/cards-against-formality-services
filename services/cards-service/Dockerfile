@@ -27,4 +27,4 @@ WORKDIR /home/service/cards-service
 COPY --from=cards-service-builder /home/service/cards-service/build ./build
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile --no-cache --production
-CMD yarn start
+CMD node ./build/index.js

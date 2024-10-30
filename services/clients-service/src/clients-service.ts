@@ -13,6 +13,7 @@ import serviceAccount from './auth.json';
 interface Client {
   _id: string;
   username: string;
+  email?: string;
   socket?: string;
   roomId?: string;
   disconnectedAt?: number;
@@ -55,6 +56,7 @@ export default class ClientsService extends Service {
   private validationSchema = {
     _id: { type: 'string' },
     username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 3, max: 12 },
+    email: { type: 'string', optional: true },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true },
     disconnectedAt: { type: 'number', optional: true, default: null }
@@ -220,7 +222,12 @@ export default class ClientsService extends Service {
           .set({ uid: data.uid });
       })
       .then(() => ctx.call(
-        `${this.name}.create`, { _id: data.uid, isAnonymous: data.isAnonymous, username: data.username }
+        `${this.name}.create`, { 
+          _id: data.uid, 
+          isAnonymous: data.isAnonymous, 
+          username: data.username, 
+          ...( data.email ? { email: data.email } : {})
+        }
       ));
   }
 
@@ -261,7 +268,12 @@ export default class ClientsService extends Service {
             .catch(() => {
               const data = doc.data();
               return ctx.call(
-                `${this.name}.create`, { _id: data.uid, isAnonymous: data.isAnonymous, username: data.username }
+                `${this.name}.create`, { 
+                  _id: data.uid, 
+                  isAnonymous: data.isAnonymous, 
+                  username: data.username, 
+                  ...( data.email ? { email: data.email } : {})
+                }
               );
             });
         }
