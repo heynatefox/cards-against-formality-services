@@ -1,7 +1,6 @@
 {
   "name": "cards-against-formality-services",
   "repository": "https://github.com/heynatefox/cards-against-formality-services.git",
-  "author": "TODO CHANGE Jordan Pawlett <jordanpawlett@googlemail.com>",
   "license": "BSD-2-CLAUSE",
   "scripts": {
     "add-deps": "sh ./helm/add-repos.sh",
