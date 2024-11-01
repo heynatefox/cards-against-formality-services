@@ -2,7 +2,6 @@
   "name": "@cards-against-formality/cache-clean-mixin",
   "version": "0.0.1",
   "description": "Cache clean mixin used in Cards against formality",
-  "author": "Jordan Pawlett",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "files": [

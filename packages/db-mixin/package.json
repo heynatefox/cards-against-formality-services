@@ -2,7 +2,6 @@
   "name": "@cards-against-formality/db-mixin",
   "version": "0.0.2",
   "description": "DB mixin used in Cards against formality",
-  "author": "Jordan Pawlett",
   "main": "build/db.mixin.js",
   "typings": "build/db.mixin.d.ts",
   "files": [

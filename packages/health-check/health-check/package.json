@@ -2,7 +2,6 @@
   "name": "@cards-against-formality/health-check-mixin",
   "version": "0.0.4",
   "description": "Kubernetes health check mixin used in Cards against formality",
-  "author": "Jordan Pawlett",
   "main": "build/index.js",
   "typings": "build/index.d.ts",
   "files": [
