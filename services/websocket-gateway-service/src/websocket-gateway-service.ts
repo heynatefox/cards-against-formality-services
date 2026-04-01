@@ -65,7 +65,7 @@ export default class WebsocketGatewayService extends Service {
           ]
         },
         started: () => {
-          const pubClient = new Redis(parseInt(process.env.REDIS_PORT), process.env.REDIS_HOST);
+          const pubClient = new Redis({ host: process.env.REDIS_HOST, port: parseInt(process.env.REDIS_PORT), password: process.env.REDIS_PASSWORD });
           const subClient = pubClient.duplicate();
           this.socketServer = new Server(
             this.server,
