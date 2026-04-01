@@ -51,7 +51,7 @@ export default class TurnHandler {
     this.logger.info('[fetchCards] deckIds:', JSON.stringify(deckIds));
     return this.broker.call<Array<{ whiteCards: string[]; blackCards: string[] }>, any>('decks.get', { id: deckIds })
       .then(decks => {
-        this.logger.info('[fetchCards] decks.get returned:', JSON.stringify((decks || []).map(d => ({ _id: d._id, name: d.name, white: d.whiteCards?.length, black: d.blackCards?.length }))));
+        this.logger.info('[fetchCards] decks.get returned:', JSON.stringify((decks || []).map((d: any) => ({ _id: d._id, name: d.name, white: d.whiteCards?.length, black: d.blackCards?.length }))));
         decks.forEach(deck => {
           const { whiteCards, blackCards } = deck;
           _whiteCards.push(...whiteCards);
