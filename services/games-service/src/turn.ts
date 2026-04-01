@@ -213,7 +213,7 @@ export default class TurnHandler {
       return totalRequired + cardsRequired;
     }, 0);
 
-    return whiteCardsRequired < whiteCards.length && !!blackCards.length;
+    return whiteCardsRequired <= whiteCards.length && !!blackCards.length;
   }
 
   /**
