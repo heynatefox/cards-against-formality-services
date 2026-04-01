@@ -66,7 +66,7 @@ export default class WebGatewayService extends Service {
           cors: {
             origin: process.env.CORS_ORIGIN || 'https://cardsagainstformality.io',
             methods: ['GET', 'OPTIONS', 'POST', 'PATCH', 'DELETE'],
-            allowedHeaders: [],
+            allowedHeaders: ['Content-Type', 'Authorization'],
             exposedHeaders: [],
             credentials: true,
             maxAge: 3600
