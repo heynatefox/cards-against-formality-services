@@ -64,7 +64,7 @@ export default class WebGatewayService extends Service {
             }
           },
           cors: {
-            origin: process.env.CORS_ORIGIN || 'https://cardsagainstformality.io',
+            origin: process.env.CORS_ORIGIN || ['https://cardsagainstformality.io', 'https://www.cardsagainstformality.io'],
             methods: ['GET', 'OPTIONS', 'POST', 'PATCH', 'DELETE'],
             allowedHeaders: ['Content-Type', 'Authorization'],
             exposedHeaders: [],
@@ -149,6 +149,10 @@ export default class WebGatewayService extends Service {
    * @memberof WebGatewayService
    */
   private authorize(ctx: Context<any, any>, route: string, req: any): Promise<Context<any, any>> {
+    if (req.method === 'OPTIONS') {
+      return Promise.resolve(ctx);
+    }
+
     const auth = req.cookies['auth'] || req.headers['authorization'];
     if (auth === undefined || !auth?.length || !auth.startsWith('Bearer')) {
       return Promise.reject(new Errors.MoleculerError('No token found', 401, 'NO_TOKEN_FOUND'));
