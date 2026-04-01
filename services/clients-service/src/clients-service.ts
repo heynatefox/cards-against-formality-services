@@ -254,29 +254,43 @@ export default class ClientsService extends Service {
    * @returns {Promise<Client>}
    * @memberof ClientsService
    */
-  private async renew(ctx: Context<any, { user: { uid: string } }>): Promise<Client> {
+  private async renew(ctx: Context<any, { user: { uid: string; firebase?: { sign_in_provider: string } } }>): Promise<Client> {
+    const uid = ctx.meta.user.uid;
     return this.firestoreDb
       .collection('users')
-      .doc(ctx.meta.user.uid)
+      .doc(uid)
       .get()
       .then(async doc => {
         if (doc.exists) {
-          await ctx.emit('client.login', { uid: ctx.meta.user.uid });
+          await ctx.emit('client.login', { uid });
           // try get the user from our cluster collection, if it doesn't exist create it.
-          return ctx.call<any, any>(`${this.name}.get`, { id: ctx.meta.user.uid })
+          return ctx.call<any, any>(`${this.name}.get`, { id: uid })
             .catch(() => {
               const data = doc.data();
               return ctx.call(
-                `${this.name}.create`, { 
-                  _id: data.uid, 
-                  isAnonymous: data.isAnonymous, 
-                  username: data.username, 
+                `${this.name}.create`, {
+                  _id: data.uid,
+                  isAnonymous: data.isAnonymous,
+                  username: data.username,
                   ...( data.email ? { email: data.email } : {})
                 }
               );
             });
         }
-        // user doesn' exist in the firebase store...
+
+        // Anonymous Firebase users have no Firestore record until their first renew.
+        // Auto-register them so they can play without going through the login flow.
+        if (ctx.meta.user.firebase?.sign_in_provider === 'anonymous') {
+          const username = `Anon-${uid.slice(-4)}`;
+          const data = { uid, username, isAnonymous: true, displayName: null, photoURL: null, email: null, emailVerified: false, phoneNumber: null };
+          await this.firestoreDb
+            .collection('users')
+            .doc(uid)
+            .set(this.sanitizeFirestoreInput(Object.assign({}, data, { lastLoggedIn: +new Date() })));
+          return ctx.call(`${this.name}.create`, { _id: uid, isAnonymous: true, username });
+        }
+
+        // Non-anonymous user with no Firestore record — they need to register first.
         throw new Errors.MoleculerError('User doesnt exist', 404, 'USERNAME_NON_EXISTENT');
       });
   }
