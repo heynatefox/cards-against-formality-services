@@ -6,7 +6,6 @@ import admin from 'firebase-admin';
 import HealthCheckMixin from '@cards-against-formality/health-check-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
-import serviceAccount from './auth.json';
 
 /**
  * WebGatewayService acts as the core gateway to access any of the internal services.
@@ -24,7 +23,7 @@ export default class WebGatewayService extends Service {
    * @memberof WebGatewayService
    */
   private admin = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as any),
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
     databaseURL: 'https://cards-against-formality.firebaseio.com'
   }, 'web-gateway');
 

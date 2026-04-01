@@ -3,7 +3,6 @@ import admin from 'firebase-admin';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
-import serviceAccount from './auth.json';
 
 /**
  * Interface that represents the Client object.
@@ -35,7 +34,7 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private admin = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as any),
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
     databaseURL: 'https://cards-against-formality.firebaseio.com'
   });
 

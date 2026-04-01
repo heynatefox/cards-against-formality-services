@@ -8,7 +8,6 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import admin from 'firebase-admin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 
-import serviceAccount from './auth.json';
 import GameNamespace from './GameNamespace';
 import RoomsNamespace from './RoomsNamespace';
 
@@ -37,7 +36,7 @@ export default class WebsocketGatewayService extends Service {
    * @memberof WebsocketGatewayService
    */
   private admin = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as any),
+    credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
     databaseURL: 'https://cards-against-formality.firebaseio.com'
   }, 'websocket-gateway');
 
