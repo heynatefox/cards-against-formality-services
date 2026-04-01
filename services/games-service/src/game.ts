@@ -147,8 +147,10 @@ export default class Game extends TurnHandler {
       initializing: true
     };
 
+    this.logger.info('[onGameStart] room.options.decks:', JSON.stringify(room.options.decks));
     return this.fetchCards(room.options.decks)
       .then(({ whiteCards, blackCards }) => {
+        this.logger.info(`[onGameStart] fetchCards result: ${whiteCards.length} white, ${blackCards.length} black`);
         return this.broker.call('games.create', {
           room: room._id,
           players,
@@ -224,7 +226,9 @@ export default class Game extends TurnHandler {
     const isTargetReached = Object.values(players).some(player => player.score >= room.options.target);
     // if not enough cards to continue. End game.
     const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards);
+    this.logger.info(`[handleNextTurn] isTargetReached=${isTargetReached} hasEnoughCards=${hasEnoughCards} whiteCards=${game.whiteCards?.length} blackCards=${game.blackCards?.length} target=${room.options.target} players=${JSON.stringify(Object.values(players).map(p => ({ id: p._id, score: p.score, cards: p.cards?.length })))}`);
     if (isTargetReached || !hasEnoughCards) {
+      this.logger.info('[handleNextTurn] ending game — isTargetReached=' + isTargetReached + ' hasEnoughCards=' + hasEnoughCards);
       this.endGame(game);
       return;
     }
