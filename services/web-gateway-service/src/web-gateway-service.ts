@@ -77,14 +77,10 @@ export default class WebGatewayService extends Service {
           ],
           routes: [
             {
+              // Public read-only endpoints — no auth required
               path: '/api',
-              authorization: true,
+              authorization: false,
               aliases: {
-                'PUT /logout': 'clients.logout',
-                'PUT /login/renew': 'clients.renew',
-                'POST /login': 'clients.login',
-                'POST /check/username': 'clients.check-username',
-
                 'GET /cards/:id': 'cards.get',
                 'GET /cards': 'cards.list',
                 'POST /cards/search': 'cards.find',
@@ -95,6 +91,23 @@ export default class WebGatewayService extends Service {
 
                 'GET /rooms': 'rooms.list',
                 'POST /rooms/search': 'rooms.find',
+              },
+              mappingPolicy: 'restrict',
+              bodyParsers: {
+                json: { strict: false },
+                urlencoded: { extended: false }
+              }
+            },
+            {
+              // Authenticated endpoints — require Firebase Bearer token
+              path: '/api',
+              authorization: true,
+              aliases: {
+                'PUT /logout': 'clients.logout',
+                'PUT /login/renew': 'clients.renew',
+                'POST /login': 'clients.login',
+                'POST /check/username': 'clients.check-username',
+
                 'POST /rooms': 'rooms.create',
                 'PUT /rooms/join/players': 'rooms.join-players',
                 'PUT /rooms/join/spectators': 'rooms.join-spectators',
@@ -107,12 +120,8 @@ export default class WebGatewayService extends Service {
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
-                json: {
-                  strict: false
-                },
-                urlencoded: {
-                  extended: false
-                }
+                json: { strict: false },
+                urlencoded: { extended: false }
               }
             }],
         },
