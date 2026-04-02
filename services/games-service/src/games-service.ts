@@ -77,7 +77,12 @@ export default class GameService extends Service {
     const clientId = ctx.meta.user.uid;
     // TOOD: add check to ensure only host can start the game.
     // Check if the required number of players are in the game before starting.
-    const _room: Room = await ctx.call('rooms.get', { id: roomId });
+    let _room: Room;
+    try {
+      _room = await ctx.call('rooms.get', { id: roomId });
+    } catch (err) {
+      throw new Error(`Room not found: ${roomId}`);
+    }
     if (_room.players.length < 2) {
       throw new Error('Not enough Players');
     }

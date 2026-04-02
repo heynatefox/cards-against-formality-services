@@ -77,13 +77,12 @@ export default class Game extends TurnHandler {
     }
 
     this.gameTimeout[gameId] = setTimeout(async () => {
-      return this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] })
-        .then((game) => {
-          cb(game);
-        })
-        .catch(() => {
-          this.logger.warn('Game no longer exists.');
-        });
+      try {
+        const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+        await cb(game);
+      } catch (err) {
+        this.logger.warn(`Game timeout handler error (gameId: ${gameId}): ${err.message}`);
+      }
     }, timeout * 1000);
   }
 
@@ -225,7 +224,7 @@ export default class Game extends TurnHandler {
     // if not enough cards to continue. End game.
     const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards);
     if (isTargetReached || !hasEnoughCards) {
-      this.endGame(game);
+      this.endGame(game).catch(err => this.logger.error(`endGame error: ${err.message}`));
       return;
     }
 
@@ -386,12 +385,16 @@ export default class Game extends TurnHandler {
     if (game.gameState !== GameState.TURN_SETUP) {
       // This needs to be implemented in a better way... User may not have a registered socekt id yet.
       setTimeout(async () => {
-        // send game state to recently joined user.
-        await this.broker.emit('games.turn.updated.client', { clientId: player._id, gameData: game.prevTurnData });
+        try {
+          // send game state to recently joined user.
+          await this.broker.emit('games.turn.updated.client', { clientId: player._id, gameData: game.prevTurnData });
 
-        // if picking cards, ensure the user is delt their cards.
-        if (game.gameState === GameState.PICKING_CARDS) {
-          await this.dealWhiteCards(player, game.whiteCards);
+          // if picking cards, ensure the user is delt their cards.
+          if (game.gameState === GameState.PICKING_CARDS) {
+            await this.dealWhiteCards(player, game.whiteCards);
+          }
+        } catch (err) {
+          this.logger.warn(`onPlayerJoin delayed setup error (playerId: ${player._id}): ${err.message}`);
         }
       }, 2000);
     }
