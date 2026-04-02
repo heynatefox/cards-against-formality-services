@@ -64,7 +64,7 @@ export default class WebGatewayService extends Service {
             }
           },
           cors: {
-            origin: process.env.CORS_ORIGIN || ['https://cardsagainstformality.io', 'https://www.cardsagainstformality.io'],
+            origin: process.env.CORS_ORIGIN || ['https://cardsagainstformality.io', 'https://www.cardsagainstformality.io', 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'],
             methods: ['GET', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'],
             allowedHeaders: ['Content-Type', 'Authorization'],
             exposedHeaders: [],

@@ -69,7 +69,7 @@ export default class WebsocketGatewayService extends Service {
           const subClient = pubClient.duplicate();
           this.socketServer = new Server(
             this.server,
-            { path: '/socket', allowEIO3: true, cors: { origin: process.env.CORS_ORIGIN || ['https://cardsagainstformality.io', 'https://www.cardsagainstformality.io'], methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'], credentials: true } }
+            { path: '/socket', allowEIO3: true, cors: { origin: process.env.CORS_ORIGIN || ['https://cardsagainstformality.io', 'https://www.cardsagainstformality.io', 'http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'], methods: ['GET', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'], credentials: true } }
           ).adapter(createAdapter(
             pubClient,
             subClient,
