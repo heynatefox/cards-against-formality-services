@@ -3,6 +3,23 @@ import HealthMiddleware from '@cards-against-formality/health-check-mixin';
 
 import Service from './games-service';
 
+process.on('unhandledRejection', (reason: any) => {
+  if (reason?.name === 'EntityNotFoundError') {
+    console.warn('Caught unhandled EntityNotFoundError — ignoring:', reason.data);
+    return;
+  }
+  console.error('Unhandled rejection:', reason);
+});
+
+process.on('uncaughtException', (err: any) => {
+  if (err?.name === 'EntityNotFoundError') {
+    console.warn('Caught uncaught EntityNotFoundError — ignoring:', err);
+    return;
+  }
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
+
 const registry = {
   strategy: 'CpuUsage'
 };
