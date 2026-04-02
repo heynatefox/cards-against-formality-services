@@ -50,6 +50,10 @@ export default class TurnHandler {
     const _blackCards = [];
     return this.broker.call<Array<{ whiteCards: string[]; blackCards: string[] }>, any>('decks.get', { id: deckIds })
       .then(decks => {
+        if (!decks) {
+          this.logger.warn('fetchCards: decks.get returned null/undefined');
+          return { whiteCards: _whiteCards, blackCards: _blackCards };
+        }
         decks.forEach(deck => {
           const { whiteCards, blackCards } = deck;
           _whiteCards.push(...whiteCards);
@@ -118,12 +122,19 @@ export default class TurnHandler {
    * @returns {Promise<Card>}
    * @memberof TurnHandler
    */
-  private pickBlackCard(blackCards: string[]): Promise<Card> {
+  private async pickBlackCard(blackCards: string[]): Promise<Card> {
     const index = this.getRandomIndex(blackCards.length - 1);
     const id = blackCards[index];
     // Remove the card so it cannot be chosen again.
     blackCards.splice(index, 1);
-    return this.broker.call('cards.get', { id });
+    const card = await this.broker.call<Card, any>('cards.get', { id }).catch(err => {
+      this.logger.warn(`pickBlackCard: card not found for id ${id}: ${err.message}`);
+      return null;
+    });
+    if (!card) {
+      throw new Error(`Card not found: ${id}`);
+    }
+    return card;
   }
 
   /**
@@ -153,7 +164,13 @@ export default class TurnHandler {
   private emitCardsToPlayer(player: GamePlayer) {
     // Get all the cards and deal them to the player.
     return this.broker.call('cards.get', { id: player.cards })
-      .then(cards => this.broker.emit('games.deal', { clientId: player._id, cards }));
+      .then(cards => {
+        if (!cards) {
+          this.logger.warn(`emitCardsToPlayer: no cards found for player ${player._id}`);
+          return;
+        }
+        return this.broker.emit('games.deal', { clientId: player._id, cards });
+      });
   }
 
   /**
@@ -268,7 +285,14 @@ export default class TurnHandler {
       throw new Error('The czar is not allowed to play the round.');
     }
     if (clientId in selectedCards) {
-      return this.broker.call('games.get', { id: game._id, populate: ['room'] });
+      const fetchedGame = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(err => {
+        this.logger.warn(`submitCards: game not found ${game._id}: ${err.message}`);
+        return null;
+      });
+      if (!fetchedGame) {
+        throw new Error(`Game not found: ${game._id}`);
+      }
+      return fetchedGame;
     }
 
     if (turnData.blackCard.pick !== cards.length) {
@@ -285,7 +309,14 @@ export default class TurnHandler {
     await this.broker.call('games.update', {
       id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards
     });
-    return this.broker.call('games.get', { id: game._id, populate: ['room'] });
+    const updatedGame = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(err => {
+      this.logger.warn(`submitCards: game not found after update ${game._id}: ${err.message}`);
+      return null;
+    });
+    if (!updatedGame) {
+      throw new Error(`Game not found after update: ${game._id}`);
+    }
+    return updatedGame;
   }
 
   /**
@@ -301,6 +332,10 @@ export default class TurnHandler {
     const winningCards = selectedCards[winner];
     return this.broker.call('cards.get', { id: winningCards })
       .then((cards: Card[]) => {
+        if (!cards) {
+          this.logger.warn(`selectWinner: no cards found for winner ${winner}`);
+          return [];
+        }
         // ensure the cards are in the correct order.
         return winningCards.map(id => cards.find(card => card._id === id));
       });
@@ -317,6 +352,10 @@ export default class TurnHandler {
   protected async populatedSelectedCards(selectedCards: { [id: string]: string[] }) {
     const allSelectedCards = Object.values(selectedCards).flat(1);
     const cards: Card[] = await this.broker.call('cards.get', { id: allSelectedCards });
+    if (!cards) {
+      this.logger.warn('populatedSelectedCards: cards.get returned null/undefined');
+      return {};
+    }
     const entries = Object.entries(selectedCards).map(([key, value]) => {
       const populatedCards = value.map(v => cards.find(c => c._id === v));
       return [key, populatedCards];

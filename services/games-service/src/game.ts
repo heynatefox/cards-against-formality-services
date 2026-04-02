@@ -354,6 +354,10 @@ export default class Game extends TurnHandler {
     // delete this.players[playerId];
     const prop = `players.${playerId}`;
     const newGameObj = await adapter.updateById(game._id, { $unset: { [prop]: 1 } });
+    if (!newGameObj) {
+      this.logger.warn(`onPlayerLeave: adapter.updateById returned null for game ${game._id}`);
+      return;
+    }
     onUpdated(newGameObj);
     newGameObj._id = newGameObj._id.toString();
     // if that was the last player to leave. End the game.
