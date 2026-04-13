@@ -15,7 +15,7 @@
     "@types/jest": "^23.3.14",
     "@types/jsonwebtoken": "^8.3.8",
     "@types/node": "^10.12.12",
-    "axios": "0.19.2",
+    "axios": "0.21.1",
     "jest": "^23.6.0",
     "jest-cli": "^23.6.0",
     "moleculer-repl": "^0.5.3",
