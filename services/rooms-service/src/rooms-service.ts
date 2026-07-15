@@ -74,6 +74,9 @@ export default class RoomsService extends Service {
       },
     },
     passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },
+    // Epoch ms, set server-side on create. Lets cleanup jobs age rooms out
+    // (target policy: empty rooms live for 24h) and lets clients sort by age.
+    createdAt: { type: 'number', optional: true },
   };
 
   /**
@@ -334,6 +337,7 @@ export default class RoomsService extends Service {
     const host = ctx.meta.user.uid;
     ctx.params.players = [host];
     ctx.params.host = host;
+    (ctx.params as any).createdAt = Date.now();
     return ctx;
   }
 
