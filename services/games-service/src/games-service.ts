@@ -53,6 +53,17 @@ export default class GameService extends Service {
               winnerId: 'string'
             },
             handler: this.selectWinner
+          },
+          reason: {
+            params: {
+              roomId: 'string',
+              text: { type: 'string', min: 1, max: 500 }
+            },
+            handler: this.submitReason
+          },
+          leaderboard: {
+            cache: { ttl: 60 },
+            handler: this.getLeaderboard
           }
         },
         events: {
@@ -147,6 +158,113 @@ export default class GameService extends Service {
     } catch (err) {
       this.logger.warn(`captureRound failed: ${err.message}`);
     }
+  }
+
+  /**
+   * "Explain yourself." — the czar defends their winner pick. Scored by a
+   * deliberately unscientific heuristic (deterministic, so the client's gauge
+   * animation can land on the same number). Reasoning is attached to the
+   * captured round's `signals` (dataset) and rolled into the weekly humor
+   * leaderboard (product).
+   *
+   * @private
+   * @memberof GameService
+   */
+  private scoreReasoning(text: string): number {
+    const t = text.trim();
+    if (t.length < 8) return 7; // one-worders: your humor is shit
+    const words = t.toLowerCase().split(/\s+/);
+    const unique = new Set(words).size;
+    let score = Math.min(38, t.length / 4);      // effort
+    score += Math.min(26, unique * 2.2);          // vocabulary
+    if (words.length >= 12) score += 10;          // committed to the bit
+    if (/[?!]/.test(t)) score += 4;               // punctuation is passion
+    if (words.length < 6 && /\b(lol|lmao|idk|funny|dunno|whatever|cuz|because)\b/i.test(t)) {
+      score = Math.min(score, 22);                // low-effort tells
+    }
+    // deterministic chaos: same text always lands the same place
+    let h = 0;
+    for (let i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; }
+    score += Math.abs(h % 17);
+    return Math.max(0, Math.min(100, Math.round(score)));
+  }
+
+  private verdictFor(score: number): string {
+    if (score < 25) return 'Your humor is shit.';
+    if (score < 50) return 'Certified hack';
+    if (score < 75) return 'Dangerously funny';
+    return 'Comedic god';
+  }
+
+  private weekKey(): string {
+    const d = new Date();
+    const jan1 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const week = Math.ceil((((d.getTime() - jan1.getTime()) / 86400000) + jan1.getUTCDay() + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+  }
+
+  private async submitReason(ctx: Context<{ roomId: string; text: string }, { user: { uid: string } }>) {
+    const { roomId, text } = ctx.params;
+    const uid = ctx.meta.user.uid;
+
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+    const prev = game?.prevTurnData;
+    // Only the czar of the just-completed round may explain themselves
+    if (!prev || prev.czar !== uid) {
+      throw new Errors.MoleculerError('Only the Czar explains themselves', 403, 'NOT_THE_CZAR');
+    }
+
+    const clean = text.trim().slice(0, 500);
+    const score = this.scoreReasoning(clean);
+    const verdict = this.verdictFor(score);
+    const db = (this.adapter as any)?.db;
+
+    // Dataset: attach to the captured round (exists only when ANALYTICS_SALT set)
+    if (db && process.env.ANALYTICS_SALT) {
+      db.collection('round_analytics')
+        .updateOne(
+          { gameId: String(game._id), turn: prev.turn },
+          { $set: { 'signals.czarReasoning': { text: clean, score, verdict, ts: Date.now() } } }
+        )
+        .catch((err: any) => this.logger.warn(`reason capture failed: ${err.message}`));
+    }
+
+    // Product: weekly leaderboard (usernames are public in-game already)
+    if (db) {
+      const username = await ctx.call<any, any>('clients.get', { id: uid })
+        .then((c: any) => c?.username)
+        .catch(() => null);
+      if (username) {
+        db.collection('humor_leaderboard')
+          .updateOne(
+            { week: this.weekKey(), uid },
+            {
+              $set: { username, lastVerdict: verdict, updatedAt: Date.now() },
+              $max: { bestScore: score },
+              $inc: { totalScore: score, defenses: 1 },
+            },
+            { upsert: true }
+          )
+          .catch((err: any) => this.logger.warn(`leaderboard update failed: ${err.message}`));
+      }
+    }
+
+    return { score, verdict };
+  }
+
+  private async getLeaderboard() {
+    const db = (this.adapter as any)?.db;
+    if (!db) {
+      return { week: this.weekKey(), entries: [] };
+    }
+    const entries = await db.collection('humor_leaderboard')
+      .find({ week: this.weekKey() })
+      .sort({ bestScore: -1, totalScore: -1 })
+      .limit(10)
+      .project({ _id: 0, username: 1, bestScore: 1, defenses: 1, lastVerdict: 1 })
+      .toArray()
+      .catch(() => []);
+    return { week: this.weekKey(), entries };
   }
 
   private async startGame(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {

@@ -91,6 +91,8 @@ export default class WebGatewayService extends Service {
 
                 'GET /rooms': 'rooms.list',
                 'POST /rooms/search': 'rooms.find',
+
+                'GET /games/leaderboard': 'games.leaderboard',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
@@ -117,6 +119,7 @@ export default class WebGatewayService extends Service {
                 'PUT /games/start': 'games.start',
                 'POST /games/cards': 'games.submit',
                 'POST /games/winner': 'games.winner',
+                'POST /games/reason': 'games.reason',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
