@@ -335,11 +335,13 @@ export default class ClientsService extends Service {
     if (!key || !publicationId || !email) {
       return;
     }
-    if (typeof fetch !== 'function') {
+    // @types/node here predates the fetch global; grab it off globalThis.
+    const fetchFn = (globalThis as any).fetch;
+    if (typeof fetchFn !== 'function') {
       this.logger.warn('Beehiiv push skipped: runtime has no fetch (Node < 18)');
       return;
     }
-    fetch(`https://api.beehiiv.com/v2/publications/${publicationId}/subscriptions`, {
+    fetchFn(`https://api.beehiiv.com/v2/publications/${publicationId}/subscriptions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
