@@ -24,7 +24,11 @@ interface RoomOptions {
   target: number;
   maxPlayers: number;
   roundTime: number;
+  randoCardrissian?: boolean;
 }
+
+// Virtual house-rule player. The frontend maps this id to "Rando Cardrissian".
+export const RANDO_ID = 'rando-cardrissian';
 
 /**
  * Room is an interface dictates the shape of the Room.
@@ -101,6 +105,7 @@ export default class Game extends TurnHandler {
           const timeout = updatedGame.prevTurnData.initializing ? 0 : 10;
           return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout);
         case GameState.PICKING_CARDS:
+          this.scheduleRandoPlay(updatedTurn.gameId);
           return this.setGameTimeout(updatedTurn.gameId, (game) =>
             this.handleWinnerSelection(game), updatedGame.roundTime);
         case GameState.SELECTING_WINNER:
@@ -120,10 +125,15 @@ export default class Game extends TurnHandler {
   }
 
   private initalizePlayers(room: Room): { [id: string]: GamePlayer } {
-    return room.players.reduce((acc, curr) => {
+    const players = room.players.reduce((acc, curr) => {
       acc[curr] = { _id: curr, cards: [], isCzar: false, score: 0 };
       return acc;
     }, {});
+    // House rule: Rando plays too (never czars — see pickCzar in turn.ts)
+    if (room.options?.randoCardrissian) {
+      players[RANDO_ID] = { _id: RANDO_ID, cards: [], isCzar: false, score: 0 };
+    }
+    return players;
   }
 
   public onGameStart(room: Room) {
@@ -267,6 +277,46 @@ export default class Game extends TurnHandler {
     };
 
     await this.broker.emit('games.turn.updated', gameData);
+  }
+
+  /**
+   * House rule: a few seconds into each picking phase, Rando submits random
+   * cards from his hand. Separate timeout map so it never clobbers the round
+   * timer. Fire-and-forget; all failures are non-fatal.
+   *
+   * @private
+   * @param {string} gameId
+   * @memberof Game
+   */
+  private randoTimeout: { [gameId: string]: NodeJS.Timer } = {};
+
+  private scheduleRandoPlay(gameId: string) {
+    if (this.randoTimeout[gameId]) {
+      clearTimeout(this.randoTimeout[gameId]);
+    }
+    // Randomized 3-8s so Rando feels like a (bad) player, not a cron job
+    const delay = 3000 + Math.random() * 5000;
+    this.randoTimeout[gameId] = setTimeout(async () => {
+      try {
+        const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+        const rando = game?.players?.[RANDO_ID];
+        if (!rando || game.gameState !== GameState.PICKING_CARDS || game.selectedCards?.[RANDO_ID]) {
+          return;
+        }
+        const pick = (game.turnData?.blackCard as any)?.pick ?? 1;
+        const hand = [...(rando.cards ?? [])];
+        if (hand.length < pick) {
+          return;
+        }
+        const chosen: string[] = [];
+        for (let i = 0; i < pick; i++) {
+          chosen.push(hand.splice(Math.floor(Math.random() * hand.length), 1)[0]);
+        }
+        await this.onHandSubmitted(game, RANDO_ID, chosen);
+      } catch (err) {
+        this.logger.warn(`Rando play failed (gameId: ${gameId}): ${err.message}`);
+      }
+    }, delay);
   }
 
   public async onHandSubmitted(game: GameInterface, playerId: string, whiteCards: string[]) {

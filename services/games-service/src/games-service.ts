@@ -59,7 +59,10 @@ export default class GameService extends Service {
           'rooms.player.joined': this.handlePlayerJoined,
           'rooms.player.left': this.handlePlayerLeft,
           'rooms.removed': this.handleRoomRemoved,
-          'games.turn.updated': ctx => this.gameService.onTurnUpdated(ctx.params)
+          'games.turn.updated': ctx => {
+            this.captureRound(ctx.params);
+            return this.gameService.onTurnUpdated(ctx.params);
+          }
         },
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
@@ -70,6 +73,80 @@ export default class GameService extends Service {
         }
       },
     );
+  }
+
+  /**
+   * Humor-dataset capture: every completed round (winner picked, no-winner,
+   * or game end) is written to the `round_analytics` collection in the same
+   * database. Player ids are hashed with ANALYTICS_SALT — capture is a NO-OP
+   * until that env var is set. Fire-and-forget; never affects gameplay.
+   *
+   * Row shape (v1): black card, every submission (populated card text), the
+   * winner, per-player hands at time of capture (card ids), scores, and an
+   * extensible `signals` object for future reasoning/reaction data.
+   *
+   * @private
+   * @param {*} turn  the games.turn.updated payload (TurnDataWithState)
+   * @memberof GameService
+   */
+  private async captureRound(turn: any) {
+    try {
+      const salt = process.env.ANALYTICS_SALT;
+      if (!salt) {
+        return;
+      }
+      // Only completed rounds carry signal: a winner announcement (turnSetup
+      // with winner set), a failed round (errorMessage), or the game end.
+      const isRoundEnd = turn?.state === 'turnSetup' && !turn?.initializing && (turn?.winner || turn?.errorMessage);
+      const isGameEnd = turn?.state === 'ended';
+      if (!isRoundEnd && !isGameEnd) {
+        return;
+      }
+
+      // tslint:disable-next-line: no-var-requires
+      const { createHash } = require('crypto');
+      const hash = (id: string) => id ? createHash('sha256').update(`${salt}:${id}`).digest('hex').slice(0, 16) : null;
+
+      // Hands (card ids) come from the game doc — one read per round
+      const game: any = await this.broker.call('games.get', { id: turn.gameId }).catch(() => null);
+      const hands = {};
+      if (game?.players) {
+        Object.values(game.players).forEach((p: any) => {
+          hands[hash(p._id)] = p.cards ?? [];
+        });
+      }
+
+      const row = {
+        v: 1,
+        ts: Date.now(),
+        gameId: turn.gameId,
+        roomId: String(turn.roomId ?? ''),
+        turn: turn.turn,
+        outcome: isGameEnd ? 'game_end' : (turn.winner ? 'winner' : 'no_winner'),
+        blackCard: turn.blackCard ? { id: turn.blackCard._id, text: turn.blackCard.text, pick: turn.blackCard.pick } : null,
+        submissions: Object.entries(turn.selectedCards ?? {}).map(([playerId, cards]: [string, any]) => ({
+          player: hash(playerId),
+          isRando: playerId === 'rando-cardrissian',
+          cards: (cards ?? []).map((c: any) => ({ id: c._id, text: c.text })),
+        })),
+        winner: Array.isArray(turn.winner) ? turn.winner.map(hash) : hash(turn.winner),
+        players: (turn.players ?? []).map((p: any) => ({ id: hash(p._id), score: p.score })),
+        hands,
+        context: {
+          roundTime: game?.roundTime ?? null,
+          playerCount: (turn.players ?? []).length,
+          errorMessage: turn.errorMessage ?? null,
+        },
+        signals: {},
+      };
+
+      const db = (this.adapter as any)?.db;
+      if (db) {
+        await db.collection('round_analytics').insertOne(row);
+      }
+    } catch (err) {
+      this.logger.warn(`captureRound failed: ${err.message}`);
+    }
   }
 
   private async startGame(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {

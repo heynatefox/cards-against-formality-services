@@ -58,7 +58,12 @@ export default class ClientsService extends Service {
     email: { type: 'string', optional: true },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true },
-    disconnectedAt: { type: 'number', optional: true, default: null }
+    disconnectedAt: { type: 'number', optional: true, default: null },
+    // Newsletter consent captured by the V2 unlock flow (sent on login/renew).
+    // marketingEmail holds typed emails from guests who never OAuth'd.
+    marketingOptIn: { type: 'boolean', optional: true },
+    marketingOptInAt: { type: 'number', optional: true },
+    marketingEmail: { type: 'string', optional: true }
   };
 
   /**
@@ -256,6 +261,26 @@ export default class ClientsService extends Service {
    */
   private async renew(ctx: Context<any, { user: { uid: string; firebase?: { sign_in_provider: string } } }>): Promise<Client> {
     const uid = ctx.meta.user.uid;
+
+    // V2 sends marketingOptIn on renew when the user joins the email list
+    // (the expansion-pack unlock). Guests may include a typed marketingEmail;
+    // signed-in users' account email comes from the token. Persist and push
+    // to Beehiiv, both fire-and-forget — never block login on either.
+    if (ctx.params?.marketingOptIn === true) {
+      const typedEmail: string | undefined =
+        typeof ctx.params.marketingEmail === 'string' && ctx.params.marketingEmail.includes('@')
+          ? ctx.params.marketingEmail.trim()
+          : undefined;
+      ctx.call(`${this.name}.update`, {
+        id: uid,
+        marketingOptIn: true,
+        marketingOptInAt: Date.now(),
+        ...(typedEmail ? { marketingEmail: typedEmail } : {})
+      })
+        .catch(() => { /* record may not exist yet on first renew — harmless */ });
+      this.pushToBeehiiv(typedEmail || (ctx.meta.user as any)?.email);
+    }
+
     return this.firestoreDb
       .collection('users')
       .doc(uid)
@@ -293,6 +318,49 @@ export default class ClientsService extends Service {
         // Non-anonymous user with no Firestore record — they need to register first.
         throw new Errors.MoleculerError('User doesnt exist', 404, 'USERNAME_NON_EXISTENT');
       });
+  }
+
+  /**
+   * Subscribe an email to the Beehiiv publication. No-op until
+   * BEEHIIV_API_KEY + BEEHIIV_PUBLICATION_ID are set (Railway env vars).
+   * API: POST /v2/publications/{id}/subscriptions, Bearer auth.
+   *
+   * @private
+   * @param {string} [email]
+   * @memberof ClientsService
+   */
+  private pushToBeehiiv(email?: string) {
+    const key = process.env.BEEHIIV_API_KEY;
+    const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+    if (!key || !publicationId || !email) {
+      return;
+    }
+    if (typeof fetch !== 'function') {
+      this.logger.warn('Beehiiv push skipped: runtime has no fetch (Node < 18)');
+      return;
+    }
+    fetch(`https://api.beehiiv.com/v2/publications/${publicationId}/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`,
+      },
+      // Same params as V1's NewsletterGate (welcome email flow is configured
+      // in Beehiiv), plus utm attribution.
+      body: JSON.stringify({
+        email,
+        reactivate_existing: false,
+        send_welcome_email: true,
+        utm_source: 'cards-against-formality',
+        utm_medium: 'deck_unlock',
+      }),
+    })
+      .then((res: any) => {
+        if (!res.ok) {
+          this.logger.warn(`Beehiiv push failed: ${res.status}`);
+        }
+      })
+      .catch((err: any) => this.logger.warn(`Beehiiv push failed: ${err?.message}`));
   }
 
   /**

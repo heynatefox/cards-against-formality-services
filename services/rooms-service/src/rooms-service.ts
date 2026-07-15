@@ -68,7 +68,9 @@ export default class RoomsService extends Service {
         target: { type: 'number', min: 5, max: 100, default: 10 },
         maxPlayers: { type: 'number', default: 10, min: 2, max: 50 },
         maxSpectators: { type: 'number', default: 10, min: 1, max: 50 },
-        roundTime: { type: 'number', default: 60, min: 15, max: 60 }
+        roundTime: { type: 'number', default: 60, min: 15, max: 60 },
+        // House rule: a virtual player submits a random card each round
+        randoCardrissian: { type: 'boolean', optional: true, default: false }
       },
     },
     passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },

@@ -93,8 +93,8 @@ export default class TurnHandler {
       prevCzar = prevTurn.czar;
     }
 
-    // pick czar
-    const playersArr = Object.values(players);
+    // pick czar — Rando plays but never judges
+    const playersArr = Object.values(players).filter(player => player._id !== 'rando-cardrissian');
     let selectedPlayer;
     if (!prevCzar) {
       selectedPlayer = playersArr[0];

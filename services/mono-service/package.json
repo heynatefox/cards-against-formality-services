@@ -1,0 +1,10 @@
+{
+  "name": "@cards-against-formality/mono-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Single-process runner: all internal services + web gateway on one Moleculer broker. See index.js header for deployment notes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
