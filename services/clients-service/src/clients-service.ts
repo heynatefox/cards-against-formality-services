@@ -305,8 +305,16 @@ export default class ClientsService extends Service {
 
         // Anonymous Firebase users have no Firestore record until their first renew.
         // Auto-register them so they can play without going through the login flow.
+        // Guests pick a nickname at sign-in; the client sends it along on this
+        // first renew. Honor it when it passes the username rules, otherwise
+        // fall back to the Anon handle. Duplicate guest nicknames are fine
+        // (display names, not identities).
         if (ctx.meta.user.firebase?.sign_in_provider === 'anonymous') {
-          const username = `Anon-${uid.slice(-4)}`;
+          let username = `Anon-${uid.slice(-4)}`;
+          const requested = typeof ctx.params?.username === 'string' ? ctx.params.username.trim() : '';
+          if (requested.length >= 3 && requested.length <= 12 && /^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$/.test(requested)) {
+            username = requested;
+          }
           const data = { uid, username, isAnonymous: true, displayName: null, photoURL: null, email: null, emailVerified: false, phoneNumber: null };
           await this.firestoreDb
             .collection('users')
