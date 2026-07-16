@@ -75,7 +75,10 @@ export default class GameService extends Service {
             params: {
               key: 'string',
               collection: { type: 'string', optional: true },
-              limit: { type: 'number', optional: true, convert: true }
+              limit: { type: 'number', optional: true, convert: true },
+              skip: { type: 'number', optional: true, convert: true },
+              outcome: { type: 'string', optional: true },
+              reasoning: { type: 'string', optional: true }
             },
             handler: this.analyticsExport
           }
@@ -162,6 +165,12 @@ export default class GameService extends Service {
       const isRoundEnd = turn?.state === 'turnSetup' && !turn?.initializing && (turn?.winner || turn?.errorMessage);
       const isGameEnd = turn?.state === 'ended';
       if (!isRoundEnd && !isGameEnd) {
+        return;
+      }
+      // Abandoned games auto-advance empty rounds forever; a round with no
+      // submissions and no winner carries zero humor signal. Don't hoard it.
+      const submissionCount = Object.keys(turn?.selectedCards ?? {}).length;
+      if (isRoundEnd && !turn?.winner && submissionCount === 0) {
         return;
       }
 
@@ -377,7 +386,7 @@ export default class GameService extends Service {
    * @param {Context<{ key: string; collection?: string; limit?: number }>} ctx
    * @memberof GameService
    */
-  private async analyticsExport(ctx: Context<{ key: string; collection?: string; limit?: number }>) {
+  private async analyticsExport(ctx: Context<{ key: string; collection?: string; limit?: number; skip?: number; outcome?: string; reasoning?: string }>) {
     const configured = process.env.ANALYTICS_EXPORT_KEY;
     if (!configured || ctx.params.key !== configured) {
       throw new Errors.MoleculerError('Not found', 404, 'NOT_FOUND');
@@ -389,9 +398,17 @@ export default class GameService extends Service {
 
     const collection = ctx.params.collection || 'summary';
     const limit = Math.min(ctx.params.limit || 500, 2000);
+    const skip = Math.max(0, (ctx.params as any).skip || 0);
 
     if (collection === 'rounds') {
-      return db.collection('round_analytics').find({}).sort({ ts: -1 }).limit(limit).toArray();
+      const query: any = {};
+      if (ctx.params.outcome) {
+        query.outcome = ctx.params.outcome;
+      }
+      if (ctx.params.reasoning === '1') {
+        query['signals.czarReasoning'] = { $exists: true };
+      }
+      return db.collection('round_analytics').find(query).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
     }
     if (collection === 'leaderboard') {
       return db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(limit).toArray();
