@@ -124,6 +124,26 @@ export default class Game extends TurnHandler {
       if (!stalled) {
         continue;
       }
+
+      // A stalled game only deserves resurrection if its room still exists.
+      // Thousands of orphaned game docs accumulated from rooms that died
+      // without firing rooms.removed; those get destroyed, not resumed.
+      const roomId = typeof (game as any).room === 'string' ? (game as any).room : (game as any).room && (game as any).room._id;
+      const room = roomId
+        ? await this.broker.call('rooms.get', { id: roomId }).catch(() => null)
+        : null;
+      if (!room) {
+        this.logger.info(`watchdog: destroying orphaned game ${game._id} (room gone)`);
+        await this.destroyGame(game._id).catch(err => this.logger.warn(`watchdog: destroy failed ${game._id}: ${err.message}`));
+        continue;
+      }
+      // Rooms with nobody in them don't need their game running either
+      if (!((room as any).players || []).length) {
+        this.logger.info(`watchdog: destroying game ${game._id} (room empty)`);
+        await this.destroyGame(game._id).catch(err => this.logger.warn(`watchdog: destroy failed ${game._id}: ${err.message}`));
+        continue;
+      }
+
       const prev = (game as any).prevTurnData;
       if (!prev || !prev.gameId) {
         // Too fresh to have a persisted turn; leave it for the next sweep

@@ -482,14 +482,14 @@ export default class GameService extends Service {
 
     const [users, live, activity, games, reasoning, leaderboard, recentRounds] = await Promise.all([
       section(async () => {
-        const clients = db.collection('clients');
-        const total = await clients.countDocuments({});
-        const anonymous = await clients.countDocuments({ isAnonymous: true });
-        const optedIn = await clients.countDocuments({ marketingOptIn: true });
+        // Each service owns its own database; go through the broker
+        const total: number = await ctx.call('clients.count', { query: {} });
+        const anonymous: number = await ctx.call('clients.count', { query: { isAnonymous: true } });
+        const optedIn: number = await ctx.call('clients.count', { query: { marketingOptIn: true } });
         return { total, anonymous, registered: total - anonymous, optedIn };
       }),
       section(async () => {
-        const roomDocs = await db.collection('rooms').find({}).toArray();
+        const roomDocs: any[] = await ctx.call('rooms.find', { query: {} });
         const withPlayers = roomDocs.filter((r: any) => (r.players || []).length > 0);
         return {
           rooms: roomDocs.length,
