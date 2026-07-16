@@ -481,9 +481,16 @@ export default class GameService extends Service {
       throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
     }
 
-    const section = async <T>(fn: () => Promise<T>): Promise<T | null> => {
-      try { return await fn(); } catch (err) {
-        this.logger.warn(`admin-stats section failed: ${err.message}`);
+    // Every section is time-boxed: a slow or wedged dependency nulls that
+    // section instead of hanging the whole dashboard.
+    const section = async <T>(name: string, fn: () => Promise<T>): Promise<T | null> => {
+      try {
+        return await Promise.race([
+          fn(),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('section timeout')), 8000)),
+        ]);
+      } catch (err) {
+        this.logger.warn(`admin-stats section '${name}' failed: ${err.message}`);
         return null;
       }
     };
@@ -492,14 +499,14 @@ export default class GameService extends Service {
     const dayMs = 24 * 60 * 60 * 1000;
 
     const [users, live, activity, games, reasoning, leaderboard, recentRounds] = await Promise.all([
-      section(async () => {
+      section('users', async () => {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
         const anonymous: number = await ctx.call('clients.count', { query: { isAnonymous: true } });
         const optedIn: number = await ctx.call('clients.count', { query: { marketingOptIn: true } });
         return { total, anonymous, registered: total - anonymous, optedIn };
       }),
-      section(async () => {
+      section('live', async () => {
         const roomDocs: any[] = await ctx.call('rooms.find', { query: {} });
         const withPlayers = roomDocs.filter((r: any) => (r.players || []).length > 0);
         return {
@@ -509,7 +516,7 @@ export default class GameService extends Service {
           liveGames: await db.collection('games').countDocuments({}),
         };
       }),
-      section(async () => {
+      section('activity', async () => {
         // Rounds per day (winner rounds = real play), last 14 days
         const since = Date.now() - 14 * dayMs;
         const daily = await rounds.aggregate([
@@ -519,7 +526,7 @@ export default class GameService extends Service {
         ]).toArray();
         return daily.map((d: any) => ({ day: new Date(d._id * dayMs).toISOString().slice(0, 10), rounds: d.n }));
       }),
-      section(async () => {
+      section('games', async () => {
         const total = await rounds.countDocuments({});
         const winnerRounds = await rounds.countDocuments({ outcome: 'winner' });
         // Per-game span: rounds count + duration from first to last capture
@@ -535,7 +542,7 @@ export default class GameService extends Service {
         const avgPlayers = games2 ? perGame.reduce((n: number, g: any) => n + (g.players || 0), 0) / games2 : 0;
         return { capturedRounds: total, winnerRounds, gamesWithPlay: games2, avgRoundsPerGame: avgRounds, avgGameDurationMin: avgDurationMin, avgPlayers };
       }),
-      section(async () => {
+      section('reasoning', async () => {
         const defenses = await rounds.countDocuments({ 'signals.czarReasoning': { $exists: true } });
         const verdicts = await rounds.aggregate([
           { $match: { 'signals.czarReasoning': { $exists: true } } },
@@ -544,8 +551,8 @@ export default class GameService extends Service {
         ]).toArray();
         return { defenses, verdicts };
       }),
-      section(() => db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(10).toArray()),
-      section(() => rounds.find({ outcome: 'winner' }).sort({ ts: -1 }).limit(25).toArray()),
+      section('leaderboard', () => db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(10).toArray()),
+      section('recentRounds', () => rounds.find({ outcome: 'winner' }).sort({ ts: -1 }).limit(25).toArray()),
     ]);
 
     return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds };
