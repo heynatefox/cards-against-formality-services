@@ -96,6 +96,7 @@ export default class WebGatewayService extends Service {
                 // Key-protected (ANALYTICS_EXPORT_KEY); 404s without the key
                 'GET /games/analytics-export': 'games.analytics-export',
                 'GET /games/admin-stats': 'games.admin-stats',
+                'POST /games/admin-login': 'games.admin-login',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

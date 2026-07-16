@@ -87,6 +87,13 @@ export default class GameService extends Service {
               key: 'string'
             },
             handler: this.adminStats
+          },
+          'admin-login': {
+            params: {
+              username: 'string',
+              password: 'string'
+            },
+            handler: this.adminLogin
           }
         },
         events: {
@@ -556,6 +563,39 @@ export default class GameService extends Service {
     ]);
 
     return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds };
+  }
+
+  /**
+   * Portal login: username + password (stored as a sha256 hash in env)
+   * exchanged for the analytics key. Constant-time compares, a flat delay
+   * against brute force, and one generic error for every failure mode.
+   *
+   * @private
+   * @param {Context<{ username: string; password: string }>} ctx
+   * @memberof GameService
+   */
+  private async adminLogin(ctx: Context<{ username: string; password: string }>) {
+    // tslint:disable-next-line: no-var-requires
+    const { createHash, timingSafeEqual } = require('crypto');
+    const user = process.env.ADMIN_USER;
+    const passHash = process.env.ADMIN_PASS_SHA256;
+    const key = process.env.ANALYTICS_EXPORT_KEY;
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+
+    const fail = () => { throw new Errors.MoleculerError('Nope.', 401, 'BAD_LOGIN'); };
+    if (!user || !passHash || !key) {
+      fail();
+    }
+    const given = createHash('sha256').update(ctx.params.password).digest('hex');
+    const a = Buffer.from(given);
+    const b = Buffer.from(passHash);
+    const passOk = a.length === b.length && timingSafeEqual(a, b);
+    const userOk = ctx.params.username === user;
+    if (!passOk || !userOk) {
+      fail();
+    }
+    return { key };
   }
 
   private async rebootHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
