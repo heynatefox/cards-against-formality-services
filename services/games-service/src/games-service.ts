@@ -126,24 +126,35 @@ export default class GameService extends Service {
 
   private watchdogInitial: NodeJS.Timer = null;
   private watchdogInterval: NodeJS.Timer = null;
+  private sweeping = false;
 
   /**
    * Fetch every live game doc and hand them to the watchdog. Games whose
    * phase deadline has passed without a state change get their timers
-   * re-armed from persisted state. See Game.resumeStalledGames.
+   * re-armed from persisted state; orphans get destroyed. Re-entrancy
+   * guarded: draining a large backlog can outlast the interval, and
+   * overlapping sweeps would flood the broker.
    *
    * @private
    * @memberof GameService
    */
-  private sweepStalledGames() {
-    return this.broker.call('games.find', { query: {} })
-      .then((games: any[]) => {
-        if (games && games.length) {
-          return this.gameService.resumeStalledGames(games);
-        }
-        return null;
-      })
-      .catch(err => this.logger.warn(`watchdog sweep failed: ${err.message}`));
+  private async sweepStalledGames() {
+    if (this.sweeping) {
+      return null;
+    }
+    this.sweeping = true;
+    try {
+      const games: any[] = await this.broker.call('games.find', { query: {} });
+      if (games && games.length) {
+        await this.gameService.resumeStalledGames(games);
+      }
+      return null;
+    } catch (err) {
+      this.logger.warn(`watchdog sweep failed: ${err.message}`);
+      return null;
+    } finally {
+      this.sweeping = false;
+    }
   }
 
   /**
