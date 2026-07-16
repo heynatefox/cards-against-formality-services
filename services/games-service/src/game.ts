@@ -75,11 +75,17 @@ export default class Game extends TurnHandler {
     super(broker, logger);
   }
 
+  // When each game's timer was armed and for how long. The watchdog uses
+  // this to spot games whose timer died (process restart, crashed callback)
+  // and bring them back to life from the persisted game doc.
+  private timeoutMeta: { [gameId: string]: { armedAt: number; timeoutSecs: number } } = {};
+
   private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number) {
     if (this.gameTimeout[gameId]) {
       clearTimeout(this.gameTimeout[gameId]);
     }
 
+    this.timeoutMeta[gameId] = { armedAt: Date.now(), timeoutSecs: timeout };
     this.gameTimeout[gameId] = setTimeout(async () => {
       try {
         const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
@@ -91,7 +97,45 @@ export default class Game extends TurnHandler {
   }
 
   public destroyGame(id: string) {
+    if (this.gameTimeout[id]) {
+      clearTimeout(this.gameTimeout[id]);
+      delete this.gameTimeout[id];
+    }
+    delete this.timeoutMeta[id];
     return this.broker.call('games.remove', { id });
+  }
+
+  /**
+   * Watchdog: every game doc whose phase deadline has long passed without a
+   * state change gets its timer re-armed from persisted state. Heals games
+   * orphaned by deploys/restarts (timers live in process memory) and by
+   * timer callbacks that died. onTurnUpdated re-persists the same state and
+   * re-arms the correct phase timer, so play resumes where it stalled.
+   *
+   * @public
+   * @param {GameInterface[]} games  all game docs (unpopulated is fine)
+   * @memberof Game
+   */
+  public async resumeStalledGames(games: GameInterface[]) {
+    const GRACE_MS = 30 * 1000;
+    for (const game of games) {
+      const meta = this.timeoutMeta[game._id];
+      const stalled = !meta || Date.now() > meta.armedAt + meta.timeoutSecs * 1000 + GRACE_MS;
+      if (!stalled) {
+        continue;
+      }
+      const prev = (game as any).prevTurnData;
+      if (!prev || !prev.gameId) {
+        // Too fresh to have a persisted turn; leave it for the next sweep
+        continue;
+      }
+      this.logger.warn(`watchdog: resuming stalled game ${game._id} (state: ${(game as any).gameState})`);
+      try {
+        await this.onTurnUpdated(prev);
+      } catch (err) {
+        this.logger.warn(`watchdog: failed to resume ${game._id}: ${err.message}`);
+      }
+    }
   }
 
   public async onTurnUpdated(updatedTurn: TurnDataWithState) {

@@ -86,10 +86,47 @@ export default class GameService extends Service {
         entityRemoved: this.entityRemoved,
         started: () => {
           this.gameService = new Game(this.broker, this.logger);
+          // Watchdog: revive games orphaned by restarts or dead timers.
+          // First sweep soon after boot (deploys stall every active game),
+          // then once a minute forever.
+          const sweep = () => this.sweepStalledGames();
+          this.watchdogInitial = setTimeout(sweep, 10 * 1000);
+          this.watchdogInterval = setInterval(sweep, 60 * 1000);
+          return null;
+        },
+        stopped: () => {
+          if (this.watchdogInitial) {
+            clearTimeout(this.watchdogInitial);
+          }
+          if (this.watchdogInterval) {
+            clearInterval(this.watchdogInterval);
+          }
           return null;
         }
       },
     );
+  }
+
+  private watchdogInitial: NodeJS.Timer = null;
+  private watchdogInterval: NodeJS.Timer = null;
+
+  /**
+   * Fetch every live game doc and hand them to the watchdog. Games whose
+   * phase deadline has passed without a state change get their timers
+   * re-armed from persisted state. See Game.resumeStalledGames.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private sweepStalledGames() {
+    return this.broker.call('games.find', { query: {} })
+      .then((games: any[]) => {
+        if (games && games.length) {
+          return this.gameService.resumeStalledGames(games);
+        }
+        return null;
+      })
+      .catch(err => this.logger.warn(`watchdog sweep failed: ${err.message}`));
   }
 
   /**
