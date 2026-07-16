@@ -182,14 +182,15 @@ export default class TurnHandler {
    * @returns {Promise<string[]>}
    * @memberof TurnHandler
    */
-  protected async dealWhiteCards(player: GamePlayer, whiteCards: string[]): Promise<string[]> {
-    const cardsNeeded = 10 - player.cards.length;
-    if (!cardsNeeded) {
+  protected async dealWhiteCards(player: GamePlayer, whiteCards: string[], handSize = 10): Promise<string[]> {
+    // >= guard: with Packing Heat a player can briefly hold more cards than
+    // the current target; never try to "deal down" (it would loop forever).
+    if (player.cards.length >= handSize) {
       await this.emitCardsToPlayer(player);
       return whiteCards;
     }
 
-    while (player.cards?.length !== 10) {
+    while (player.cards.length < handSize) {
       player.cards.push(this.pickWhiteCard(whiteCards));
     }
 
@@ -206,9 +207,9 @@ export default class TurnHandler {
    * @returns
    * @memberof TurnHandler
    */
-  private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[]) {
+  private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[], handSize = 10) {
     for (const player of Object.values(players)) {
-      whiteCards = await this.dealWhiteCards(player, whiteCards);
+      whiteCards = await this.dealWhiteCards(player, whiteCards, handSize);
     }
 
     return whiteCards;
@@ -226,7 +227,7 @@ export default class TurnHandler {
   public hasEnoughCards(players: GamePlayer[], whiteCards: string[], blackCards: string[]): boolean {
     // check if there are enough cards left to play the turn.
     const whiteCardsRequired = Object.values(players).reduce((totalRequired, player) => {
-      const cardsRequired = 10 - player.cards.length;
+      const cardsRequired = Math.max(0, 10 - player.cards.length);
       return totalRequired + cardsRequired;
     }, 0);
 
@@ -252,7 +253,11 @@ export default class TurnHandler {
     turnData.czar = this.pickCzar(turns, players);
     // mutate black and white cards by reference
     turnData.blackCard = await this.pickBlackCard(blackCards);
-    const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards);
+    // House rule "Packing Heat": everyone draws an extra card on 2+ pick
+    // prompts. The extra card is absorbed next round (hands top up to 10).
+    const packingHeat = !!(room && (room as any).options && (room as any).options.packingHeat);
+    const handSize = packingHeat && turnData.blackCard && turnData.blackCard.pick >= 2 ? 11 : 10;
+    const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards, handSize);
 
     // tslint:disable-next-line: max-line-length
     await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData });

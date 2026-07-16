@@ -64,6 +64,12 @@ export default class GameService extends Service {
           leaderboard: {
             cache: { ttl: 60 },
             handler: this.getLeaderboard
+          },
+          reboot: {
+            params: {
+              roomId: 'string'
+            },
+            handler: this.rebootHand
           }
         },
         events: {
@@ -306,6 +312,41 @@ export default class GameService extends Service {
       .catch(err => {
         throw err;
       });
+  }
+
+  /**
+   * House rule "Rebooting the Universe": pay one point, swap your whole hand.
+   * Allowed for non-czar players who haven't played this round and have a
+   * point to burn, in rooms with the rule enabled.
+   *
+   * @private
+   * @param {Context<{ roomId: string }, any>} ctx
+   * @memberof GameService
+   */
+  private async rebootHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
+    const { roomId } = ctx.params;
+    const uid = ctx.meta.user.uid;
+
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+    const options = game.room && game.room.options;
+    if (!options || !options.rebootingUniverse) {
+      throw new Errors.MoleculerError('Rebooting the Universe is not enabled in this room', 400, 'RULE_DISABLED');
+    }
+    const player = game.players && game.players[uid];
+    if (!player) {
+      throw new Errors.MoleculerError('You are not in this game', 403, 'NOT_IN_GAME');
+    }
+    if (game.turnData && game.turnData.czar === uid) {
+      throw new Errors.MoleculerError('The Czar cannot reboot mid-judgment', 400, 'CZAR_CANNOT_REBOOT');
+    }
+    if (game.selectedCards && uid in game.selectedCards) {
+      throw new Errors.MoleculerError('You already played this round', 400, 'ALREADY_PLAYED');
+    }
+    if ((player.score || 0) < 1) {
+      throw new Errors.MoleculerError('Costs one point. You have none.', 400, 'NO_POINTS');
+    }
+
+    return this.gameService.rebootPlayerHand(game, uid);
   }
 
   private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }, any>) {

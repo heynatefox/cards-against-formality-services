@@ -70,7 +70,11 @@ export default class RoomsService extends Service {
         maxSpectators: { type: 'number', default: 10, min: 1, max: 50 },
         roundTime: { type: 'number', default: 60, min: 15, max: 60 },
         // House rule: a virtual player submits a random card each round
-        randoCardrissian: { type: 'boolean', optional: true, default: false }
+        randoCardrissian: { type: 'boolean', optional: true, default: false },
+        // House rule: draw an extra white card on 2+ pick prompts
+        packingHeat: { type: 'boolean', optional: true, default: false },
+        // House rule: pay one point to swap your whole hand
+        rebootingUniverse: { type: 'boolean', optional: true, default: false }
       },
     },
     passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },

@@ -120,6 +120,7 @@ export default class WebGatewayService extends Service {
                 'POST /games/cards': 'games.submit',
                 'POST /games/winner': 'games.winner',
                 'POST /games/reason': 'games.reason',
+                'POST /games/reboot': 'games.reboot',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

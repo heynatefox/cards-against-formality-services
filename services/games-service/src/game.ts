@@ -463,4 +463,25 @@ export default class Game extends TurnHandler {
 
     // handle firing game removed update.
   }
+
+  /**
+   * House rule "Rebooting the Universe": a player pays one point to discard
+   * their hand and draw a fresh one. Validations live in the games-service
+   * action; this performs the swap, persists it, and deals the new hand.
+   *
+   * @public
+   * @param {GameInterface} game
+   * @param {string} clientId
+   * @returns {Promise<{ score: number }>}
+   * @memberof Game
+   */
+  public async rebootPlayerHand(game: GameInterface, clientId: string): Promise<{ score: number }> {
+    const player = game.players[clientId];
+    player.score -= 1;
+    player.cards = [];
+    // Mutates player.cards and whiteCards by reference and emits the new hand
+    const whiteCards = await this.dealWhiteCards(player, game.whiteCards);
+    await this.broker.call('games.update', { id: game._id, players: game.players, whiteCards });
+    return { score: player.score };
+  }
 }
