@@ -93,6 +93,8 @@ export default class WebGatewayService extends Service {
                 'POST /rooms/search': 'rooms.find',
 
                 'GET /games/leaderboard': 'games.leaderboard',
+                // Key-protected (ANALYTICS_EXPORT_KEY); 404s without the key
+                'GET /games/analytics-export': 'games.analytics-export',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

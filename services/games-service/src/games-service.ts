@@ -70,6 +70,14 @@ export default class GameService extends Service {
               roomId: 'string'
             },
             handler: this.rebootHand
+          },
+          'analytics-export': {
+            params: {
+              key: 'string',
+              collection: { type: 'string', optional: true },
+              limit: { type: 'number', optional: true, convert: true }
+            },
+            handler: this.analyticsExport
           }
         },
         events: {
@@ -360,6 +368,65 @@ export default class GameService extends Service {
    * @param {Context<{ roomId: string }, any>} ctx
    * @memberof GameService
    */
+  /**
+   * Key-protected export of the humor dataset. No-ops (404) unless
+   * ANALYTICS_EXPORT_KEY is set and matches. collection: 'summary'
+   * (default) | 'rounds' | 'leaderboard'.
+   *
+   * @private
+   * @param {Context<{ key: string; collection?: string; limit?: number }>} ctx
+   * @memberof GameService
+   */
+  private async analyticsExport(ctx: Context<{ key: string; collection?: string; limit?: number }>) {
+    const configured = process.env.ANALYTICS_EXPORT_KEY;
+    if (!configured || ctx.params.key !== configured) {
+      throw new Errors.MoleculerError('Not found', 404, 'NOT_FOUND');
+    }
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    }
+
+    const collection = ctx.params.collection || 'summary';
+    const limit = Math.min(ctx.params.limit || 500, 2000);
+
+    if (collection === 'rounds') {
+      return db.collection('round_analytics').find({}).sort({ ts: -1 }).limit(limit).toArray();
+    }
+    if (collection === 'leaderboard') {
+      return db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(limit).toArray();
+    }
+
+    // summary: shape of the dataset at a glance
+    const rounds = db.collection('round_analytics');
+    const total = await rounds.countDocuments({});
+    const withReasoning = await rounds.countDocuments({ 'signals.czarReasoning': { $exists: true } });
+    const outcomes = await rounds.aggregate([
+      { $group: { _id: '$outcome', n: { $sum: 1 } } }
+    ]).toArray();
+    const verdicts = await rounds.aggregate([
+      { $match: { 'signals.czarReasoning': { $exists: true } } },
+      { $group: { _id: '$signals.czarReasoning.verdict', n: { $sum: 1 }, avgScore: { $avg: '$signals.czarReasoning.score' } } },
+      { $sort: { n: -1 } }
+    ]).toArray();
+    const range = await rounds.aggregate([
+      { $group: { _id: null, first: { $min: '$ts' }, last: { $max: '$ts' }, games: { $addToSet: '$gameId' }, avgPlayers: { $avg: '$context.playerCount' } } }
+    ]).toArray();
+    const leaderboardCount = await db.collection('humor_leaderboard').countDocuments({});
+
+    const r = range && range[0];
+    return {
+      rounds: total,
+      distinctGames: r && r.games ? r.games.length : 0,
+      firstRoundAt: r ? r.first : null,
+      lastRoundAt: r ? r.last : null,
+      avgPlayersPerRound: r ? r.avgPlayers : null,
+      outcomes,
+      reasoning: { rounds: withReasoning, coverage: total ? withReasoning / total : 0, verdicts },
+      leaderboardEntries: leaderboardCount,
+    };
+  }
+
   private async rebootHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
     const { roomId } = ctx.params;
     const uid = ctx.meta.user.uid;
