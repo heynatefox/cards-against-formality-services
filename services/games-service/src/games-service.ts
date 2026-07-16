@@ -81,6 +81,12 @@ export default class GameService extends Service {
               reasoning: { type: 'string', optional: true }
             },
             handler: this.analyticsExport
+          },
+          'admin-stats': {
+            params: {
+              key: 'string'
+            },
+            handler: this.adminStats
           }
         },
         events: {
@@ -442,6 +448,96 @@ export default class GameService extends Service {
       reasoning: { rounds: withReasoning, coverage: total ? withReasoning / total : 0, verdicts },
       leaderboardEntries: leaderboardCount,
     };
+  }
+
+  /**
+   * Dashboard payload for the admin portal. Same key gate as the export.
+   * Every section is best-effort: services share one Mongo database, so the
+   * games adapter can usually read clients/rooms too; if a collection is
+   * elsewhere the section comes back null instead of failing the request.
+   *
+   * @private
+   * @param {Context<{ key: string }>} ctx
+   * @memberof GameService
+   */
+  private async adminStats(ctx: Context<{ key: string }>) {
+    const configured = process.env.ANALYTICS_EXPORT_KEY;
+    if (!configured || ctx.params.key !== configured) {
+      throw new Errors.MoleculerError('Not found', 404, 'NOT_FOUND');
+    }
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    }
+
+    const section = async <T>(fn: () => Promise<T>): Promise<T | null> => {
+      try { return await fn(); } catch (err) {
+        this.logger.warn(`admin-stats section failed: ${err.message}`);
+        return null;
+      }
+    };
+
+    const rounds = db.collection('round_analytics');
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    const [users, live, activity, games, reasoning, leaderboard, recentRounds] = await Promise.all([
+      section(async () => {
+        const clients = db.collection('clients');
+        const total = await clients.countDocuments({});
+        const anonymous = await clients.countDocuments({ isAnonymous: true });
+        const optedIn = await clients.countDocuments({ marketingOptIn: true });
+        return { total, anonymous, registered: total - anonymous, optedIn };
+      }),
+      section(async () => {
+        const roomDocs = await db.collection('rooms').find({}).toArray();
+        const withPlayers = roomDocs.filter((r: any) => (r.players || []).length > 0);
+        return {
+          rooms: roomDocs.length,
+          activeRooms: withPlayers.length,
+          playersSeated: roomDocs.reduce((n: number, r: any) => n + (r.players || []).length, 0),
+          liveGames: await db.collection('games').countDocuments({}),
+        };
+      }),
+      section(async () => {
+        // Rounds per day (winner rounds = real play), last 14 days
+        const since = Date.now() - 14 * dayMs;
+        const daily = await rounds.aggregate([
+          { $match: { ts: { $gte: since }, outcome: 'winner' } },
+          { $group: { _id: { $floor: { $divide: ['$ts', dayMs] } }, n: { $sum: 1 } } },
+          { $sort: { _id: 1 } }
+        ]).toArray();
+        return daily.map((d: any) => ({ day: new Date(d._id * dayMs).toISOString().slice(0, 10), rounds: d.n }));
+      }),
+      section(async () => {
+        const total = await rounds.countDocuments({});
+        const winnerRounds = await rounds.countDocuments({ outcome: 'winner' });
+        // Per-game span: rounds count + duration from first to last capture
+        const perGame = await rounds.aggregate([
+          { $match: { outcome: 'winner' } },
+          { $group: { _id: '$gameId', rounds: { $sum: 1 }, first: { $min: '$ts' }, last: { $max: '$ts' }, players: { $avg: '$context.playerCount' } } }
+        ]).toArray();
+        const games2 = perGame.length;
+        const avgRounds = games2 ? perGame.reduce((n: number, g: any) => n + g.rounds, 0) / games2 : 0;
+        const avgDurationMin = games2
+          ? perGame.reduce((n: number, g: any) => n + Math.max(0, g.last - g.first), 0) / games2 / 60000
+          : 0;
+        const avgPlayers = games2 ? perGame.reduce((n: number, g: any) => n + (g.players || 0), 0) / games2 : 0;
+        return { capturedRounds: total, winnerRounds, gamesWithPlay: games2, avgRoundsPerGame: avgRounds, avgGameDurationMin: avgDurationMin, avgPlayers };
+      }),
+      section(async () => {
+        const defenses = await rounds.countDocuments({ 'signals.czarReasoning': { $exists: true } });
+        const verdicts = await rounds.aggregate([
+          { $match: { 'signals.czarReasoning': { $exists: true } } },
+          { $group: { _id: '$signals.czarReasoning.verdict', n: { $sum: 1 }, avgScore: { $avg: '$signals.czarReasoning.score' } } },
+          { $sort: { n: -1 } }
+        ]).toArray();
+        return { defenses, verdicts };
+      }),
+      section(() => db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(10).toArray()),
+      section(() => rounds.find({ outcome: 'winner' }).sort({ ts: -1 }).limit(25).toArray()),
+    ]);
+
+    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds };
   }
 
   private async rebootHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
