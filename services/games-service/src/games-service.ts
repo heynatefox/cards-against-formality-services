@@ -583,27 +583,17 @@ export default class GameService extends Service {
 
     await new Promise(resolve => setTimeout(resolve, 400));
 
-    // Temporary diagnostic (no secrets): reports which gate failed so the
-    // env-var vs typo question can be answered. Remove after verification.
-    const diag = (reason: string) => {
-      throw new Errors.MoleculerError('Nope.', 401, 'BAD_LOGIN', {
-        d: reason,
-        hasUser: !!user,
-        hasHash: !!passHash,
-        hashLen: passHash ? passHash.length : 0,
-        givenLen: 0,
-      });
-    };
+    const fail = () => { throw new Errors.MoleculerError('Nope.', 401, 'BAD_LOGIN'); };
     if (!user || !passHash || !key) {
-      diag('env-missing');
+      fail();
     }
     const given = createHash('sha256').update(ctx.params.password).digest('hex');
+    const a = Buffer.from(given);
+    const b = Buffer.from(passHash);
+    const passOk = a.length === b.length && timingSafeEqual(a, b);
     const userOk = ctx.params.username === user;
-    if (given !== passHash) {
-      throw new Errors.MoleculerError('Nope.', 401, 'BAD_LOGIN', { d: 'hash-mismatch', givenLen: given.length, hashLen: passHash.length, userOk });
-    }
-    if (!userOk) {
-      diag('user-mismatch');
+    if (!passOk || !userOk) {
+      fail();
     }
     return { key };
   }
