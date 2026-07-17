@@ -97,6 +97,7 @@ export default class WebGatewayService extends Service {
                 'GET /games/analytics-export': 'games.analytics-export',
                 'GET /games/admin-stats': 'games.admin-stats',
                 'POST /games/admin-login': 'games.admin-login',
+                'POST /games/bug-report': 'games.bug-report',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

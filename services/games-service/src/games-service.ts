@@ -94,6 +94,14 @@ export default class GameService extends Service {
               password: 'string'
             },
             handler: this.adminLogin
+          },
+          'bug-report': {
+            params: {
+              bug: { type: 'string', min: 5, max: 1000 },
+              route: { type: 'string', optional: true, max: 300 },
+              context: { type: 'string', optional: true, max: 1000 }
+            },
+            handler: this.bugReport
           }
         },
         events: {
@@ -437,6 +445,9 @@ export default class GameService extends Service {
     if (collection === 'leaderboard') {
       return db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(limit).toArray();
     }
+    if (collection === 'bugs') {
+      return db.collection('bug_reports').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
 
     // summary: shape of the dataset at a glance
     const rounds = db.collection('round_analytics');
@@ -596,6 +607,28 @@ export default class GameService extends Service {
       fail();
     }
     return { key };
+  }
+
+  /**
+   * In-app bug reporter (replaced Netlify Forms, which bills past 100
+   * submissions/month). Public, gateway-rate-limited, fire-and-forget.
+   *
+   * @private
+   * @param {Context<{ bug: string; route?: string; context?: string }>} ctx
+   * @memberof GameService
+   */
+  private async bugReport(ctx: Context<{ bug: string; route?: string; context?: string }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    }
+    await db.collection('bug_reports').insertOne({
+      ts: Date.now(),
+      bug: ctx.params.bug.trim(),
+      route: ctx.params.route || null,
+      context: ctx.params.context || null,
+    });
+    return { message: 'Filed. A human reads these on Mondays.' };
   }
 
   private async rebootHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
