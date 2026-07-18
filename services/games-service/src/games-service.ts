@@ -3,6 +3,7 @@ import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 import dbMixin from '@cards-against-formality/db-mixin';
 
 import Game, { Room, GameInterface } from './game';
+import * as cardTags from './data/card-tags-v0.json';
 
 export default class GameService extends Service {
 
@@ -451,6 +452,9 @@ export default class GameService extends Service {
     if (collection === 'bugs') {
       return db.collection('bug_reports').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
     }
+    if (collection === 'styles') {
+      return this.styleStats(db, Math.min(ctx.params.limit || 3000, 10000));
+    }
 
     // summary: shape of the dataset at a glance
     const rounds = db.collection('round_analytics');
@@ -479,6 +483,76 @@ export default class GameService extends Service {
       outcomes,
       reasoning: { rounds: withReasoning, coverage: total ? withReasoning / total : 0, verdicts },
       leaderboardEntries: leaderboardCount,
+    };
+  }
+
+  /**
+   * Humor-style aggregation over recent judged rounds, joining card ids
+   * against the v0 tagset baked into the build. Two rates per style:
+   * winRate (of plays, how many won the round) and playRate (of times a
+   * style was in someone's hand, how often it got played — the stratified
+   * dealer makes this denominator meaningful). Rando plays are excluded;
+   * bot picks are noise in a preference measure.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async styleStats(db: any, sample: number) {
+    const tags = cardTags as { [id: string]: { t: string[]; i: number } };
+    const rows = await db.collection('round_analytics')
+      .find({ outcome: 'winner' })
+      .sort({ ts: -1 })
+      .limit(sample)
+      .project({ submissions: 1, winner: 1, hands: 1, ts: 1 })
+      .toArray();
+
+    const byStyle: { [s: string]: { played: number; wins: number; held: number } } = {};
+    const bucket = (s: string) => byStyle[s] || (byStyle[s] = { played: 0, wins: 0, held: 0 });
+    let taggedPlays = 0;
+    let untaggedPlays = 0;
+
+    for (const r of rows) {
+      const winners = new Set(Array.isArray(r.winner) ? r.winner : [r.winner]);
+      for (const sub of r.submissions || []) {
+        if (sub.isRando) {
+          continue;
+        }
+        const won = winners.has(sub.player);
+        for (const c of sub.cards || []) {
+          const tag = tags[c.id];
+          if (!tag) { untaggedPlays++; continue; }
+          taggedPlays++;
+          const b = bucket(tag.t[0]);
+          b.played++;
+          if (won) { b.wins++; }
+        }
+      }
+      // Hands are card ids still held at round end — the road not taken
+      for (const handIds of Object.values(r.hands || {})) {
+        for (const id of handIds as string[]) {
+          const tag = tags[id];
+          if (tag) { bucket(tag.t[0]).held++; }
+        }
+      }
+    }
+
+    const styles = Object.entries(byStyle).map(([style, b]) => ({
+      style,
+      played: b.played,
+      wins: b.wins,
+      winRate: b.played ? b.wins / b.played : 0,
+      playShare: taggedPlays ? b.played / taggedPlays : 0,
+      playRate: (b.played + b.held) ? b.played / (b.played + b.held) : 0,
+    })).sort((x, y) => y.winRate - x.winRate);
+
+    return {
+      roundsAnalyzed: rows.length,
+      windowFrom: rows.length ? rows[rows.length - 1].ts : null,
+      windowTo: rows.length ? rows[0].ts : null,
+      taggedPlays,
+      untaggedPlays,
+      tagset: 'v0',
+      styles,
     };
   }
 
@@ -519,7 +593,7 @@ export default class GameService extends Service {
     const rounds = db.collection('round_analytics');
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const [users, live, activity, games, reasoning, leaderboard, recentRounds] = await Promise.all([
+    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles] = await Promise.all([
       section('users', async () => {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
@@ -574,9 +648,10 @@ export default class GameService extends Service {
       }),
       section('leaderboard', () => db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(10).toArray()),
       section('recentRounds', () => rounds.find({ outcome: 'winner' }).sort({ ts: -1 }).limit(25).toArray()),
+      section('styles', () => this.styleStats(db, 2000)),
     ]);
 
-    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds };
+    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles };
   }
 
   /**
@@ -591,22 +666,27 @@ export default class GameService extends Service {
   private async adminLogin(ctx: Context<{ username: string; password: string }>) {
     // tslint:disable-next-line: no-var-requires
     const { createHash, timingSafeEqual } = require('crypto');
-    const user = process.env.ADMIN_USER;
-    const passHash = process.env.ADMIN_PASS_SHA256;
+    // Two-slot user table from env; slots without both halves set are inert
+    const users = [
+      { name: process.env.ADMIN_USER, hash: process.env.ADMIN_PASS_SHA256 },
+      { name: process.env.ADMIN_USER_2, hash: process.env.ADMIN_PASS_SHA256_2 },
+    ].filter(u => u.name && u.hash);
     const key = process.env.ANALYTICS_EXPORT_KEY;
 
     await new Promise(resolve => setTimeout(resolve, 400));
 
     const fail = () => { throw new Errors.MoleculerError('Nope.', 401, 'BAD_LOGIN'); };
-    if (!user || !passHash || !key) {
+    if (!users.length || !key) {
       fail();
     }
+    const match = users.find(u => u.name === ctx.params.username);
+    // Compare against a dummy hash on unknown usernames to keep timing flat
+    const target = match ? match.hash : createHash('sha256').update('decoy').digest('hex');
     const given = createHash('sha256').update(ctx.params.password).digest('hex');
     const a = Buffer.from(given);
-    const b = Buffer.from(passHash);
+    const b = Buffer.from(target);
     const passOk = a.length === b.length && timingSafeEqual(a, b);
-    const userOk = ctx.params.username === user;
-    if (!passOk || !userOk) {
+    if (!match || !passOk) {
       fail();
     }
     return { key };
