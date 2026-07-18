@@ -4,6 +4,7 @@ import dbMixin from '@cards-against-formality/db-mixin';
 
 import Game, { Room, GameInterface } from './game';
 import * as cardTags from './data/card-tags-v0.json';
+import * as tasteTagsSvc from './data/card-tags-v1.json';
 
 export default class GameService extends Service {
 
@@ -112,6 +113,17 @@ export default class GameService extends Service {
               placement: { type: 'string', max: 20 }
             },
             handler: this.promoEvent
+          },
+          'wyr-response': {
+            params: {
+              pairId: { type: 'string', max: 40 },
+              child: { type: 'string', max: 60 },
+              choice: { type: 'enum', values: ['a', 'b'], optional: true },
+              direction: { type: 'number', optional: true, convert: true },
+              latencyMs: { type: 'number', optional: true, convert: true },
+              skipped: { type: 'boolean', optional: true, convert: true }
+            },
+            handler: this.wyrResponse
           }
         },
         events: {
@@ -251,7 +263,7 @@ export default class GameService extends Service {
           errorMessage: turn.errorMessage ?? null,
           // Which card-tag set the stratified dealer was using (analysis
           // joins card ids against this tagset version offline)
-          tagset: 'v0',
+          tagset: 'v1',
         },
         signals: {},
       };
@@ -509,6 +521,12 @@ export default class GameService extends Service {
     if (collection === 'promos') {
       return this.promoStats(db);
     }
+    if (collection === 'measurement') {
+      return this.measurementStats(db, Math.min(ctx.params.limit || 6000, 15000));
+    }
+    if (collection === 'wyr') {
+      return db.collection('wyr_responses').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
 
     // summary: shape of the dataset at a glance
     const rounds = db.collection('round_analytics');
@@ -741,6 +759,133 @@ export default class GameService extends Service {
   }
 
   /**
+   * Would-You-Rather capture (Track B of the measurement pilot). The
+   * docs' Social-game mechanic in miniature: private, unscored, skippable.
+   * Authenticated; player ids salted-hashed at capture like round capture.
+   * direction is the CHOSEN option's direction (+1 toward the parent's
+   * +pole), so per-player means read straight off the rows.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async wyrResponse(ctx: Context<{ pairId: string; child: string; choice?: string; direction?: number; latencyMs?: number; skipped?: boolean }, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (!db || !salt) {
+      return { ok: false };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    if (!ctx.params.skipped && (ctx.params.choice === undefined || ctx.params.direction === undefined)) {
+      throw new Errors.MoleculerError('Answer or skip', 422, 'BAD_WYR');
+    }
+    // tslint:disable-next-line: no-var-requires
+    const { createHash } = require('crypto');
+    const player = createHash('sha256').update(`${salt}:${uid}`).digest('hex').slice(0, 16);
+    await db.collection('wyr_responses').insertOne({
+      ts: Date.now(),
+      player,
+      pairId: ctx.params.pairId,
+      child: ctx.params.child,
+      parent: ctx.params.child.split('.')[0],
+      choice: ctx.params.skipped ? null : ctx.params.choice,
+      direction: ctx.params.skipped ? null : Math.max(-1, Math.min(1, ctx.params.direction)),
+      latencyMs: ctx.params.latencyMs || null,
+      skipped: !!ctx.params.skipped,
+      bank: 'wyr-bank-v1',
+    });
+    return { ok: true };
+  }
+
+  /**
+   * VC-demo measurement rollup: per-player taste estimates from card plays
+   * (joined against tagset v1) + WYR disposition aggregates. Powers the
+   * portal's live dashboard and the export.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async measurementStats(db: any, sample: number) {
+    const v1 = tasteTagsSvc as { [id: string]: { e: number; m: number; r: number; s: number; grade?: string } };
+    const rows = await db.collection('round_analytics')
+      .find({ outcome: 'winner' })
+      .sort({ ts: -1 })
+      .limit(sample)
+      .project({ submissions: 1, winner: 1, ts: 1 })
+      .toArray();
+
+    const players: { [p: string]: { n: number; wins: number; tiers: { [t: number]: number }; m: number; r: number; s: number; tagged: number } } = {};
+    const tier = (e: number) => (e <= 1 ? 1 : e === 2 ? 2 : 3);
+    for (const row of rows) {
+      const winners = new Set(Array.isArray(row.winner) ? row.winner : [row.winner]);
+      for (const sub of row.submissions || []) {
+        if (sub.isRando || !sub.player) { continue; }
+        const p = players[sub.player] || (players[sub.player] = { n: 0, wins: 0, tiers: {}, m: 0, r: 0, s: 0, tagged: 0 });
+        const won = winners.has(sub.player);
+        for (const c of sub.cards || []) {
+          if (!c || !c.id) { continue; }
+          p.n++;
+          if (won) { p.wins++; }
+          const t = v1[c.id];
+          if (t) {
+            p.tagged++;
+            p.tiers[tier(t.e)] = (p.tiers[tier(t.e)] || 0) + 1;
+            p.m += t.m; p.r += t.r; p.s += t.s;
+          }
+        }
+      }
+    }
+
+    const MIN_PLAYS = 8;
+    const taste = Object.entries(players)
+      .filter(([, p]) => p.tagged >= MIN_PLAYS)
+      .map(([id, p]) => {
+        // edge ceiling: highest tier played at least twice, else highest played
+        let ceiling = 1;
+        for (const t of [3, 2, 1]) {
+          if ((p.tiers[t] || 0) >= 2) { ceiling = t; break; }
+          if ((p.tiers[t] || 0) >= 1 && ceiling === 1) { ceiling = t; }
+        }
+        return {
+          player: id, plays: p.tagged, wins: p.wins,
+          edgeCeiling: ceiling,
+          mode: +(p.m / p.tagged).toFixed(2),
+          register: +(p.r / p.tagged).toFixed(2),
+          sincerity: +(p.s / p.tagged).toFixed(2),
+        };
+      });
+
+    const edgeHist: { [t: number]: number } = { 1: 0, 2: 0, 3: 0 };
+    for (const t of taste) { edgeHist[t.edgeCeiling]++; }
+
+    // WYR aggregates
+    const wyrAgg = await db.collection('wyr_responses').aggregate([
+      { $match: { skipped: false } },
+      { $group: { _id: { parent: '$parent', child: '$child' }, n: { $sum: 1 }, meanDir: { $avg: '$direction' }, players: { $addToSet: '$player' } } }
+    ]).toArray();
+    const wyrSkips = await db.collection('wyr_responses').countDocuments({ skipped: true });
+    const wyrPlayers = new Set<string>();
+    const wyr = wyrAgg.map((a: any) => {
+      (a.players || []).forEach((p: string) => wyrPlayers.add(p));
+      return { parent: a._id.parent, child: a._id.child, n: a.n, meanDirection: +(a.meanDir || 0).toFixed(3) };
+    }).sort((x: any, y: any) => y.n - x.n);
+
+    return {
+      generatedAt: Date.now(),
+      roundsAnalyzed: rows.length,
+      tastePlayersMeasured: taste.length,
+      minPlaysGate: MIN_PLAYS,
+      edgeCeilingHistogram: edgeHist,
+      // scatter capped for the portal; full list via the export
+      scatter: taste.slice(0, 500).map(t => ({ m: t.mode, r: t.register, e: t.edgeCeiling })),
+      taste: taste.sort((a, b) => b.plays - a.plays).slice(0, 1000),
+      wyr: { responses: wyr.reduce((n: number, w: any) => n + w.n, 0), skips: wyrSkips, playersMeasured: wyrPlayers.size, byChild: wyr },
+    };
+  }
+
+  /**
    * In-house promo impression/click mirror (the GA pipeline turned out to be
    * unreadable for a year; never again). Public, gateway-rate-limited,
    * fire-and-forget from the client.
@@ -800,7 +945,7 @@ export default class GameService extends Service {
     const rounds = db.collection('round_analytics');
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos] = await Promise.all([
+    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement] = await Promise.all([
       section('users', async () => {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
@@ -858,9 +1003,10 @@ export default class GameService extends Service {
       section('styles', () => this.styleStats(db, 2000)),
       section('cards', () => this.cardStats(db, 4000)),
       section('promos', () => this.promoStats(db)),
+      section('measurement', () => this.measurementStats(db, 6000)),
     ]);
 
-    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos };
+    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement };
   }
 
   /**

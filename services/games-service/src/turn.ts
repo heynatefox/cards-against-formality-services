@@ -2,6 +2,10 @@ import { GamePlayer, GameInterface } from './game';
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 // Humor-style tags per card (tagset v0) for the stratified dealer
 import * as cardTags from './data/card-tags-v0.json';
+// Measurement-grade taste tags (tagset v1: edge/mode/register/sincerity per
+// the content-metadata standard) — drives the v2 dealer and prompt weighting
+import * as tasteTags from './data/card-tags-v1.json';
+import * as promptTags from './data/prompt-tags-v1.json';
 
 export interface Card {
   _id: string;
@@ -125,7 +129,21 @@ export default class TurnHandler {
    * @memberof TurnHandler
    */
   private async pickBlackCard(blackCards: string[]): Promise<Card> {
-    const index = this.getRandomIndex(blackCards.length - 1);
+    // Prompt weighting: 85% of rounds draw a measurement-fork prompt (grade
+    // A/B in prompt-tags-v1 — both a clean and a spicy card, or a grounded
+    // and an absurd card, genuinely land). 15% keep the pure-fun tail alive.
+    const pTags = promptTags as { [id: string]: { grade?: string } };
+    let index = this.getRandomIndex(blackCards.length - 1);
+    if (Math.random() < 0.85) {
+      const forkIndexes: number[] = [];
+      for (let i = 0; i < blackCards.length; i++) {
+        const g = pTags[blackCards[i]] && pTags[blackCards[i]].grade;
+        if (g === 'A' || g === 'B') { forkIndexes.push(i); }
+      }
+      if (forkIndexes.length > 0) {
+        index = forkIndexes[this.getRandomIndex(forkIndexes.length - 1)];
+      }
+    }
     const id = blackCards[index];
     // Remove the card so it cannot be chosen again.
     blackCards.splice(index, 1);
@@ -170,23 +188,51 @@ export default class TurnHandler {
    * @memberof TurnHandler
    */
   private pickWhiteCardStratified(whiteCards: string[], hand: string[]): string {
-    const tags = cardTags as { [id: string]: { t: string[]; i: number } };
-    const primary = (id: string) => (tags[id] && tags[id].t && tags[id].t[0]) || 'untagged';
+    // v2 (tagset card-tags-v1): stratify hands on the TASTE VECTOR — every
+    // hand should span edge tiers 1/2/3+ and hold at least one grounded and
+    // one absurd card, so each play is a choice between taste positions
+    // (the authoring spec's stratified deal). Random within a stratum, so
+    // gameplay feels identical. Falls back to v0 style-spread for untagged
+    // cards, and to pure random when nothing is tagged.
+    const v1 = tasteTags as { [id: string]: { e: number; m: number; grade?: string } };
+    const v0 = cardTags as { [id: string]: { t: string[]; i: number } };
+    const tier = (e: number) => (e <= 1 ? 1 : e === 2 ? 2 : 3);
 
-    const handCounts: { [tag: string]: number } = {};
+    const tiersInHand: { [t: number]: number } = {};
+    let groundedInHand = 0;
+    let absurdInHand = 0;
+    const styleCounts: { [tag: string]: number } = {};
     for (const id of hand) {
-      const tag = primary(id);
-      handCounts[tag] = (handCounts[tag] || 0) + 1;
+      const t1 = v1[id];
+      if (t1) {
+        tiersInHand[tier(t1.e)] = (tiersInHand[tier(t1.e)] || 0) + 1;
+        if (t1.m <= -1) { groundedInHand++; }
+        if (t1.m >= 1) { absurdInHand++; }
+      }
+      const s = v0[id] && v0[id].t && v0[id].t[0];
+      if (s) { styleCounts[s] = (styleCounts[s] || 0) + 1; }
     }
 
-    const K = Math.min(6, whiteCards.length);
+    const K = Math.min(8, whiteCards.length);
     let bestIndex = this.getRandomIndex(whiteCards.length - 1);
-    let bestCount = Infinity;
+    let bestScore = -Infinity;
     for (let n = 0; n < K; n++) {
       const index = this.getRandomIndex(whiteCards.length - 1);
-      const count = handCounts[primary(whiteCards[index])] || 0;
-      if (count < bestCount) {
-        bestCount = count;
+      const id = whiteCards[index];
+      const t1 = v1[id];
+      let score = Math.random(); // tiebreak stays random
+      if (t1) {
+        if (!tiersInHand[tier(t1.e)]) { score += 2; }         // fills a missing edge tier
+        if (t1.m <= -1 && groundedInHand === 0) { score += 2; } // fills the grounded slot
+        if (t1.m >= 1 && absurdInHand === 0) { score += 2; }    // fills the absurd slot
+        if (t1.grade === 'A' || t1.grade === 'B') { score += 1; } // prefer discriminators
+      } else {
+        // v0 fallback: least-represented style, scaled under the v1 scores
+        const s = v0[id] && v0[id].t && v0[id].t[0];
+        if (s && !styleCounts[s]) { score += 1; }
+      }
+      if (score > bestScore) {
+        bestScore = score;
         bestIndex = index;
       }
     }
