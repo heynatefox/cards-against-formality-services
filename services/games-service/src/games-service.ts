@@ -504,7 +504,7 @@ export default class GameService extends Service {
       return this.styleStats(db, Math.min(ctx.params.limit || 3000, 10000));
     }
     if (collection === 'cards') {
-      return this.cardStats(db, Math.min(ctx.params.limit || 5000, 15000));
+      return this.cardStats(db, Math.min(ctx.params.limit || 5000, 15000), (ctx.params as any).full === '1');
     }
     if (collection === 'promos') {
       return this.promoStats(db);
@@ -618,15 +618,17 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async cardStats(db: any, sample: number) {
+  private async cardStats(db: any, sample: number, full: boolean = false) {
+    const projection: any = { submissions: 1, winner: 1, blackCard: 1, ts: 1 };
+    if (full) { projection.hands = 1; } // held counts only needed for the full export
     const rows = await db.collection('round_analytics')
       .find({ outcome: 'winner' })
       .sort({ ts: -1 })
       .limit(sample)
-      .project({ submissions: 1, winner: 1, blackCard: 1, ts: 1 })
+      .project(projection)
       .toArray();
 
-    const white: { [id: string]: { text: string; played: number; wins: number } } = {};
+    const white: { [id: string]: { text: string; played: number; wins: number; held: number } } = {};
     const prompts: { [id: string]: { text: string; rounds: number } } = {};
 
     for (const r of rows) {
@@ -640,17 +642,37 @@ export default class GameService extends Service {
         const won = winners.has(sub.player);
         for (const c of sub.cards || []) {
           if (!c || !c.id) { continue; }
-          const w = white[c.id] || (white[c.id] = { text: c.text, played: 0, wins: 0 });
+          const w = white[c.id] || (white[c.id] = { text: c.text, played: 0, wins: 0, held: 0 });
           w.played++;
           if (won) { w.wins++; }
+        }
+      }
+      if (full) {
+        for (const handIds of Object.values(r.hands || {})) {
+          for (const id of handIds as string[]) {
+            const w = white[id] || (white[id] = { text: '', played: 0, wins: 0, held: 0 });
+            w.held++;
+          }
         }
       }
     }
 
     const whiteArr = Object.entries(white).map(([id, w]) => ({
-      id, text: w.text, played: w.played, wins: w.wins,
+      id, text: w.text, played: w.played, wins: w.wins, held: w.held,
       winRate: w.played ? w.wins / w.played : 0,
     }));
+
+    if (full) {
+      return {
+        roundsAnalyzed: rows.length,
+        windowFrom: rows.length ? rows[rows.length - 1].ts : null,
+        windowTo: rows.length ? rows[0].ts : null,
+        white: whiteArr.sort((a, b) => b.played - a.played),
+        prompts: Object.entries(prompts)
+          .map(([id, p]) => ({ id, text: p.text, rounds: p.rounds }))
+          .sort((a, b) => b.rounds - a.rounds),
+      };
+    }
     const MIN_PLAYS = 10;
     return {
       roundsAnalyzed: rows.length,
