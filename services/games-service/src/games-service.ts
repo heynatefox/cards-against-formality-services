@@ -239,6 +239,9 @@ export default class GameService extends Service {
           roundTime: game?.roundTime ?? null,
           playerCount: (turn.players ?? []).length,
           errorMessage: turn.errorMessage ?? null,
+          // Which card-tag set the stratified dealer was using (analysis
+          // joins card ids against this tagset version offline)
+          tagset: 'v0',
         },
         signals: {},
       };

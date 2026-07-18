@@ -1,5 +1,7 @@
 import { GamePlayer, GameInterface } from './game';
 import { ServiceBroker, LoggerInstance } from 'moleculer';
+// Humor-style tags per card (tagset v0) for the stratified dealer
+import * as cardTags from './data/card-tags-v0.json';
 
 export interface Card {
   _id: string;
@@ -154,6 +156,46 @@ export default class TurnHandler {
   }
 
   /**
+   * Stratified pick for the psychometric pilot: sample a handful of random
+   * candidates and deal the one whose humor-style tag is least represented
+   * in the player's current hand. Hands end up spread across styles, which
+   * turns every play into a calibrated choice between styles instead of an
+   * accident of the shuffle. Falls back to pure random when tags are
+   * unavailable. Still random WITHIN a style, so gameplay feels identical.
+   *
+   * @private
+   * @param {string[]} whiteCards
+   * @param {string[]} hand  the player's current card ids
+   * @returns {string}
+   * @memberof TurnHandler
+   */
+  private pickWhiteCardStratified(whiteCards: string[], hand: string[]): string {
+    const tags = cardTags as { [id: string]: { t: string[]; i: number } };
+    const primary = (id: string) => (tags[id] && tags[id].t && tags[id].t[0]) || 'untagged';
+
+    const handCounts: { [tag: string]: number } = {};
+    for (const id of hand) {
+      const tag = primary(id);
+      handCounts[tag] = (handCounts[tag] || 0) + 1;
+    }
+
+    const K = Math.min(6, whiteCards.length);
+    let bestIndex = this.getRandomIndex(whiteCards.length - 1);
+    let bestCount = Infinity;
+    for (let n = 0; n < K; n++) {
+      const index = this.getRandomIndex(whiteCards.length - 1);
+      const count = handCounts[primary(whiteCards[index])] || 0;
+      if (count < bestCount) {
+        bestCount = count;
+        bestIndex = index;
+      }
+    }
+    const id = whiteCards[bestIndex];
+    whiteCards.splice(bestIndex, 1);
+    return id;
+  }
+
+  /**
    * Given a Player, fetch their cards and emit all their cards to them.
    *
    * @private
@@ -191,7 +233,7 @@ export default class TurnHandler {
     }
 
     while (player.cards.length < handSize) {
-      player.cards.push(this.pickWhiteCard(whiteCards));
+      player.cards.push(this.pickWhiteCardStratified(whiteCards, player.cards));
     }
 
     await this.emitCardsToPlayer(player);
