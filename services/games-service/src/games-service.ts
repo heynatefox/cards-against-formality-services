@@ -813,27 +813,35 @@ export default class GameService extends Service {
       .find({ outcome: 'winner' })
       .sort({ ts: -1 })
       .limit(sample)
-      .project({ submissions: 1, winner: 1, ts: 1 })
+      .project({ submissions: 1, winner: 1, hands: 1, ts: 1 })
       .toArray();
 
-    const players: { [p: string]: { n: number; wins: number; tiers: { [t: number]: number }; m: number; r: number; s: number; tagged: number } } = {};
+    const players: { [p: string]: { wins: number; played: { [t: number]: number }; held: { [t: number]: number }; m: number; r: number; s: number; tagged: number } } = {};
     const tier = (e: number) => (e <= 1 ? 1 : e === 2 ? 2 : 3);
     for (const row of rows) {
       const winners = new Set(Array.isArray(row.winner) ? row.winner : [row.winner]);
       for (const sub of row.submissions || []) {
         if (sub.isRando || !sub.player) { continue; }
-        const p = players[sub.player] || (players[sub.player] = { n: 0, wins: 0, tiers: {}, m: 0, r: 0, s: 0, tagged: 0 });
+        const p = players[sub.player] || (players[sub.player] = { wins: 0, played: {}, held: {}, m: 0, r: 0, s: 0, tagged: 0 });
         const won = winners.has(sub.player);
         for (const c of sub.cards || []) {
           if (!c || !c.id) { continue; }
-          p.n++;
-          if (won) { p.wins++; }
           const t = v1[c.id];
           if (t) {
             p.tagged++;
-            p.tiers[tier(t.e)] = (p.tiers[tier(t.e)] || 0) + 1;
+            if (won) { p.wins++; }
+            p.played[tier(t.e)] = (p.played[tier(t.e)] || 0) + 1;
             p.m += t.m; p.r += t.r; p.s += t.s;
           }
+        }
+      }
+      // Hands = the road not taken; per-tier denominators for appetite
+      for (const [ph, handIds] of Object.entries(row.hands || {})) {
+        const p = players[ph];
+        if (!p) { continue; }
+        for (const id of handIds as string[]) {
+          const t = v1[id];
+          if (t) { p.held[tier(t.e)] = (p.held[tier(t.e)] || 0) + 1; }
         }
       }
     }
@@ -842,16 +850,22 @@ export default class GameService extends Service {
     const taste = Object.entries(players)
       .filter(([, p]) => p.tagged >= MIN_PLAYS)
       .map(([id, p]) => {
-        // Edge ceiling by SHARE, not count: a tier is "yours" only if it's
-        // at least 20% of your tagged plays (tiers are roughly equally
-        // available, so share ~ preference). Count-based ceilings saturate
-        // to 3 for anyone with a long history.
-        const share = (t: number) => (p.tiers[t] || 0) / p.tagged;
-        const ceiling = share(3) >= 0.2 ? 3 : share(2) >= 0.2 ? 2 : 1;
+        // Edge ceiling from APPETITE: play-rate-when-dealt per tier vs the
+        // player's overall play rate. A tier is inside your ceiling if you
+        // play it at >=75% of your normal rate; playing tier-3 cards far
+        // below your normal rate is avoidance (held-despite-dealt).
+        const dealt = (t: number) => (p.played[t] || 0) + (p.held[t] || 0);
+        const rate = (t: number) => (dealt(t) ? (p.played[t] || 0) / dealt(t) : 0);
+        const totalDealt = dealt(1) + dealt(2) + dealt(3);
+        const overall = totalDealt ? p.tagged / totalDealt : 0;
+        const appetite = (t: number) => (overall ? rate(t) / overall : 0);
+        let ceiling = 1;
+        if ((p.played[2] || 0) >= 2 && appetite(2) >= 0.75) { ceiling = 2; }
+        if ((p.played[3] || 0) >= 2 && appetite(3) >= 0.75 && ceiling === 2) { ceiling = 3; }
         return {
           player: id, plays: p.tagged, wins: p.wins,
           edgeCeiling: ceiling,
-          edgeShare3: +share(3).toFixed(2),
+          edgeAppetite3: +appetite(3).toFixed(2),
           mode: +(p.m / p.tagged).toFixed(2),
           register: +(p.r / p.tagged).toFixed(2),
           sincerity: +(p.s / p.tagged).toFixed(2),
