@@ -842,15 +842,16 @@ export default class GameService extends Service {
     const taste = Object.entries(players)
       .filter(([, p]) => p.tagged >= MIN_PLAYS)
       .map(([id, p]) => {
-        // edge ceiling: highest tier played at least twice, else highest played
-        let ceiling = 1;
-        for (const t of [3, 2, 1]) {
-          if ((p.tiers[t] || 0) >= 2) { ceiling = t; break; }
-          if ((p.tiers[t] || 0) >= 1 && ceiling === 1) { ceiling = t; }
-        }
+        // Edge ceiling by SHARE, not count: a tier is "yours" only if it's
+        // at least 20% of your tagged plays (tiers are roughly equally
+        // available, so share ~ preference). Count-based ceilings saturate
+        // to 3 for anyone with a long history.
+        const share = (t: number) => (p.tiers[t] || 0) / p.tagged;
+        const ceiling = share(3) >= 0.2 ? 3 : share(2) >= 0.2 ? 2 : 1;
         return {
           player: id, plays: p.tagged, wins: p.wins,
           edgeCeiling: ceiling,
+          edgeShare3: +share(3).toFixed(2),
           mode: +(p.m / p.tagged).toFixed(2),
           register: +(p.r / p.tagged).toFixed(2),
           sincerity: +(p.s / p.tagged).toFixed(2),
