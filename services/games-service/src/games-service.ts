@@ -266,15 +266,46 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private scoreReasoning(text: string): number {
+  private normReasoning(s: string): string {
+    return s.toLowerCase().replace(/<[^>]*>/g, ' ').replace(/[^a-z0-9' ]+/g, ' ').replace(/ +/g, ' ').trim();
+  }
+
+  /**
+   * Paste detection: players discovered the gauge rewarded length and started
+   * pasting the prompt card / winning card / czar-screen copy into the box.
+   * A defense that is mostly someone else's words scores a flat 2.
+   */
+  private isPastedDefense(text: string, context: string[]): boolean {
+    const nt = this.normReasoning(text);
+    const words = nt.split(' ').filter(w => w.length > 0);
+    const uiCopy = ['select your favorite answer', 'you are the card czar', 'the czar is deciding', 'waiting for players to play'];
+    const sources = context.concat(uiCopy).map(s => this.normReasoning(s)).filter(s => s.length >= 12);
+    for (const src of sources) {
+      // whole defense is a chunk of the source, or the source dominates the defense
+      if (nt.length >= 12 && src.indexOf(nt) !== -1) { return true; }
+      if (nt.indexOf(src) !== -1 && src.length >= nt.length * 0.5) { return true; }
+      // token overlap: most meaningful words lifted from one source
+      const srcTokens = new Set(src.split(' '));
+      const meaty = words.filter(w => w.length >= 3);
+      if (meaty.length >= 5 && meaty.filter(w => srcTokens.has(w)).length / meaty.length >= 0.6) { return true; }
+    }
+    return false;
+  }
+
+  private scoreReasoning(text: string, context: string[] = []): number {
     const t = text.trim();
     if (t.length < 8) return 7; // one-worders: your humor is shit
-    const words = t.toLowerCase().split(/\s+/);
-    const unique = new Set(words).size;
-    let score = Math.min(38, t.length / 4);      // effort
-    score += Math.min(26, unique * 2.2);          // vocabulary
-    if (words.length >= 12) score += 10;          // committed to the bit
+    if (this.isPastedDefense(t, context)) { return 2; } // clipboard is not comedy
+    const words = this.normReasoning(t).split(' ').filter(w => w.length > 0);
+    const unique = new Set(words);
+    const uniqueRatio = words.length ? unique.size / words.length : 0;
+    let score = Math.min(40, unique.size * 2.5);  // depth: distinct words, not characters
+    score += Math.min(16, words.length * 0.8);    // length still counts, a little
+    if (words.length >= 12 && uniqueRatio >= 0.7) score += 10; // committed AND varied
     if (/[?!]/.test(t)) score += 4;               // punctuation is passion
+    if (words.length >= 8 && uniqueRatio < 0.5) {
+      score = Math.min(score, 30);                // "ha ha ha ha" farms nothing
+    }
     if (words.length < 6 && /\b(lol|lmao|idk|funny|dunno|whatever|cuz|because)\b/i.test(t)) {
       score = Math.min(score, 22);                // low-effort tells
     }
@@ -311,7 +342,15 @@ export default class GameService extends Service {
     }
 
     const clean = text.trim().slice(0, 500);
-    const score = this.scoreReasoning(clean);
+    // Round texts the czar could paste-farm: the prompt and every submission
+    const contextTexts: string[] = [];
+    if (prev.blackCard?.text) {
+      contextTexts.push(prev.blackCard.text);
+    }
+    Object.values(prev.selectedCards ?? {}).forEach((cards: any) => {
+      (cards ?? []).forEach((c: any) => { if (c?.text) { contextTexts.push(c.text); } });
+    });
+    const score = this.scoreReasoning(clean, contextTexts);
     const verdict = this.verdictFor(score);
     const db = (this.adapter as any)?.db;
 
@@ -320,7 +359,7 @@ export default class GameService extends Service {
       db.collection('round_analytics')
         .updateOne(
           { gameId: String(game._id), turn: prev.turn },
-          { $set: { 'signals.czarReasoning': { text: clean, score, verdict, ts: Date.now() } } }
+          { $set: { 'signals.czarReasoning': { text: clean, score, verdict, pasted: score === 2, ts: Date.now() } } }
         )
         .catch((err: any) => this.logger.warn(`reason capture failed: ${err.message}`));
     }
