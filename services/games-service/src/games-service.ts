@@ -103,6 +103,15 @@ export default class GameService extends Service {
               context: { type: 'string', optional: true, max: 1000 }
             },
             handler: this.bugReport
+          },
+          'promo-event': {
+            params: {
+              type: { type: 'enum', values: ['impression', 'click'] },
+              property: { type: 'string', max: 20 },
+              variant: { type: 'string', max: 20 },
+              placement: { type: 'string', max: 20 }
+            },
+            handler: this.promoEvent
           }
         },
         events: {
@@ -494,6 +503,12 @@ export default class GameService extends Service {
     if (collection === 'styles') {
       return this.styleStats(db, Math.min(ctx.params.limit || 3000, 10000));
     }
+    if (collection === 'cards') {
+      return this.cardStats(db, Math.min(ctx.params.limit || 5000, 15000));
+    }
+    if (collection === 'promos') {
+      return this.promoStats(db);
+    }
 
     // summary: shape of the dataset at a glance
     const rounds = db.collection('round_analytics');
@@ -596,6 +611,137 @@ export default class GameService extends Service {
   }
 
   /**
+   * Card popularity over recent judged rounds: most-played white cards,
+   * best win rate (min plays gate so 2-for-2 flukes don't top the chart),
+   * and most-seen prompts. Rando plays excluded — bot picks are random.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async cardStats(db: any, sample: number) {
+    const rows = await db.collection('round_analytics')
+      .find({ outcome: 'winner' })
+      .sort({ ts: -1 })
+      .limit(sample)
+      .project({ submissions: 1, winner: 1, blackCard: 1, ts: 1 })
+      .toArray();
+
+    const white: { [id: string]: { text: string; played: number; wins: number } } = {};
+    const prompts: { [id: string]: { text: string; rounds: number } } = {};
+
+    for (const r of rows) {
+      const winners = new Set(Array.isArray(r.winner) ? r.winner : [r.winner]);
+      if (r.blackCard && r.blackCard.id) {
+        const p = prompts[r.blackCard.id] || (prompts[r.blackCard.id] = { text: r.blackCard.text, rounds: 0 });
+        p.rounds++;
+      }
+      for (const sub of r.submissions || []) {
+        if (sub.isRando) { continue; }
+        const won = winners.has(sub.player);
+        for (const c of sub.cards || []) {
+          if (!c || !c.id) { continue; }
+          const w = white[c.id] || (white[c.id] = { text: c.text, played: 0, wins: 0 });
+          w.played++;
+          if (won) { w.wins++; }
+        }
+      }
+    }
+
+    const whiteArr = Object.entries(white).map(([id, w]) => ({
+      id, text: w.text, played: w.played, wins: w.wins,
+      winRate: w.played ? w.wins / w.played : 0,
+    }));
+    const MIN_PLAYS = 10;
+    return {
+      roundsAnalyzed: rows.length,
+      windowFrom: rows.length ? rows[rows.length - 1].ts : null,
+      windowTo: rows.length ? rows[0].ts : null,
+      distinctWhiteCards: whiteArr.length,
+      topPlayed: whiteArr.slice().sort((a, b) => b.played - a.played).slice(0, 25),
+      topWinRate: whiteArr.filter(w => w.played >= MIN_PLAYS)
+        .sort((a, b) => b.winRate - a.winRate).slice(0, 25),
+      minPlaysForWinRate: MIN_PLAYS,
+      topPrompts: Object.entries(prompts)
+        .map(([id, p]) => ({ id, text: p.text, rounds: p.rounds }))
+        .sort((a, b) => b.rounds - a.rounds).slice(0, 15),
+    };
+  }
+
+  /**
+   * Promo A/B rollup from our own promo_events mirror (GA-independent).
+   * Impressions, clicks, and CTR per property / creative / placement.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async promoStats(db: any) {
+    const agg = await db.collection('promo_events').aggregate([
+      { $group: {
+        _id: { property: '$property', variant: '$variant', placement: '$placement', type: '$type' },
+        n: { $sum: 1 },
+        first: { $min: '$ts' },
+        last: { $max: '$ts' },
+      } }
+    ]).toArray();
+
+    const rows: { [key: string]: any } = {};
+    let from: number | null = null;
+    let to: number | null = null;
+    for (const a of agg) {
+      const k = `${a._id.property}|${a._id.variant}|${a._id.placement}`;
+      const row = rows[k] || (rows[k] = {
+        property: a._id.property, variant: a._id.variant, placement: a._id.placement,
+        impressions: 0, clicks: 0,
+      });
+      if (a._id.type === 'impression') { row.impressions = a.n; }
+      if (a._id.type === 'click') { row.clicks = a.n; }
+      if (from === null || a.first < from) { from = a.first; }
+      if (to === null || a.last > to) { to = a.last; }
+    }
+    const detail = Object.values(rows).map((r: any) => ({
+      ...r, ctr: r.impressions ? r.clicks / r.impressions : 0,
+    })).sort((x: any, y: any) => y.impressions - x.impressions);
+
+    // Property-level rollup: the headline of the test
+    const byProperty: { [p: string]: { impressions: number; clicks: number } } = {};
+    for (const r of detail) {
+      const p = byProperty[r.property] || (byProperty[r.property] = { impressions: 0, clicks: 0 });
+      p.impressions += r.impressions;
+      p.clicks += r.clicks;
+    }
+    return {
+      since: from, until: to,
+      properties: Object.entries(byProperty).map(([property, p]) => ({
+        property, ...p, ctr: p.impressions ? p.clicks / p.impressions : 0,
+      })).sort((x, y) => y.ctr - x.ctr),
+      detail,
+    };
+  }
+
+  /**
+   * In-house promo impression/click mirror (the GA pipeline turned out to be
+   * unreadable for a year; never again). Public, gateway-rate-limited,
+   * fire-and-forget from the client.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async promoEvent(ctx: Context<{ type: string; property: string; variant: string; placement: string }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    }
+    await db.collection('promo_events').insertOne({
+      ts: Date.now(),
+      type: ctx.params.type,
+      property: ctx.params.property,
+      variant: ctx.params.variant,
+      placement: ctx.params.placement,
+    });
+    return { ok: true };
+  }
+
+  /**
    * Dashboard payload for the admin portal. Same key gate as the export.
    * Every section is best-effort: services share one Mongo database, so the
    * games adapter can usually read clients/rooms too; if a collection is
@@ -632,7 +778,7 @@ export default class GameService extends Service {
     const rounds = db.collection('round_analytics');
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles] = await Promise.all([
+    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos] = await Promise.all([
       section('users', async () => {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
@@ -688,9 +834,11 @@ export default class GameService extends Service {
       section('leaderboard', () => db.collection('humor_leaderboard').find({}).sort({ bestScore: -1 }).limit(10).toArray()),
       section('recentRounds', () => rounds.find({ outcome: 'winner' }).sort({ ts: -1 }).limit(25).toArray()),
       section('styles', () => this.styleStats(db, 2000)),
+      section('cards', () => this.cardStats(db, 4000)),
+      section('promos', () => this.promoStats(db)),
     ]);
 
-    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles };
+    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos };
   }
 
   /**
