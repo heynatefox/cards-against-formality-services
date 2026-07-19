@@ -5,6 +5,9 @@ import dbMixin from '@cards-against-formality/db-mixin';
 import Game, { Room, GameInterface } from './game';
 import * as cardTags from './data/card-tags-v0.json';
 import * as tasteTagsSvc from './data/card-tags-v1.json';
+import * as signalTagsSvc from './data/card-tags-v2.json';
+import * as signalCardsPayload from './data/signal-cards-v1.json';
+import { signalRegistry } from './signal-registry';
 
 export default class GameService extends Service {
 
@@ -146,6 +149,13 @@ export default class GameService extends Service {
           const sweep = () => this.sweepStalledGames();
           this.watchdogInitial = setTimeout(sweep, 10 * 1000);
           this.watchdogInterval = setInterval(sweep, 60 * 1000);
+          // Signal candidate decks: idempotent import + registry build.
+          // Retries every 2 minutes until it succeeds (cards-service may
+          // still be booting); dealing works fine without it in the interim.
+          const ensure = () => this.ensureSignalCards().then(ok => {
+            if (!ok) { setTimeout(ensure, 2 * 60 * 1000); }
+          });
+          setTimeout(ensure, 15 * 1000);
           return null;
         },
         stopped: () => {
@@ -240,6 +250,14 @@ export default class GameService extends Service {
           hands[hash(p._id)] = p.cards ?? [];
         });
       }
+      // Submission latency per player (ms from turn start to card submit)
+      const latencies: { [p: string]: number } = {};
+      if (game?.turnStartedAt && game?.submittedAt) {
+        Object.entries(game.submittedAt).forEach(([pid, ts]: [string, any]) => {
+          const ms = ts - game.turnStartedAt;
+          if (ms > 0 && ms < 30 * 60 * 1000) { latencies[hash(pid)] = ms; }
+        });
+      }
 
       const row = {
         v: 1,
@@ -265,7 +283,7 @@ export default class GameService extends Service {
           // joins card ids against this tagset version offline)
           tagset: 'v1',
         },
-        signals: {},
+        signals: Object.keys(latencies).length ? { latencies } : {},
       };
 
       const db = (this.adapter as any)?.db;
@@ -523,6 +541,9 @@ export default class GameService extends Service {
     }
     if (collection === 'measurement') {
       return this.measurementStats(db, Math.min(ctx.params.limit || 6000, 15000));
+    }
+    if (collection === 'candidates') {
+      return this.candidateStats(db, Math.min(ctx.params.limit || 8000, 20000));
     }
     if (collection === 'wyr') {
       return db.collection('wyr_responses').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
@@ -800,6 +821,116 @@ export default class GameService extends Service {
   }
 
   /**
+   * Idempotent import of the Signal candidate decks into the cards DB and
+   * registry build. Cards are matched by exact text (the payload was deduped
+   * against the live catalog, so any text hit IS our prior import). Only
+   * canonical card fields are inserted; signal metadata stays in the
+   * registry, keyed by the live ObjectId.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async ensureSignalCards(): Promise<boolean> {
+    try {
+      const payload = (signalCardsPayload as any).cards as Array<{ source_id: string; cardType: string; text: string; pick: number | null; signal: any }>;
+      const texts = payload.map(p => p.text);
+      const existing: any[] = await this.broker.call('cards.find', { query: { text: { $in: texts } } });
+      const byText: { [t: string]: any } = {};
+      (existing || []).forEach(c => { byText[c.text] = c; });
+
+      const missing = payload.filter(p => !byText[p.text]);
+      if (missing.length) {
+        const inserted: any[] = await this.broker.call('cards.insert', {
+          entities: missing.map(p => (p.cardType === 'black'
+            ? { text: p.text, cardType: 'black', pick: p.pick || 1 }
+            : { text: p.text, cardType: 'white' })),
+        });
+        (inserted || []).forEach(c => { byText[c.text] = c; });
+        this.logger.info(`ensureSignalCards: inserted ${missing.length} candidate cards`);
+      }
+
+      const whiteIds: string[] = [];
+      const promptIds = new Set<string>();
+      const metaById: { [id: string]: any } = {};
+      for (const p of payload) {
+        const live = byText[p.text];
+        if (!live) { continue; }
+        const id = String(live._id);
+        metaById[id] = { sourceId: p.source_id, cardType: p.cardType, pick: p.pick || undefined, signal: p.signal };
+        if (p.cardType === 'white') {
+          // The lone heat-5 candidate stays out of the deal (comfort gate)
+          if (!p.signal || p.signal.heat < 5) { whiteIds.push(id); }
+        } else {
+          promptIds.add(id);
+        }
+      }
+      signalRegistry.whiteIds = whiteIds;
+      signalRegistry.promptIds = promptIds;
+      signalRegistry.metaById = metaById;
+      signalRegistry.ready = whiteIds.length > 0;
+      this.logger.info(`ensureSignalCards: registry ready (${whiteIds.length} responses, ${promptIds.size} prompts)`);
+      return signalRegistry.ready;
+    } catch (err) {
+      this.logger.warn(`ensureSignalCards failed (will retry): ${err.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Candidate calibration progress: exposures (times in hand), plays, and
+   * wins per Signal card since the decks went live. Feeds the portal panel
+   * and the promote-at-300-500-exposures decision.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async candidateStats(db: any, sample: number) {
+    const ids = new Set(Object.keys(signalRegistry.metaById));
+    if (!ids.size) { return { ready: false, candidates: [] }; }
+    const rows = await db.collection('round_analytics')
+      .find({ outcome: 'winner', 'context.tagset': 'v1' })
+      .sort({ ts: -1 })
+      .limit(sample)
+      .project({ submissions: 1, winner: 1, hands: 1, ts: 1 })
+      .toArray();
+    const agg: { [id: string]: { dealt: number; plays: number; wins: number } } = {};
+    const bucket = (id: string) => agg[id] || (agg[id] = { dealt: 0, plays: 0, wins: 0 });
+    for (const r of rows) {
+      const winners = new Set(Array.isArray(r.winner) ? r.winner : [r.winner]);
+      for (const sub of r.submissions || []) {
+        if (sub.isRando) { continue; }
+        const won = winners.has(sub.player);
+        for (const c of sub.cards || []) {
+          if (c && c.id && ids.has(c.id)) {
+            const b = bucket(c.id); b.plays++; if (won) { b.wins++; }
+          }
+        }
+      }
+      for (const handIds of Object.values(r.hands || {})) {
+        for (const id of handIds as string[]) {
+          if (ids.has(id)) { bucket(id).dealt++; }
+        }
+      }
+    }
+    const candidates = Object.entries(agg).map(([id, a]) => {
+      const meta = signalRegistry.metaById[id];
+      return {
+        id, sourceId: meta.sourceId, type: meta.cardType,
+        primary: meta.signal && meta.signal.measures && meta.signal.measures.primary || null,
+        exposures: a.dealt + a.plays, plays: a.plays, wins: a.wins,
+      };
+    }).sort((x, y) => y.exposures - x.exposures);
+    return {
+      ready: true,
+      totalCandidates: ids.size,
+      seenInPlay: candidates.length,
+      totalExposures: candidates.reduce((n, c) => n + c.exposures, 0),
+      totalPlays: candidates.reduce((n, c) => n + c.plays, 0),
+      candidates: candidates.slice(0, 50),
+    };
+  }
+
+  /**
    * VC-demo measurement rollup: per-player taste estimates from card plays
    * (joined against tagset v1) + WYR disposition aggregates. Powers the
    * portal's live dashboard and the export.
@@ -809,6 +940,7 @@ export default class GameService extends Service {
    */
   private async measurementStats(db: any, sample: number) {
     const v1 = tasteTagsSvc as { [id: string]: { e: number; m: number; r: number; s: number; grade?: string } };
+    const v2 = signalTagsSvc as { [id: string]: { h: number; f?: string[] } };
     const rows = await db.collection('round_analytics')
       .find({ outcome: 'winner' })
       .sort({ ts: -1 })
@@ -816,6 +948,13 @@ export default class GameService extends Service {
       .project({ submissions: 1, winner: 1, hands: 1, ts: 1 })
       .toArray();
 
+    const FLAVORS = ['sexual', 'morbid', 'taboo', 'gross_out'];
+    const flav: { [p: string]: { [f: string]: { [h: number]: { played: number; held: number } } } } = {};
+    const flavBucket = (p: string, f: string, h: number) => {
+      const pf = flav[p] || (flav[p] = {});
+      const ff = pf[f] || (pf[f] = {});
+      return ff[h] || (ff[h] = { played: 0, held: 0 });
+    };
     const players: { [p: string]: { wins: number; played: { [t: number]: number }; held: { [t: number]: number }; m: number; r: number; s: number; tagged: number } } = {};
     const tier = (e: number) => (e <= 1 ? 1 : e === 2 ? 2 : 3);
     for (const row of rows) {
@@ -833,6 +972,10 @@ export default class GameService extends Service {
             p.played[tier(t.e)] = (p.played[tier(t.e)] || 0) + 1;
             p.m += t.m; p.r += t.r; p.s += t.s;
           }
+          const t2 = v2[c.id];
+          if (t2 && t2.f) {
+            for (const f of t2.f) { flavBucket(sub.player, f, t2.h).played++; }
+          }
         }
       }
       // Hands = the road not taken; per-tier denominators for appetite
@@ -842,6 +985,10 @@ export default class GameService extends Service {
         for (const id of handIds as string[]) {
           const t = v1[id];
           if (t) { p.held[tier(t.e)] = (p.held[tier(t.e)] || 0) + 1; }
+          const t2 = v2[id];
+          if (t2 && t2.f) {
+            for (const f of t2.f) { flavBucket(ph, f, t2.h).held++; }
+          }
         }
       }
     }
@@ -875,6 +1022,31 @@ export default class GameService extends Service {
     const edgeHist: { [t: number]: number } = { 1: 0, 2: 0, 3: 0 };
     for (const t of taste) { edgeHist[t.edgeCeiling]++; }
 
+    // Flavor ceilings (tagset v2): per flavor, the highest heat a player
+    // plays at >=75% of their overall rate. Population histograms feed the
+    // portal; per-player detail rides on the taste rows.
+    const tasteIds = new Set(taste.map(t => t.player));
+    const flavorCeilings: { [f: string]: { [h: string]: number } } = {};
+    for (const f of FLAVORS) { flavorCeilings[f] = { none: 0, 2: 0, 3: 0, 4: 0, 5: 0 }; }
+    for (const pid of Object.keys(flav)) {
+      if (!tasteIds.has(pid)) { continue; }
+      const pRow = players[pid];
+      const totalDealtAll = [1, 2, 3].reduce((n, t) => n + (pRow.played[t] || 0) + (pRow.held[t] || 0), 0);
+      const overallRate = totalDealtAll ? pRow.tagged / totalDealtAll : 0;
+      for (const f of FLAVORS) {
+        const byHeat = flav[pid][f] || {};
+        let ceiling: number | null = null;
+        for (const h of [2, 3, 4, 5]) {
+          const b = byHeat[h];
+          if (!b) { continue; }
+          const dealt = b.played + b.held;
+          const rate = dealt ? b.played / dealt : 0;
+          if (b.played >= 2 && overallRate > 0 && rate / overallRate >= 0.75) { ceiling = h; }
+        }
+        flavorCeilings[f][ceiling === null ? 'none' : String(ceiling)]++;
+      }
+    }
+
     // WYR aggregates
     const wyrAgg = await db.collection('wyr_responses').aggregate([
       { $match: { skipped: false } },
@@ -893,6 +1065,7 @@ export default class GameService extends Service {
       tastePlayersMeasured: taste.length,
       minPlaysGate: MIN_PLAYS,
       edgeCeilingHistogram: edgeHist,
+      flavorCeilings,
       // scatter capped for the portal; full list via the export
       scatter: taste.slice(0, 500).map(t => ({ m: t.mode, r: t.register, e: t.edgeCeiling })),
       taste: taste.sort((a, b) => b.plays - a.plays).slice(0, 1000),
@@ -960,7 +1133,7 @@ export default class GameService extends Service {
     const rounds = db.collection('round_analytics');
     const dayMs = 24 * 60 * 60 * 1000;
 
-    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement] = await Promise.all([
+    const [users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement, candidates] = await Promise.all([
       section('users', async () => {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
@@ -1019,9 +1192,10 @@ export default class GameService extends Service {
       section('cards', () => this.cardStats(db, 4000)),
       section('promos', () => this.promoStats(db)),
       section('measurement', () => this.measurementStats(db, 6000)),
+      section('candidates', () => this.candidateStats(db, 8000)),
     ]);
 
-    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement };
+    return { generatedAt: Date.now(), users, live, activity, games, reasoning, leaderboard, recentRounds, styles, cards, promos, measurement, candidates };
   }
 
   /**

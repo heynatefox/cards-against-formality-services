@@ -6,6 +6,12 @@ import * as cardTags from './data/card-tags-v0.json';
 // the content-metadata standard) — drives the v2 dealer and prompt weighting
 import * as tasteTags from './data/card-tags-v1.json';
 import * as promptTags from './data/prompt-tags-v1.json';
+// Tagset v2 (partner-scored: heat + flavors) + the bench list + candidate decks
+import * as signalTags from './data/card-tags-v2.json';
+import * as benchList from './data/bench-v1.json';
+import { signalRegistry } from './signal-registry';
+
+const BENCHED = new Set<string>(((benchList as any).benched || []) as string[]);
 
 export interface Card {
   _id: string;
@@ -65,7 +71,27 @@ export default class TurnHandler {
           _whiteCards.push(...whiteCards);
           _blackCards.push(...blackCards);
         });
-        return { whiteCards: _whiteCards, blackCards: _blackCards };
+
+        // Card hygiene (measurement pilot): drop the 86 benched dead-weight
+        // cards and comfort-gate heat 5 (maximum transgression) out of the
+        // deal entirely. Cards stay in the DB and in stats; they just stop
+        // being dealt. Reversible by emptying bench-v1.json.
+        const v2 = signalTags as { [id: string]: { h: number } };
+        const servableWhites = _whiteCards.filter(id => !BENCHED.has(id) && !(v2[id] && v2[id].h >= 5));
+
+        // Candidate injection: the Signal decks ride along in every game's
+        // draw pile (the stratified picker caps them at 2 per hand). Prompts
+        // join the black pile at ~1-in-4 density.
+        if (signalRegistry.ready) {
+          servableWhites.push(...signalRegistry.whiteIds);
+          const prompts = Array.from(signalRegistry.promptIds);
+          const target = Math.min(prompts.length, Math.max(4, Math.floor(_blackCards.length / 3)));
+          for (let i = 0; i < target; i++) {
+            const idx = this.getRandomIndex(prompts.length - 1);
+            _blackCards.push(prompts.splice(idx, 1)[0]);
+          }
+        }
+        return { whiteCards: servableWhites, blackCards: _blackCards };
       });
   }
 
@@ -138,7 +164,7 @@ export default class TurnHandler {
       const forkIndexes: number[] = [];
       for (let i = 0; i < blackCards.length; i++) {
         const g = pTags[blackCards[i]] && pTags[blackCards[i]].grade;
-        if (g === 'A' || g === 'B') { forkIndexes.push(i); }
+        if (g === 'A' || g === 'B' || signalRegistry.promptIds.has(blackCards[i])) { forkIndexes.push(i); }
       }
       if (forkIndexes.length > 0) {
         index = forkIndexes[this.getRandomIndex(forkIndexes.length - 1)];
@@ -201,6 +227,7 @@ export default class TurnHandler {
     const tiersInHand: { [t: number]: number } = {};
     let groundedInHand = 0;
     let absurdInHand = 0;
+    let candidatesInHand = 0;
     const styleCounts: { [tag: string]: number } = {};
     for (const id of hand) {
       const t1 = v1[id];
@@ -209,6 +236,7 @@ export default class TurnHandler {
         if (t1.m <= -1) { groundedInHand++; }
         if (t1.m >= 1) { absurdInHand++; }
       }
+      if (signalRegistry.metaById[id]) { candidatesInHand++; }
       const s = v0[id] && v0[id].t && v0[id].t[0];
       if (s) { styleCounts[s] = (styleCounts[s] || 0) + 1; }
     }
@@ -219,8 +247,13 @@ export default class TurnHandler {
     for (let n = 0; n < K; n++) {
       const index = this.getRandomIndex(whiteCards.length - 1);
       const id = whiteCards[index];
+      // Candidate quota: never more than 2 unproven cards in a hand; nudge
+      // toward exactly 1 so exposures accumulate without degrading hands.
+      const isCandidate = !!signalRegistry.metaById[id];
+      if (isCandidate && candidatesInHand >= 2) { continue; }
       const t1 = v1[id];
       let score = Math.random(); // tiebreak stays random
+      if (isCandidate && candidatesInHand === 0) { score += 1.5; }
       if (t1) {
         if (!tiersInHand[tier(t1.e)]) { score += 2; }         // fills a missing edge tier
         if (t1.m <= -1 && groundedInHand === 0) { score += 2; } // fills the grounded slot
@@ -348,7 +381,7 @@ export default class TurnHandler {
     const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards, handSize);
 
     // tslint:disable-next-line: max-line-length
-    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData });
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {} });
     return {
       gameId: game._id,
       players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
@@ -398,9 +431,10 @@ export default class TurnHandler {
 
     const playersProp = `players.${clientId}.cards`;
     const selectedCardsProp = `selectedCards.${clientId}`;
+    const submittedAtProp = `submittedAt.${clientId}`;
 
     await this.broker.call('games.update', {
-      id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards
+      id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards, [submittedAtProp]: Date.now()
     });
     const updatedGame = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(err => {
       this.logger.warn(`submitCards: game not found after update ${game._id}: ${err.message}`);
