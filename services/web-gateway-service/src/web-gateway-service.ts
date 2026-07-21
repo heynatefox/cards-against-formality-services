@@ -128,6 +128,10 @@ export default class WebGatewayService extends Service {
                 'POST /games/reason': 'games.reason',
                 'POST /games/reboot': 'games.reboot',
                 'POST /games/wyr-response': 'games.wyr-response',
+                'POST /games/tot-response': 'games.tot-response',
+                'POST /games/ml-vote': 'games.ml-vote',
+                'GET /games/ml-reveal': 'games.ml-reveal',
+                'GET /games/my-signal': 'games.my-signal',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

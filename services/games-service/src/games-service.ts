@@ -124,9 +124,43 @@ export default class GameService extends Service {
               choice: { type: 'enum', values: ['a', 'b'], optional: true },
               direction: { type: 'number', optional: true, convert: true },
               latencyMs: { type: 'number', optional: true, convert: true },
-              skipped: { type: 'boolean', optional: true, convert: true }
+              skipped: { type: 'boolean', optional: true, convert: true },
+              bank: { type: 'string', optional: true, max: 24 }
             },
             handler: this.wyrResponse
+          },
+          'tot-response': {
+            params: {
+              itemId: { type: 'string', max: 40 },
+              cat: { type: 'string', max: 30 },
+              choice: { type: 'enum', values: ['a', 'b'] },
+              sig: { type: 'string', optional: true, max: 60 },
+              latencyMs: { type: 'number', optional: true, convert: true }
+            },
+            handler: this.totResponse
+          },
+          'ml-vote': {
+            params: {
+              roomId: { type: 'string', max: 40 },
+              itemId: { type: 'string', max: 40 },
+              child: { type: 'string', max: 60 },
+              kind: { type: 'enum', values: ['most', 'least'] },
+              direction: { type: 'number', convert: true },
+              votedFor: { type: 'string', max: 64 },
+              round: { type: 'number', optional: true, convert: true },
+              playerCount: { type: 'number', optional: true, convert: true }
+            },
+            handler: this.mlVote
+          },
+          'ml-reveal': {
+            params: {
+              roomId: { type: 'string', max: 40 },
+              itemId: { type: 'string', max: 40 }
+            },
+            handler: this.mlReveal
+          },
+          'my-signal': {
+            handler: this.mySignal
           }
         },
         events: {
@@ -548,6 +582,12 @@ export default class GameService extends Service {
     if (collection === 'wyr') {
       return db.collection('wyr_responses').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
     }
+    if (collection === 'tot') {
+      return db.collection('tot_responses').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
+    if (collection === 'ml') {
+      return db.collection('ml_events').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
 
     // summary: shape of the dataset at a glance
     const rounds = db.collection('round_analytics');
@@ -789,7 +829,7 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async wyrResponse(ctx: Context<{ pairId: string; child: string; choice?: string; direction?: number; latencyMs?: number; skipped?: boolean }, { user: { uid: string } }>) {
+  private async wyrResponse(ctx: Context<{ pairId: string; child: string; choice?: string; direction?: number; latencyMs?: number; skipped?: boolean; bank?: string }, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
     if (!db || !salt) {
@@ -815,9 +855,193 @@ export default class GameService extends Service {
       direction: ctx.params.skipped ? null : Math.max(-1, Math.min(1, ctx.params.direction)),
       latencyMs: ctx.params.latencyMs || null,
       skipped: !!ctx.params.skipped,
-      bank: 'wyr-bank-v1',
+      bank: ctx.params.bank || 'wyr-bank-v1',
     });
+    if (ctx.params.skipped) {
+      return { ok: true };
+    }
+    // Population split for the reveal — the per-question payoff that makes
+    // answering feel like a game instead of a survey. Includes this answer.
+    return { ok: true, split: await this.choiceSplit(db, 'wyr_responses', { pairId: ctx.params.pairId, skipped: false }) };
+  }
+
+  /**
+   * {a, b} answer counts for one item. Small indexed-ish scan; time-boxed
+   * by the caller being fire-and-forget on the client side anyway.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async choiceSplit(db: any, collection: string, match: any): Promise<{ a: number; b: number }> {
+    const agg = await db.collection(collection).aggregate([
+      { $match: match },
+      { $group: { _id: '$choice', n: { $sum: 1 } } }
+    ]).toArray();
+    const split = { a: 0, b: 0 };
+    agg.forEach((g: any) => { if (g._id === 'a' || g._id === 'b') { split[g._id] = g.n; } });
+    return split;
+  }
+
+  /**
+   * Daily Five This-or-That answer (lobby, solo). The interest lane: cards
+   * read taste, WYR reads dispositions, this reads what people are INTO.
+   * Same salted-hash identity as every other capture. Returns the item's
+   * population split so the client can pay the player immediately.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async totResponse(ctx: Context<{ itemId: string; cat: string; choice: 'a' | 'b'; sig?: string; latencyMs?: number }, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (!db || !salt) {
+      return { ok: false };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    // tslint:disable-next-line: no-var-requires
+    const { createHash } = require('crypto');
+    const player = createHash('sha256').update(`${salt}:${uid}`).digest('hex').slice(0, 16);
+    await db.collection('tot_responses').insertOne({
+      ts: Date.now(),
+      player,
+      itemId: ctx.params.itemId,
+      cat: ctx.params.cat,
+      choice: ctx.params.choice,
+      sig: ctx.params.sig || null,
+      latencyMs: ctx.params.latencyMs || null,
+      bank: 'tot-v1',
+    });
+    return { ok: true, split: await this.choiceSplit(db, 'tot_responses', { itemId: ctx.params.itemId }) };
+  }
+
+  /**
+   * Table Verdict vote (Most/Least Likely, between rounds). Two stores with
+   * a hard wall, per the lane rules: ml_events is the measurement corpus
+   * (both ids salted-hashed — votedFor shares the id space with round
+   * capture, so peer evidence joins per-player profiles by hash), ml_tally
+   * is gameplay state (raw client ids, reveal-only, no instrument fields)
+   * so the next interlude can name the crowned player. Never join them.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async mlVote(ctx: Context<{ roomId: string; itemId: string; child: string; kind: 'most' | 'least'; direction: number; votedFor: string; round?: number; playerCount?: number }, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (!db || !salt) {
+      return { ok: false };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    if (ctx.params.votedFor === uid) {
+      throw new Errors.MoleculerError('No self votes', 422, 'SELF_VOTE');
+    }
+    // tslint:disable-next-line: no-var-requires
+    const { createHash } = require('crypto');
+    const hash = (id: string) => createHash('sha256').update(`${salt}:${id}`).digest('hex').slice(0, 16);
+    await db.collection('ml_events').insertOne({
+      ts: Date.now(),
+      itemId: ctx.params.itemId,
+      child: ctx.params.child,
+      parent: ctx.params.child.split('.')[0],
+      kind: ctx.params.kind,
+      direction: Math.max(-1, Math.min(1, ctx.params.direction)),
+      voter: hash(uid),
+      votedFor: hash(ctx.params.votedFor),
+      round: ctx.params.round || null,
+      playerCount: ctx.params.playerCount || null,
+      bank: 'ml-bank-v1',
+    });
+    await db.collection('ml_tally').updateOne(
+      { roomId: ctx.params.roomId, itemId: ctx.params.itemId },
+      {
+        $inc: { [`votes.${ctx.params.votedFor}`]: 1, total: 1 },
+        $set: { kind: ctx.params.kind, ts: Date.now() },
+      },
+      { upsert: true }
+    );
     return { ok: true };
+  }
+
+  /**
+   * Deferred reveal for a Table Verdict: the tally lands one interlude
+   * later ("The table has spoken"), which fits inside the ~10s auto-advance
+   * without any turn-state surgery. Gameplay data only — raw client ids the
+   * room already knows, same trust level as the scoreboard.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async mlReveal(ctx: Context<{ roomId: string; itemId: string }, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      return { total: 0 };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    const doc = await db.collection('ml_tally').findOne({ roomId: ctx.params.roomId, itemId: ctx.params.itemId });
+    if (!doc) {
+      return { total: 0 };
+    }
+    return { itemId: doc.itemId, kind: doc.kind, votes: doc.votes || {}, total: doc.total || 0 };
+  }
+
+  /**
+   * The caller's own read — the Vibe Check panel. Everything keyed off the
+   * caller's salted hash, computed live, returned only to them. Parents from
+   * WYR self-report, crowns from Table Verdict peer evidence (kept separate:
+   * self-vs-peer divergence is signal, never averaged away), Daily Five
+   * volume by category.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async mySignal(ctx: Context<{}, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (!db || !salt) {
+      return { ok: false, parents: [], crowns: [], daily5: { answers: 0, topCats: [] }, totalWyr: 0 };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    // tslint:disable-next-line: no-var-requires
+    const { createHash } = require('crypto');
+    const player = createHash('sha256').update(`${salt}:${uid}`).digest('hex').slice(0, 16);
+    const [wyrAgg, crownAgg, totAgg] = await Promise.all([
+      db.collection('wyr_responses').aggregate([
+        { $match: { player, skipped: false } },
+        { $group: { _id: '$parent', n: { $sum: 1 }, mean: { $avg: '$direction' } } }
+      ]).toArray(),
+      db.collection('ml_events').aggregate([
+        { $match: { votedFor: player } },
+        { $group: { _id: '$parent', n: { $sum: 1 }, mean: { $avg: '$direction' } } }
+      ]).toArray(),
+      db.collection('tot_responses').aggregate([
+        { $match: { player } },
+        { $group: { _id: '$cat', n: { $sum: 1 } } },
+        { $sort: { n: -1 } },
+        { $limit: 5 }
+      ]).toArray(),
+    ]);
+    const parents = wyrAgg.map((g: any) => ({ parent: g._id, n: g.n, mean: +(g.mean || 0).toFixed(3) }));
+    const crowns = crownAgg.map((g: any) => ({ parent: g._id, n: g.n, mean: +(g.mean || 0).toFixed(3) }));
+    const daily5Answers = totAgg.reduce((n: number, g: any) => n + g.n, 0);
+    return {
+      ok: true,
+      parents,
+      crowns,
+      daily5: { answers: daily5Answers, topCats: totAgg.map((g: any) => ({ cat: g._id, n: g.n })) },
+      totalWyr: parents.reduce((n: number, p: any) => n + p.n, 0),
+    };
   }
 
   /**
@@ -1070,6 +1294,54 @@ export default class GameService extends Service {
       scatter: taste.slice(0, 500).map(t => ({ m: t.mode, r: t.register, e: t.edgeCeiling })),
       taste: taste.sort((a, b) => b.plays - a.plays).slice(0, 1000),
       wyr: { responses: wyr.reduce((n: number, w: any) => n + w.n, 0), skips: wyrSkips, playersMeasured: wyrPlayers.size, byChild: wyr },
+      daily5: await this.daily5Stats(db),
+      verdicts: await this.verdictStats(db),
+    };
+  }
+
+  /**
+   * Daily Five rollup for the portal: volume, distinct players, category mix.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async daily5Stats(db: any) {
+    const byCat = await db.collection('tot_responses').aggregate([
+      { $group: { _id: '$cat', n: { $sum: 1 }, players: { $addToSet: '$player' } } },
+      { $sort: { n: -1 } }
+    ]).toArray();
+    const players = new Set<string>();
+    byCat.forEach((c: any) => (c.players || []).forEach((p: string) => players.add(p)));
+    return {
+      responses: byCat.reduce((n: number, c: any) => n + c.n, 0),
+      playersMeasured: players.size,
+      byCat: byCat.map((c: any) => ({ cat: c._id, n: c.n })),
+    };
+  }
+
+  /**
+   * Table Verdict rollup for the portal: peer-evidence volume by parent,
+   * distinct voters and crowned players.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async verdictStats(db: any) {
+    const byParent = await db.collection('ml_events').aggregate([
+      { $group: { _id: '$parent', n: { $sum: 1 }, meanDir: { $avg: '$direction' }, voters: { $addToSet: '$voter' }, crowned: { $addToSet: '$votedFor' } } },
+      { $sort: { n: -1 } }
+    ]).toArray();
+    const voters = new Set<string>();
+    const crowned = new Set<string>();
+    byParent.forEach((p: any) => {
+      (p.voters || []).forEach((v: string) => voters.add(v));
+      (p.crowned || []).forEach((c: string) => crowned.add(c));
+    });
+    return {
+      votes: byParent.reduce((n: number, p: any) => n + p.n, 0),
+      voters: voters.size,
+      playersCrowned: crowned.size,
+      byParent: byParent.map((p: any) => ({ parent: p._id, n: p.n, meanDirection: +(p.meanDir || 0).toFixed(3) })),
     };
   }
 
