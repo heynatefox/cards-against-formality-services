@@ -190,6 +190,10 @@ export default class GameService extends Service {
             if (!ok) { setTimeout(ensure, 2 * 60 * 1000); }
           });
           setTimeout(ensure, 15 * 1000);
+          // Signal collections are point-queried on every answer (split
+          // reveals, tallies, my-signal); index them before they grow past
+          // scan size. createIndex is idempotent, failures are non-fatal.
+          setTimeout(() => this.ensureSignalIndexes(), 20 * 1000);
           return null;
         },
         stopped: () => {
@@ -880,6 +884,35 @@ export default class GameService extends Service {
     const split = { a: 0, b: 0 };
     agg.forEach((g: any) => { if (g._id === 'a' || g._id === 'b') { split[g._id] = g.n; } });
     return split;
+  }
+
+  /**
+   * Idempotent index creation for the signal collections. Every answer
+   * triggers a point query (split reveal, tally upsert, my-signal reads);
+   * without these they become collection scans as the corpus grows.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async ensureSignalIndexes(): Promise<void> {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (!db) {
+      setTimeout(() => this.ensureSignalIndexes(), 2 * 60 * 1000);
+      return;
+    }
+    try {
+      await Promise.all([
+        db.collection('wyr_responses').createIndex({ pairId: 1 }),
+        db.collection('wyr_responses').createIndex({ player: 1 }),
+        db.collection('tot_responses').createIndex({ itemId: 1 }),
+        db.collection('tot_responses').createIndex({ player: 1 }),
+        db.collection('ml_events').createIndex({ votedFor: 1 }),
+        db.collection('ml_tally').createIndex({ roomId: 1, itemId: 1 }),
+      ]);
+      this.logger.info('Signal indexes ensured');
+    } catch (e) {
+      this.logger.warn('Signal index creation failed (non-fatal)', e);
+    }
   }
 
   /**
