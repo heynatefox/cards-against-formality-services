@@ -519,8 +519,24 @@ export default class GameService extends Service {
         if (!games?.length) {
           throw new Error('Unable to find game');
         }
-        this.logger.info(games[0].room);
-        return games[0];
+        // A finished game's doc lingers up to roundTime after "play again"
+        // (forever, if its destroy timer died in a deploy; the watchdog only
+        // sweeps rooms that are gone or empty). games[0] is natural order,
+        // i.e. the OLDEST doc, so every action in a restarted room could
+        // resolve to the dead game and no-op: "second game, submitting a
+        // card doesn't do anything". Prefer the newest live game, and sweep
+        // any stale finished docs while we're here.
+        const live = games.filter(g => (g as any).gameState !== 'ended');
+        const game = live.length ? live[live.length - 1] : games[games.length - 1];
+        if (games.length > 1) {
+          games
+            .filter(g => g !== game && (g as any).gameState === 'ended')
+            .forEach(g => {
+              this.logger.warn(`getGameMatchingRoom: sweeping stale ended game ${g._id} for room ${roomId}`);
+              this.gameService.destroyGame(g._id).catch(() => undefined);
+            });
+        }
+        return game;
       })
       .catch(err => {
         throw err;
