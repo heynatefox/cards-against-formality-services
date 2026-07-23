@@ -132,6 +132,7 @@ export default class WebGatewayService extends Service {
                 'POST /games/ml-vote': 'games.ml-vote',
                 'GET /games/ml-reveal': 'games.ml-reveal',
                 'GET /games/my-signal': 'games.my-signal',
+                'POST /games/signal-impression': 'games.signal-impression',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {

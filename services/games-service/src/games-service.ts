@@ -161,6 +161,13 @@ export default class GameService extends Service {
           },
           'my-signal': {
             handler: this.mySignal
+          },
+          'signal-impression': {
+            params: {
+              surface: { type: 'enum', values: ['wyr', 'd5', 'tv'] },
+              item: { type: 'string', max: 40, optional: true },
+            },
+            handler: this.signalImpression
           }
         },
         events: {
@@ -591,6 +598,19 @@ export default class GameService extends Service {
     }
     if (collection === 'ml') {
       return db.collection('ml_events').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
+    if (collection === 'impressions') {
+      // Aggregate only: per-surface shown counts by day. Raw rows are volume
+      // noise; the ask->answer denominator is the whole point.
+      return db.collection('signal_impressions').aggregate([
+        { $group: {
+          _id: { surface: '$surface', day: { $dateToString: { format: '%Y-%m-%d', date: { $toDate: '$ts' } } } },
+          shown: { $sum: 1 },
+          players: { $addToSet: '$player' },
+        } },
+        { $project: { _id: 0, surface: '$_id.surface', day: '$_id.day', shown: 1, uniquePlayers: { $size: '$players' } } },
+        { $sort: { day: -1, surface: 1 } },
+      ]).toArray();
     }
 
     // summary: shape of the dataset at a glance
@@ -1036,6 +1056,38 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
+  /**
+   * One row per measurement moment SHOWN. Closes the denominator gap the
+   * skip-rate framing has: refusal rate uses engagements (answer + skip)
+   * because silent ignores were invisible. With impressions logged, the
+   * true ask-to-answer rate becomes computable per surface with a clean
+   * denominator. Fire-and-forget from the client; never blocks play.
+   *
+   * @private
+   * @memberof GameService
+   */
+  private async signalImpression(ctx: Context<{ surface: string; item?: string }, { user: { uid: string } }>) {
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (!db || !salt) {
+      return { ok: false };
+    }
+    const uid = ctx.meta.user && ctx.meta.user.uid;
+    if (!uid) {
+      throw new Errors.MoleculerError('No user', 401, 'NO_USER');
+    }
+    // tslint:disable-next-line: no-var-requires
+    const { createHash } = require('crypto');
+    const player = createHash('sha256').update(`${salt}:${uid}`).digest('hex').slice(0, 16);
+    await db.collection('signal_impressions').insertOne({
+      ts: Date.now(),
+      surface: ctx.params.surface,
+      item: ctx.params.item || null,
+      player,
+    });
+    return { ok: true };
+  }
+
   private async mySignal(ctx: Context<{}, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
@@ -1056,7 +1108,7 @@ export default class GameService extends Service {
       ]).toArray(),
       db.collection('ml_events').aggregate([
         { $match: { votedFor: player } },
-        { $group: { _id: '$parent', n: { $sum: 1 }, mean: { $avg: '$direction' } } }
+        { $group: { _id: '$parent', n: { $sum: 1 }, mean: { $avg: '$direction' }, voters: { $addToSet: '$voter' } } }
       ]).toArray(),
       db.collection('tot_responses').aggregate([
         { $match: { player } },
@@ -1066,7 +1118,11 @@ export default class GameService extends Service {
       ]).toArray(),
     ]);
     const parents = wyrAgg.map((g: any) => ({ parent: g._id, n: g.n, mean: +(g.mean || 0).toFixed(3) }));
-    const crowns = crownAgg.map((g: any) => ({ parent: g._id, n: g.n, mean: +(g.mean || 0).toFixed(3) }));
+    // Privacy floor: a peer read only exists once 3+ DISTINCT voters agree
+    // it exists, so no single friend's vote is ever inferable from the sheet.
+    const crowns = crownAgg
+      .filter((g: any) => (g.voters || []).length >= 3)
+      .map((g: any) => ({ parent: g._id, n: g.n, voters: g.voters.length, mean: +(g.mean || 0).toFixed(3) }));
     const daily5Answers = totAgg.reduce((n: number, g: any) => n + g.n, 0);
     return {
       ok: true,

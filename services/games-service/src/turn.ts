@@ -214,6 +214,9 @@ export default class TurnHandler {
    * @memberof TurnHandler
    */
   private pickWhiteCardStratified(whiteCards: string[], hand: string[]): string {
+    // Empty deck: there is nothing to pick. Callers treat a falsy return as
+    // "stop dealing" rather than pushing undefined into a hand.
+    if (!whiteCards.length) { return null as any; }
     // v2 (tagset card-tags-v1): stratify hands on the TASTE VECTOR — every
     // hand should span edge tiers 1/2/3+ and hold at least one grounded and
     // one absurd card, so each play is a choice between taste positions
@@ -304,6 +307,12 @@ export default class TurnHandler {
    * @memberof TurnHandler
    */
   protected async dealWhiteCards(player: GamePlayer, whiteCards: string[], handSize = 10): Promise<string[]> {
+    // Self-heal: an exhausted deck used to fill hands with undefined ids,
+    // which made the card lookup return nothing and the player see an empty
+    // hand ("didn't get cards"). Strip any such ghosts before dealing so
+    // affected players recover on their next deal.
+    player.cards = (player.cards || []).filter(id => typeof id === 'string' && id.length > 0);
+
     // >= guard: with Packing Heat a player can briefly hold more cards than
     // the current target; never try to "deal down" (it would loop forever).
     if (player.cards.length >= handSize) {
@@ -311,8 +320,13 @@ export default class TurnHandler {
       return whiteCards;
     }
 
-    while (player.cards.length < handSize) {
-      player.cards.push(this.pickWhiteCardStratified(whiteCards, player.cards));
+    while (player.cards.length < handSize && whiteCards.length > 0) {
+      const picked = this.pickWhiteCardStratified(whiteCards, player.cards);
+      if (typeof picked !== 'string' || !picked.length) { break; } // deck starved; deal what we have
+      player.cards.push(picked);
+    }
+    if (player.cards.length < handSize) {
+      this.logger.warn(`dealWhiteCards: deck exhausted, player ${player._id} holds ${player.cards.length}/${handSize}`);
     }
 
     await this.emitCardsToPlayer(player);
