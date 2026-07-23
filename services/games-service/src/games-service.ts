@@ -615,6 +615,9 @@ export default class GameService extends Service {
     if (collection === 'ml') {
       return db.collection('ml_events').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
     }
+    if (collection === 'discards') {
+      return db.collection('discard_events').find({}).sort({ ts: -1 }).skip(skip).limit(limit).toArray();
+    }
     if (collection === 'impressions') {
       // Aggregate only: per-surface shown counts by day. Raw rows are volume
       // noise; the ask->answer denominator is the whole point.
@@ -1656,6 +1659,27 @@ export default class GameService extends Service {
     }
     if ((player.score || 0) < 1) {
       throw new Errors.MoleculerError('Costs one point. You have none.', 400, 'NO_POINTS');
+    }
+
+    // Capture the discard: a whole hand thrown away at a real cost is the
+    // cleanest single avoidance read in the system (the dossier's
+    // discard-and-redraw instrument, for free off an existing house rule).
+    // Fire-and-forget; the reboot never waits on it.
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (db && salt && Array.isArray(player.cards) && player.cards.length) {
+      // tslint:disable-next-line: no-var-requires
+      const { createHash } = require('crypto');
+      const hashed = createHash('sha256').update(`${salt}:${uid}`).digest('hex').slice(0, 16);
+      db.collection('discard_events').insertOne({
+        ts: Date.now(),
+        player: hashed,
+        gameId: game._id,
+        cards: player.cards.filter((c: any) => typeof c === 'string'),
+        cost: 1,
+        reason: 'reboot',
+        tagset: 'v2',
+      }).catch(() => undefined);
     }
 
     return this.gameService.rebootPlayerHand(game, uid);
