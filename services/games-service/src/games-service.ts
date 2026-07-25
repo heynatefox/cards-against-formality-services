@@ -1536,12 +1536,20 @@ export default class GameService extends Service {
         const firstOptIn = await ctx.call<any[], any>('clients.find', {
           query: { marketingOptInAt: { $exists: true } }, sort: 'marketingOptInAt', limit: 1,
         }).catch(() => []);
+        // The real list size, straight from Beehiiv. Null when unconfigured
+        // or unreachable, in which case the portal falls back to the local
+        // V2-era count rather than showing a number that isn't the list.
+        const list = await ctx.call<{ active: number; free: number; premium: number } | null, any>('clients.newsletter-stats', {})
+          .catch(() => null);
         return {
           total, anonymous, registered: total - anonymous,
           optedInSinceV2,
           typedEmailsCaptured: withEmail,
           optInTrackingSince: firstOptIn[0]?.marketingOptInAt ?? null,
           listAuthority: 'beehiiv',
+          listActive: list?.active ?? null,
+          listFree: list?.free ?? null,
+          listPremium: list?.premium ?? null,
         };
       }),
       section('live', async () => {

@@ -13,7 +13,7 @@ whiteCards = whiteCards.map(card => {
 const postCard = (data, i) => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      return axios.post('http://localhost:8000/admin/cards', data)
+      return axios.post('https://api.cardsagainstformality.io/admin/cards', data)
         .then(res => { resolve(res.data) })
         .catch(err => {
           console.log(err);
@@ -24,7 +24,7 @@ const postCard = (data, i) => {
 }
 
 const postDeck = (data) => {
-  return axios.post('http://localhost:8000/admin/decks', data)
+  return axios.post('https://api.cardsagainstformality.io/admin/decks', data)
     .then(res => res.data)
     .catch(err => {
       console.log(err.message);

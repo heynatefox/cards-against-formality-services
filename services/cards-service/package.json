@@ -15,7 +15,7 @@
     "@types/jest": "^23.3.14",
     "@types/jsonwebtoken": "^8.3.8",
     "@types/node": "^10.12.12",
-    "axios": "0.19.2",
+    "axios": "^1.16.1",
     "jest": "^23.6.0",
     "jest-cli": "^23.6.0",
     "moleculer-repl": "^0.5.3",
@@ -30,8 +30,8 @@
     "@cards-against-formality/db-mixin": "link:../../packages/db-mixin",
     "@cards-against-formality/health-check-mixin": "link:../../packages/health-check",
     "ioredis": "^4.16.2",
-    "nats": "^1.4.0",
-    "lodash": "4.17.20"
+    "lodash": "4.17.20",
+    "nats": "^1.4.0"
   },
   "engines": {
     "node": ">= 8.x.x"

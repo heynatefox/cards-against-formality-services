@@ -88,6 +88,21 @@ export default class ClientsService extends Service {
           entityValidator: this.validationSchema
         },
         actions: {
+          // Authoritative mailing-list size, read from Beehiiv. The local
+
+          // marketingOptIn count only covers V2-era opt-ins; the real list
+
+          // predates it. Returns null when unconfigured or on any failure so
+
+          // the dashboard degrades to the local number instead of lying.
+
+          'newsletter-stats': {
+
+            cache: { ttl: 300 },
+
+            handler: this.newsletterStats
+
+          },
           'health': this.health,
           'renew': {
             handler: this.renew
@@ -341,6 +356,50 @@ export default class ClientsService extends Service {
         // Non-anonymous user with no Firestore record — they need to register first.
         throw new Errors.MoleculerError('User doesnt exist', 404, 'USERNAME_NON_EXISTENT');
       });
+  }
+
+  /**
+   * Live subscriber counts from Beehiiv.
+   * GET /v2/publications/{id}?expand=stats -> { data: { stats: {...} } }
+   *
+   * @private
+   * @returns {Promise<{ active: number; free: number; premium: number } | null>}
+   * @memberof ClientsService
+   */
+  private async newsletterStats(): Promise<{ active: number; free: number; premium: number } | null> {
+    const key = process.env.BEEHIIV_API_KEY;
+    const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+    if (!key || !publicationId) {
+      return null;
+    }
+    const fetchFn = (globalThis as any).fetch;
+    if (typeof fetchFn !== 'function') {
+      return null;
+    }
+    try {
+      const res = await fetchFn(
+        `https://api.beehiiv.com/v2/publications/${publicationId}?expand=stats`,
+        { headers: { Authorization: `Bearer ${key}` } }
+      );
+      if (!res.ok) {
+        this.logger.warn(`Beehiiv stats failed: ${res.status}`);
+        return null;
+      }
+      const body: any = await res.json();
+      const stats = body?.data?.stats;
+      if (!stats || typeof stats.active_subscriptions !== 'number') {
+        this.logger.warn('Beehiiv stats: unexpected response shape');
+        return null;
+      }
+      return {
+        active: stats.active_subscriptions,
+        free: stats.active_free_subscriptions ?? 0,
+        premium: stats.active_premium_subscriptions ?? 0,
+      };
+    } catch (err) {
+      this.logger.warn(`Beehiiv stats failed: ${err?.message}`);
+      return null;
+    }
   }
 
   /**
