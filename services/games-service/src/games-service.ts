@@ -325,8 +325,9 @@ export default class GameService extends Service {
           playerCount: (turn.players ?? []).length,
           errorMessage: turn.errorMessage ?? null,
           // Which card-tag set the stratified dealer was using (analysis
-          // joins card ids against this tagset version offline)
-          tagset: 'v1',
+          // joins card ids against this tagset version offline). Read from
+          // env so a catalog re-tag can't leave rows claiming an old rubric.
+          tagset: process.env.CARD_TAGSET || 'v2',
         },
         signals: Object.keys(latencies).length ? { latencies } : {},
       };
@@ -872,7 +873,7 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async wyrResponse(ctx: Context<{ pairId: string; child: string; choice?: string; direction?: number; latencyMs?: number; skipped?: boolean; bank?: string }, { user: { uid: string } }>) {
+  private async wyrResponse(ctx: Context<{ pairId: string; child: string; choice?: string; direction?: number; latencyMs?: number; skipped?: boolean; bank?: string; locale?: string; playerCount?: number }, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
     if (!db || !salt) {
@@ -899,6 +900,10 @@ export default class GameService extends Service {
       latencyMs: ctx.params.latencyMs || null,
       skipped: !!ctx.params.skipped,
       bank: ctx.params.bank || 'wyr-bank-v1',
+      // Context the estimate can be banded on later: language proves the
+      // multilingual claim per lane, table size conditions social answers.
+      locale: (ctx.params.locale || '').slice(0, 8) || null,
+      playerCount: ctx.params.playerCount || null,
     });
     if (ctx.params.skipped) {
       return { ok: true };
@@ -963,7 +968,7 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async totResponse(ctx: Context<{ itemId: string; cat: string; choice: 'a' | 'b'; sig?: string; latencyMs?: number }, { user: { uid: string } }>) {
+  private async totResponse(ctx: Context<{ itemId: string; cat: string; choice: 'a' | 'b'; sig?: string; latencyMs?: number; locale?: string }, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
     if (!db || !salt) {
@@ -985,6 +990,7 @@ export default class GameService extends Service {
       sig: ctx.params.sig || null,
       latencyMs: ctx.params.latencyMs || null,
       bank: 'tot-v1',
+      locale: (ctx.params.locale || '').slice(0, 8) || null,
     });
     return { ok: true, split: await this.choiceSplit(db, 'tot_responses', { itemId: ctx.params.itemId }) };
   }
@@ -1000,7 +1006,7 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async mlVote(ctx: Context<{ roomId: string; itemId: string; child: string; kind: 'most' | 'least'; direction: number; votedFor: string; round?: number; playerCount?: number }, { user: { uid: string } }>) {
+  private async mlVote(ctx: Context<{ roomId: string; itemId: string; child: string; kind: 'most' | 'least'; direction: number; votedFor: string; round?: number; playerCount?: number; locale?: string }, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
     if (!db || !salt) {
@@ -1028,6 +1034,7 @@ export default class GameService extends Service {
       round: ctx.params.round || null,
       playerCount: ctx.params.playerCount || null,
       bank: 'ml-bank-v1',
+      locale: (ctx.params.locale || '').slice(0, 8) || null,
     });
     await db.collection('ml_tally').updateOne(
       { roomId: ctx.params.roomId, itemId: ctx.params.itemId },
