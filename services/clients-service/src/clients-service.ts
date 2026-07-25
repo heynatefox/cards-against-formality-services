@@ -264,22 +264,35 @@ export default class ClientsService extends Service {
 
     // V2 sends marketingOptIn on renew when the user joins the email list
     // (the expansion-pack unlock). Guests may include a typed marketingEmail;
-    // signed-in users' account email comes from the token. Persist and push
-    // to Beehiiv, both fire-and-forget — never block login on either.
-    if (ctx.params?.marketingOptIn === true) {
-      const typedEmail: string | undefined =
-        typeof ctx.params.marketingEmail === 'string' && ctx.params.marketingEmail.includes('@')
-          ? ctx.params.marketingEmail.trim()
-          : undefined;
-      ctx.call(`${this.name}.update`, {
+    // signed-in users' account email comes from the token. Push to Beehiiv
+    // immediately (fire-and-forget, never blocks login); persist the flag
+    // AFTER the renew resolves, because on a guest's first renew the client
+    // record does not exist yet. This used to run before creation, fail, and
+    // get swallowed as "harmless" — so the email reached Beehiiv but the local
+    // flag was never set and the opt-in was invisible to our own dashboard.
+    const optIn = ctx.params?.marketingOptIn === true;
+    const typedEmail: string | undefined =
+      optIn && typeof ctx.params.marketingEmail === 'string' && ctx.params.marketingEmail.includes('@')
+        ? ctx.params.marketingEmail.trim()
+        : undefined;
+    if (optIn) {
+      this.pushToBeehiiv(typedEmail || (ctx.meta.user as any)?.email);
+    }
+
+    const persistOptIn = (client: Client): Client => {
+      if (!optIn) {
+        return client;
+      }
+      // Retry once on the next tick: create() may still be settling.
+      const apply = () => ctx.call(`${this.name}.update`, {
         id: uid,
         marketingOptIn: true,
         marketingOptInAt: Date.now(),
         ...(typedEmail ? { marketingEmail: typedEmail } : {})
-      })
-        .catch(() => { /* record may not exist yet on first renew — harmless */ });
-      this.pushToBeehiiv(typedEmail || (ctx.meta.user as any)?.email);
-    }
+      });
+      apply().catch(() => setTimeout(() => { apply().catch(() => undefined); }, 750));
+      return client;
+    };
 
     return this.firestoreDb
       .collection('users')
@@ -290,6 +303,7 @@ export default class ClientsService extends Service {
           await ctx.emit('client.login', { uid });
           // try get the user from our cluster collection, if it doesn't exist create it.
           return ctx.call<any, any>(`${this.name}.get`, { id: uid })
+            .then(persistOptIn)
             .catch(() => {
               const data = doc.data();
               return ctx.call(
@@ -299,7 +313,7 @@ export default class ClientsService extends Service {
                   username: data.username,
                   ...( data.email ? { email: data.email } : {})
                 }
-              );
+              ).then(persistOptIn as any);
             });
         }
 
@@ -320,7 +334,8 @@ export default class ClientsService extends Service {
             .collection('users')
             .doc(uid)
             .set(this.sanitizeFirestoreInput(Object.assign({}, data, { lastLoggedIn: +new Date() })));
-          return ctx.call(`${this.name}.create`, { _id: uid, isAnonymous: true, username });
+          return ctx.call<Client, any>(`${this.name}.create`, { _id: uid, isAnonymous: true, username })
+            .then(persistOptIn);
         }
 
         // Non-anonymous user with no Firestore record — they need to register first.

@@ -1525,8 +1525,24 @@ export default class GameService extends Service {
         // Each service owns its own database; go through the broker
         const total: number = await ctx.call('clients.count', { query: {} });
         const anonymous: number = await ctx.call('clients.count', { query: { isAnonymous: true } });
-        const optedIn: number = await ctx.call('clients.count', { query: { marketingOptIn: true } });
-        return { total, anonymous, registered: total - anonymous, optedIn };
+        // NOTE ON WHAT THIS COUNTS. `marketingOptIn` is written only by the
+        // V2 unlock flow, so this is "opt-ins recorded locally since V2",
+        // NOT the size of the mailing list. The authoritative list lives in
+        // Beehiiv and includes every V1-era signup, which is why the portal
+        // number is far smaller than the real list. Labelled accordingly.
+        const optedInSinceV2: number = await ctx.call('clients.count', { query: { marketingOptIn: true } });
+        const withEmail = await ctx.call<number, any>('clients.count', { query: { marketingEmail: { $exists: true } } })
+          .catch(() => 0);
+        const firstOptIn = await ctx.call<any[], any>('clients.find', {
+          query: { marketingOptInAt: { $exists: true } }, sort: 'marketingOptInAt', limit: 1,
+        }).catch(() => []);
+        return {
+          total, anonymous, registered: total - anonymous,
+          optedInSinceV2,
+          typedEmailsCaptured: withEmail,
+          optInTrackingSince: firstOptIn[0]?.marketingOptInAt ?? null,
+          listAuthority: 'beehiiv',
+        };
       }),
       section('live', async () => {
         const roomDocs: any[] = await ctx.call('rooms.find', { query: {} });
