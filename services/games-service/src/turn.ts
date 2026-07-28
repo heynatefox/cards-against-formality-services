@@ -383,19 +383,41 @@ export default class TurnHandler {
     // mutate by reference. ensure we reset the czar.
     Object.values(players).forEach(player => player.isCzar = false);
 
+    // Timing only, no behaviour change. Players report sitting on the
+    // between-rounds screen far longer than the 10s that phase is meant to
+    // last; one game was measured holding turnSetup for 23s. Nothing throws
+    // and nothing logs at ERROR, so the time is going into one of the awaits
+    // below and this says which.
+    const t0 = Date.now();
+
     turnData.turn += 1;
     // players mutated by reference.
     turnData.czar = this.pickCzar(turns, players);
+    const tCzar = Date.now();
     // mutate black and white cards by reference
     turnData.blackCard = await this.pickBlackCard(blackCards);
+    const tBlack = Date.now();
     // House rule "Packing Heat": everyone draws an extra card on 2+ pick
     // prompts. The extra card is absorbed next round (hands top up to 10).
     const packingHeat = !!(room && (room as any).options && (room as any).options.packingHeat);
     const handSize = packingHeat && turnData.blackCard && turnData.blackCard.pick >= 2 ? 11 : 10;
     const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards, handSize);
+    const tDeal = Date.now();
 
     // tslint:disable-next-line: max-line-length
     await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {} });
+    const tUpdate = Date.now();
+
+    // Only complain when it actually went slowly, so this stays quiet in the
+    // normal case and is easy to find when it does not.
+    if (tUpdate - t0 > 1500) {
+      this.logger.warn(
+        `slow startTurn ${game._id}: total=${tUpdate - t0}ms ` +
+        `czar=${tCzar - t0}ms blackCard=${tBlack - tCzar}ms deal=${tDeal - tBlack}ms update=${tUpdate - tDeal}ms ` +
+        `turns=${(turns || []).length} white=${(newWhiteCards || []).length} black=${(blackCards || []).length} ` +
+        `players=${Object.keys(players || {}).length}`,
+      );
+    }
     return {
       gameId: game._id,
       players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),

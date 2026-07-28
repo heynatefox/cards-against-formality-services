@@ -87,9 +87,18 @@ export default class Game extends TurnHandler {
 
     this.timeoutMeta[gameId] = { armedAt: Date.now(), timeoutSecs: timeout };
     this.gameTimeout[gameId] = setTimeout(async () => {
+      // Timing only. This fetch pulls the whole game doc, which grows with the
+      // match: 160 turns measured at 147KB. If the between-rounds delay people
+      // report is transport rather than logic, it shows up right here.
+      const t0 = Date.now();
       try {
         const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+        const tGet = Date.now();
         await cb(game);
+        const tCb = Date.now();
+        if (tCb - t0 > 1500) {
+          this.logger.warn(`slow phase advance ${gameId}: get=${tGet - t0}ms handler=${tCb - tGet}ms armedFor=${timeout}s`);
+        }
       } catch (err) {
         this.logger.warn(`Game timeout handler error (gameId: ${gameId}): ${err.message}`);
       }
