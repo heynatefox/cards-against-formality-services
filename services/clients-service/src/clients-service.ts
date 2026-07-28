@@ -2,6 +2,7 @@ import { Service, ServiceBroker, Context, NodeHealthStatus, Errors } from 'molec
 import admin from 'firebase-admin';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
+import { createCheckout, verifySignature, recordDonation, board, sessionStatus, claimName, recordClick, nameIsBlocked, MIN_INCHES } from './donations';
 
 
 /**
@@ -88,6 +89,54 @@ export default class ClientsService extends Service {
           entityValidator: this.validationSchema
         },
         actions: {
+          // ── Measuring Dicks ────────────────────────────────────────────
+          // Opens a Stripe Checkout Session. Public: anyone can donate, and
+          // requiring an account would kill the impulse this whole thing runs
+          // on.
+          'donate-checkout': {
+            params: {
+              inches: { type: 'number', convert: true, min: MIN_INCHES },
+              name: { type: 'string', optional: true, max: 40 },
+              ref: { type: 'string', optional: true, max: 40 },
+              donor: { type: 'string', optional: true, max: 64 },
+              origin: { type: 'string', optional: true, max: 120 },
+            },
+            handler: this.donateCheckout
+          },
+          // Stripe calls this. Signature-verified against the raw body; the
+          // event id is the primary key so replays cannot double-credit.
+          'stripe-webhook': {
+            handler: this.stripeWebhook
+          },
+          // The public board. Cached briefly: it is read on every page view
+          // and changes only when money arrives.
+          // Asked by the success page after Stripe redirects back.
+          'donate-session': {
+            params: { id: { type: 'string', max: 200 } },
+            handler: this.donateSession
+          },
+          // Lets a donor put a name on a row they already paid for.
+          'donate-name': {
+            params: {
+              id: { type: 'string', max: 200 },
+              name: { type: 'string', min: 1, max: 40 },
+            },
+            handler: this.donateName
+          },
+          // One millimetre of girth per unique visitor who follows a link.
+          'donate-click': {
+            params: {
+              ref: { type: 'string', max: 64 },
+              visitor: { type: 'string', max: 64 },
+            },
+            handler: this.donateClick
+          },
+          'donations-board': {
+            cache: { ttl: 20, keys: ['span'] },
+            params: { span: { type: 'enum', values: ['all', 'month'], optional: true } },
+            handler: this.donationsBoard
+          },
+
           // Authoritative mailing-list size, read from Beehiiv. The local
 
           // marketingOptIn count only covers V2-era opt-ins; the real list
@@ -411,7 +460,7 @@ export default class ClientsService extends Service {
    * @param {string} [email]
    * @memberof ClientsService
    */
-  private pushToBeehiiv(email?: string) {
+  private pushToBeehiiv(email?: string, medium: string = 'deck_unlock') {
     const key = process.env.BEEHIIV_API_KEY;
     const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
     if (!key || !publicationId || !email) {
@@ -436,7 +485,7 @@ export default class ClientsService extends Service {
         reactivate_existing: false,
         send_welcome_email: true,
         utm_source: 'cards-against-formality',
-        utm_medium: 'deck_unlock',
+        utm_medium: medium,
       }),
     })
       .then((res: any) => {
@@ -576,4 +625,118 @@ export default class ClientsService extends Service {
   private entityRemoved(json: any, ctx: Context) {
     return ctx.emit(`${this.name}.removed`, json);
   }
+
+  /** Hands back a Stripe Checkout URL for the frontend to redirect to. */
+  private async donateCheckout(
+    ctx: Context<{ inches: number; name?: string; ref?: string; origin?: string; donor?: string }>,
+  ) {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) throw new Errors.MoleculerError('Donations unavailable', 503, 'NO_STRIPE');
+
+    // Checked here as well as on rename: the pre-payment field reaches the
+    // board just the same, and stopping it before Stripe means no refund to
+    // unwind afterwards.
+    if (ctx.params.name && nameIsBlocked(ctx.params.name)) {
+      throw new Errors.MoleculerError('Pick a different name', 400, 'NAME_BLOCKED');
+    }
+
+    // Return the donor to the site they actually came from. Validated against
+    // an allowlist inside createCheckout, so this cannot become an open redirect.
+    try {
+      const { url, id } = await createCheckout(key, {
+        inches: ctx.params.inches,
+        name: ctx.params.name,
+        ref: ctx.params.ref,
+        // Without this the id is accepted and silently dropped, and repeat
+        // donations never stack.
+        donor: ctx.params.donor,
+        origin: ctx.params.origin || '',
+      });
+      return { url, id };
+    } catch (e) {
+      const msg = (e as any)?.message;
+      this.logger.error('checkout failed', msg);
+      throw new Errors.MoleculerError(msg || 'Checkout failed', 400, 'CHECKOUT_FAILED');
+    }
+  }
+
+  /**
+   * Stripe webhook. Returns 200 on anything it has already handled or does not
+   * care about: a non-2xx makes Stripe retry, and retrying an event we have
+   * deliberately ignored just generates noise forever.
+   */
+  private async stripeWebhook(ctx: Context<any, any>) {
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!secret) throw new Errors.MoleculerError('Not configured', 503, 'NO_WEBHOOK_SECRET');
+
+    const raw = ctx.meta?.rawBody;
+    const sig = ctx.meta?.stripeSignature;
+    if (!verifySignature(raw, sig, secret)) {
+      this.logger.warn('stripe webhook: bad signature');
+      throw new Errors.MoleculerError('Invalid signature', 400, 'BAD_SIGNATURE');
+    }
+
+    const event = JSON.parse(raw);
+    if (event.type !== 'checkout.session.completed') return { ignored: event.type };
+    if (event?.data?.object?.payment_status !== 'paid') return { ignored: 'unpaid' };
+
+    const db = (this.adapter as any)?.db;
+    if (!db) throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+
+    const { result, optInEmail } = await recordDonation(db, event);
+    this.logger.info(`donation ${result}: ${event.id}`);
+    // Only ever set on a first insert with an explicit opt-in, so a Stripe
+    // retry cannot resubscribe someone and a receipt address never leaks here.
+    if (optInEmail) this.pushToBeehiiv(optInEmail, 'donation');
+    await this.broker.cacher?.clean('clients.donations-board:**');
+    return { ok: true, result };
+  }
+
+  /** Status of one checkout session, for the page Stripe redirects back to. */
+  private async donateSession(ctx: Context<{ id: string }>) {
+    const db = (this.adapter as any)?.db;
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!db || !key) return { paid: false, recorded: false };
+    try {
+      return await sessionStatus(db, key, ctx.params.id);
+    } catch (e) {
+      this.logger.error('session lookup failed', (e as any)?.message);
+      return { paid: false, recorded: false };
+    }
+  }
+
+  /** Names a donation after the fact, authorised by its checkout session id. */
+  private async donateName(ctx: Context<{ id: string; name: string }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    try {
+      if (nameIsBlocked(ctx.params.name)) {
+        throw new Errors.MoleculerError('Pick a different name', 400, 'NAME_BLOCKED');
+      }
+      const out = await claimName(db, ctx.params.id, ctx.params.name);
+      await this.broker.cacher?.clean('clients.donations-board:**');
+      return out;
+    } catch (e) {
+      throw new Errors.MoleculerError((e as any)?.message || 'Could not set name', 400, 'CLAIM_FAILED');
+    }
+  }
+
+  /** Credits girth for a referred visit. */
+  private async donateClick(ctx: Context<{ ref: string; visitor: string }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) return { ok: false };
+    try {
+      return { ok: true, result: await recordClick(db, ctx.params.ref, ctx.params.visitor) };
+    } catch {
+      return { ok: false };
+    }
+  }
+
+  /** Public leaderboard plus the running total the meter is driven by. */
+  private async donationsBoard(ctx: Context<{ span?: 'all' | 'month' }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) return { rows: [], totalInches: 0 };
+    return board(db, ctx.params.span || 'all', 100);
+  }
+
 }

@@ -99,11 +99,44 @@ export default class WebGatewayService extends Service {
                 'POST /games/admin-login': 'games.admin-login',
                 'POST /games/bug-report': 'games.bug-report',
                 'POST /games/promo-event': 'games.promo-event',
+
+                // Measuring Dicks. Public by design: requiring an account to
+                // donate would kill the impulse the whole mechanic runs on.
+                'POST /donate/checkout': 'clients.donate-checkout',
+                'GET /donate/board': 'clients.donations-board',
+                'GET /donate/session': 'clients.donate-session',
+                'POST /donate/name': 'clients.donate-name',
+                'POST /donate/click': 'clients.donate-click',
               },
               mappingPolicy: 'restrict',
               bodyParsers: {
                 json: { strict: false },
                 urlencoded: { extended: false }
+              }
+            },
+            {
+              // Stripe webhook, on its own route because it needs the RAW body.
+              // Signature verification hashes the exact bytes Stripe sent, so
+              // parsing and re-serialising the JSON invalidates every event.
+              // body-parser's verify hook hands us those bytes before parsing.
+              path: '/api',
+              authorization: false,
+              aliases: {
+                'POST /games/stripe-webhook': 'clients.stripe-webhook',
+              },
+              mappingPolicy: 'restrict',
+              onBeforeCall(ctx: any, route: any, req: any) {
+                ctx.meta.rawBody = req.rawBody;
+                ctx.meta.stripeSignature = req.headers['stripe-signature'];
+              },
+              bodyParsers: {
+                json: {
+                  strict: false,
+                  verify: (req: any, _res: any, buf: Buffer) => {
+                    req.rawBody = buf.toString('utf8');
+                  }
+                },
+                urlencoded: false
               }
             },
             {
