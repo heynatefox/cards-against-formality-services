@@ -126,7 +126,11 @@ export default class Game extends TurnHandler {
    * @memberof Game
    */
   public async resumeStalledGames(games: GameInterface[]) {
-    const GRACE_MS = 30 * 1000;
+    // 10s of slack, not 30. The grace exists to avoid resuming a phase that
+    // is merely finishing; measured phase advances complete in well under a
+    // second, so 30 was three times longer than anything it protected and
+    // every second of it was a player staring at a frozen screen.
+    const GRACE_MS = 10 * 1000;
     for (const game of games) {
       const meta = this.timeoutMeta[game._id];
       const stalled = !meta || Date.now() > meta.armedAt + meta.timeoutSecs * 1000 + GRACE_MS;
@@ -193,7 +197,17 @@ export default class Game extends TurnHandler {
           return;
       }
     } catch (e) {
-      this.logger.warn(e);
+      // This block wraps BOTH the state write and the timer arming, so a failed
+      // write used to leave the game with no timer at all: dead until the
+      // watchdog noticed, up to a minute and a half later. Log it properly
+      // (logger.warn on a raw error object printed nothing greppable, which is
+      // why this never showed up) and arm a short recovery so the game retries
+      // itself in seconds rather than waiting to be rescued.
+      const msg = (e && (e as any).message) || String(e);
+      this.logger.error(`onTurnUpdated failed for ${updatedTurn && updatedTurn.gameId} (state: ${updatedTurn && updatedTurn.state}): ${msg}`);
+      if (updatedTurn && updatedTurn.gameId) {
+        this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), 5);
+      }
     }
   }
 

@@ -189,7 +189,13 @@ export default class GameService extends Service {
           // then once a minute forever.
           const sweep = () => this.sweepStalledGames();
           this.watchdogInitial = setTimeout(sweep, 10 * 1000);
-          this.watchdogInterval = setInterval(sweep, 60 * 1000);
+          // Every 15s, not 60. A stalled round used to wait between 40 and
+          // 100 seconds to be rescued, which is the "stuck on next round"
+          // complaint. Sweeping this often was previously unsafe because a
+          // merely slow game would get resumed mid-flight, but 19 hours of
+          // timing showed no phase advance ever exceeding 1.5s, so there is
+          // no slow case to race.
+          this.watchdogInterval = setInterval(sweep, 15 * 1000);
           // Signal candidate decks: idempotent import + registry build.
           // Retries every 2 minutes until it succeeds (cards-service may
           // still be booting); dealing works fine without it in the interim.
