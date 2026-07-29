@@ -100,6 +100,7 @@ export default class ClientsService extends Service {
               ref: { type: 'string', optional: true, max: 40 },
               donor: { type: 'string', optional: true, max: 64 },
               origin: { type: 'string', optional: true, max: 120 },
+              from: { type: 'string', optional: true, max: 24 },
             },
             handler: this.donateCheckout
           },
@@ -628,7 +629,7 @@ export default class ClientsService extends Service {
 
   /** Hands back a Stripe Checkout URL for the frontend to redirect to. */
   private async donateCheckout(
-    ctx: Context<{ inches: number; name?: string; ref?: string; origin?: string; donor?: string }>,
+    ctx: Context<{ inches: number; name?: string; ref?: string; origin?: string; donor?: string; from?: string }>,
   ) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) throw new Errors.MoleculerError('Donations unavailable', 503, 'NO_STRIPE');
@@ -650,6 +651,7 @@ export default class ClientsService extends Service {
         // Without this the id is accepted and silently dropped, and repeat
         // donations never stack.
         donor: ctx.params.donor,
+        from: ctx.params.from,
         origin: ctx.params.origin || '',
       });
       return { url, id };

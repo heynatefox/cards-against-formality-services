@@ -20,6 +20,8 @@ export interface CheckoutInput {
   origin: string;
   /** Stable per-person id so repeat donations stack onto one entry. */
   donor?: string;
+  /** Placement that produced the click: banner, endgame, home. */
+  from?: string;
 }
 
 /**
@@ -60,7 +62,7 @@ const form = (obj: Record<string, string | number | undefined>) =>
  */
 export async function createCheckout(
   secretKey: string,
-  { inches, name, ref, origin, donor }: CheckoutInput,
+  { inches, name, ref, origin, donor, from }: CheckoutInput,
 ): Promise<{ url: string; id: string }> {
   const cents = Math.round(inches * 100);
   if (!Number.isFinite(cents) || cents < MIN_INCHES * 100) {
@@ -89,6 +91,9 @@ export async function createCheckout(
     'metadata[name]': (name || '').slice(0, 40),
     'metadata[ref]': (ref || '').slice(0, 40),
     'metadata[donor]': (donor || '').slice(0, 64),
+    // Which placement sent them. The whole point of shipping three at once
+    // is finding out which one earns, and that is unknowable after the fact.
+    'metadata[from]': (from || '').slice(0, 24),
     success_url: `${safeOrigin(origin)}/measure/?paid={CHECKOUT_SESSION_ID}`,
     cancel_url: `${safeOrigin(origin)}/measure/`,
     submit_type: 'donate',
@@ -164,6 +169,8 @@ export interface DonationRow {
   ref: string;
   /** Groups repeat donations from the same person into one leaderboard entry. */
   donor: string;
+  /** Which on-site placement produced the click. */
+  from?: string;
   ts: number;
   livemode: boolean;
   /** Whether the donor ticked Stripe's marketing opt-in. Proof, not an address. */
@@ -202,6 +209,7 @@ export async function recordDonation(db: any, event: any): Promise<DonationResul
     name: (session?.metadata?.name || '').slice(0, 40) || 'Anonymous',
     ref: (session?.metadata?.ref || '').slice(0, 40),
     donor: (session?.metadata?.donor || '').slice(0, 64),
+    from: (session?.metadata?.from || '').slice(0, 24),
     ts: (Number(event.created) || Math.floor(Date.now() / 1000)) * 1000,
     livemode: !!event.livemode,
     // The flag is kept as proof of consent. The address deliberately is NOT:
