@@ -29,7 +29,7 @@ const { MongoClient } = (() => {
 
 const DAYS = Number(process.argv[2] || 7);
 const SINCE = Date.now() - DAYS * 24 * 3600 * 1000;
-const PLACEMENTS = ['banner', 'nav', 'home', 'endgame'];
+const PLACEMENTS = ['hero', 'banner', 'nav', 'home', 'endgame'];
 
 const pct = (n, d) => (d ? `${((n / d) * 100).toFixed(1)}%` : '–');
 const pad = (s, n) => String(s).padEnd(n);
