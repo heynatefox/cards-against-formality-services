@@ -188,6 +188,12 @@ export default class TurnHandler {
 
     // pick czar — Rando plays but never judges
     const playersArr = Object.values(players).filter(player => player._id !== 'rando-cardrissian' && !isProbeBot(player._id));
+    // Every human has left and only synthetic seats remain: there is nobody
+    // to judge, so refuse the round cleanly. The empty-room watchdog destroys
+    // the game within a sweep; this used to be a TypeError retry loop.
+    if (!playersArr.length) {
+      throw new Error('no human players left to judge');
+    }
     let selectedPlayer;
     if (!prevCzar) {
       selectedPlayer = playersArr[0];
