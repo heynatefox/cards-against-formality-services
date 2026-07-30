@@ -555,6 +555,22 @@ export default class GameService extends Service {
       throw new Error('Only the host can start the game');
     }
 
+    // Idempotent start: a double click (or a retry racing a slow response)
+    // used to create two live game docs for one room, each with its own
+    // timers, announcing over each other. Observed within five minutes of
+    // testing solo mode; multiplayer had the same hole.
+    const db = (this.adapter as any) && (this.adapter as any).db;
+    if (db) {
+      const live = await db.collection('games').findOne({
+        room: roomId,
+        gameState: { $ne: 'ended' },
+      });
+      if (live) {
+        this.logger.warn(`startGame: room ${roomId} already has live game ${live._id}; not creating another`);
+        return { message: 'Game already started' };
+      }
+    }
+
     return this.gameService.onGameStart(_room)
       .then(() => ({ message: 'Game successfully started' }))
       .catch(err => {
