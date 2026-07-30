@@ -75,24 +75,52 @@ export default class Game extends TurnHandler {
     super(broker, logger);
   }
 
-  // When each game's timer was armed and for how long. The watchdog uses
-  // this to spot games whose timer died (process restart, crashed callback)
-  // and bring them back to life from the persisted game doc.
-  private timeoutMeta: { [gameId: string]: { armedAt: number; timeoutSecs: number } } = {};
+  // When each game's timer was armed, for how long, and for WHICH state/turn.
+  // The state and turn let a firing timer prove it is still current: if the
+  // doc has moved on since arming, the timer is stale and must not advance
+  // the game a second time.
+  private timeoutMeta: { [gameId: string]: { armedAt: number; timeoutSecs: number; state?: string; turn?: number } } = {};
 
-  private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number) {
+  // One phase advance at a time per game. The timer callback, the watchdog
+  // and Rando all read-modify-write the same document; unserialised, two of
+  // them interleave and the round replays or double-advances. This is an
+  // in-process lock and assumes a single games-service instance, which is
+  // the current deployment shape.
+  private gameLocks: { [gameId: string]: Promise<void> } = {};
+
+  protected withGameLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.gameLocks[gameId] || Promise.resolve();
+    const run = prev.then(fn, fn);
+    this.gameLocks[gameId] = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private setGameTimeout(gameId: string, cb: (game: GameInterface) => void, timeout: number, armedFor?: { state: string; turn: number }) {
     if (this.gameTimeout[gameId]) {
       clearTimeout(this.gameTimeout[gameId]);
     }
 
-    this.timeoutMeta[gameId] = { armedAt: Date.now(), timeoutSecs: timeout };
-    this.gameTimeout[gameId] = setTimeout(async () => {
+    this.timeoutMeta[gameId] = { armedAt: Date.now(), timeoutSecs: timeout, state: armedFor && armedFor.state, turn: armedFor && armedFor.turn };
+    this.gameTimeout[gameId] = setTimeout(() => this.withGameLock(gameId, async () => {
       // Timing only. This fetch pulls the whole game doc, which grows with the
       // match: 160 turns measured at 147KB. If the between-rounds delay people
       // report is transport rather than logic, it shows up right here.
       const t0 = Date.now();
       try {
         const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+        // Staleness guard: if the doc has moved past the state/turn this timer
+        // was armed for, something else already advanced the game (an early
+        // all-submitted advance, the czar picking, another instance during a
+        // rolling deploy). Firing anyway is exactly the round-replay bug.
+        const meta = this.timeoutMeta[gameId];
+        if (meta && meta.state && game && game.turnData) {
+          const sameState = (game as any).gameState === meta.state;
+          const sameTurn = game.turnData.turn === meta.turn;
+          if (!sameState || !sameTurn) {
+            this.logger.warn(`skip stale timer ${gameId}: armed for ${meta.state}/t${meta.turn}, doc is ${(game as any).gameState}/t${game.turnData.turn}`);
+            return;
+          }
+        }
         const tGet = Date.now();
         await cb(game);
         const tCb = Date.now();
@@ -102,7 +130,7 @@ export default class Game extends TurnHandler {
       } catch (err) {
         this.logger.warn(`Game timeout handler error (gameId: ${gameId}): ${err.message}`);
       }
-    }, timeout * 1000);
+    }), timeout * 1000);
   }
 
   public destroyGame(id: string) {
@@ -132,9 +160,41 @@ export default class Game extends TurnHandler {
     // every second of it was a player staring at a frozen screen.
     const GRACE_MS = 10 * 1000;
     for (const game of games) {
+      // A live in-process timer that has not expired vouches for the game.
       const meta = this.timeoutMeta[game._id];
-      const stalled = !meta || Date.now() > meta.armedAt + meta.timeoutSecs * 1000 + GRACE_MS;
-      if (!stalled) {
+      const timerHealthy = meta && Date.now() <= meta.armedAt + meta.timeoutSecs * 1000 + GRACE_MS;
+      if (timerHealthy) {
+        continue;
+      }
+
+      // No healthy timer in THIS process. That used to mean "stalled", which
+      // was the round-replay bug: every deploy wipes process memory, so the
+      // boot sweep resumed every live game, re-announced the round players
+      // were mid-way through with the same black card, and locked out anyone
+      // who had already submitted. The document itself now says when the state
+      // last changed, so a game is only stalled once its own phase deadline
+      // has genuinely passed.
+      const stateAge = Date.now() - ((game as any).stateChangedAt || 0);
+      const phase = String((game as any).gameState || '');
+      const phaseSecs = phase === GameState.TURN_SETUP ? 10 : ((game as any).roundTime || 60);
+      if (stateAge < phaseSecs * 1000 + GRACE_MS) {
+        // Healthy game, dead timer (fresh boot). Re-arm quietly for the time
+        // it has left instead of replaying the announcement.
+        const leftSecs = Math.max(1, Math.ceil(phaseSecs - stateAge / 1000));
+        const prevT = (game as any).prevTurnData;
+        if (prevT && prevT.gameId) {
+          this.logger.info(`watchdog: re-arming live game ${game._id} (${phase}, ${leftSecs}s left)`);
+          const armedFor = { state: phase, turn: game.turnData && game.turnData.turn };
+          if (phase === GameState.TURN_SETUP) {
+            this.setGameTimeout(game._id, (g) => this.handleNextTurn(g), leftSecs, armedFor);
+          } else if (phase === GameState.PICKING_CARDS) {
+            this.setGameTimeout(game._id, (g) => this.handleWinnerSelection(g), leftSecs, armedFor);
+          } else if (phase === GameState.SELECTING_WINNER) {
+            this.setGameTimeout(game._id, (g) => this.handleNoWinner(g, 'The Czar did not pick a winner! They have failed us all...'), leftSecs, armedFor);
+          } else {
+            this.setGameTimeout(game._id, (g) => { this.destroyGame(g._id); }, leftSecs, armedFor);
+          }
+        }
         continue;
       }
 
@@ -162,9 +222,9 @@ export default class Game extends TurnHandler {
         // Too fresh to have a persisted turn; leave it for the next sweep
         continue;
       }
-      this.logger.warn(`watchdog: resuming stalled game ${game._id} (state: ${(game as any).gameState})`);
+      this.logger.warn(`watchdog: resuming stalled game ${game._id} (state: ${(game as any).gameState}, stateAge=${Math.round(stateAge / 1000)}s)`);
       try {
-        await this.onTurnUpdated(prev);
+        await this.withGameLock(game._id, () => this.onTurnUpdated(prev));
       } catch (err) {
         this.logger.warn(`watchdog: failed to resume ${game._id}: ${err.message}`);
       }
@@ -175,23 +235,26 @@ export default class Game extends TurnHandler {
     try {
       // Try update the games prevState.
       // tslint:disable-next-line: max-line-length
-      const updatedGame: GameInterface = await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state });
+      // stateChangedAt lets the watchdog judge staleness from the document
+      // rather than from process memory that a deploy wipes.
+      const updatedGame: GameInterface = await this.broker.call('games.update', { id: updatedTurn.gameId, prevTurnData: updatedTurn, gameState: updatedTurn.state, stateChangedAt: Date.now() });
 
+      const armedFor = { state: updatedTurn.state, turn: updatedTurn.turn };
       switch (updatedTurn.state) {
         case GameState.TURN_SETUP:
           const timeout = updatedGame.prevTurnData.initializing ? 0 : 10;
-          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout);
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout, armedFor);
         case GameState.PICKING_CARDS:
           this.scheduleRandoPlay(updatedTurn.gameId);
           return this.setGameTimeout(updatedTurn.gameId, (game) =>
-            this.handleWinnerSelection(game), updatedGame.roundTime);
+            this.handleWinnerSelection(game), updatedGame.roundTime, armedFor);
         case GameState.SELECTING_WINNER:
-          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), updatedGame.roundTime);
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), updatedGame.roundTime, armedFor);
         case GameState.ENEDED:
           return this.setGameTimeout(updatedTurn.gameId, (game) => {
             // kick everyone out and end the game;
             this.destroyGame(game._id);
-          }, updatedGame.roundTime);
+          }, updatedGame.roundTime, armedFor);
         default:
           this.logger.error('Not sure which state to call');
           return;
@@ -383,7 +446,7 @@ export default class Game extends TurnHandler {
     }
     // Randomized 3-8s so Rando feels like a (bad) player, not a cron job
     const delay = 3000 + Math.random() * 5000;
-    this.randoTimeout[gameId] = setTimeout(async () => {
+    this.randoTimeout[gameId] = setTimeout(() => this.withGameLock(gameId, async () => {
       try {
         const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
         const rando = game?.players?.[RANDO_ID];
@@ -403,7 +466,7 @@ export default class Game extends TurnHandler {
       } catch (err) {
         this.logger.warn(`Rando play failed (gameId: ${gameId}): ${err.message}`);
       }
-    }, delay);
+    }), delay);
   }
 
   public async onHandSubmitted(game: GameInterface, playerId: string, whiteCards: string[]) {
@@ -415,7 +478,14 @@ export default class Game extends TurnHandler {
 
     const updatedGame = await this.submitCards(game, playerId, whiteCards);
     if (this.hasEveryoneSelected(updatedGame)) {
-      this.handleWinnerSelection(updatedGame);
+      // Locked and re-checked: the LAST two submits of a round routinely land
+      // within milliseconds of each other, and both used to see
+      // "everyone selected" and both announce winner selection.
+      await this.withGameLock(game._id, async () => {
+        const fresh = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(() => null);
+        if (!fresh || (fresh as any).gameState !== GameState.PICKING_CARDS) { return; }
+        await this.handleWinnerSelection(fresh);
+      });
     }
   }
 
