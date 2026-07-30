@@ -545,7 +545,9 @@ export default class GameService extends Service {
     } catch (err) {
       throw new Error(`Room not found: ${roomId}`);
     }
-    if (_room.players.length < 2) {
+    // Solo rooms start with one human; the probe bots are added at game
+    // creation and never live in room.players.
+    if (_room.players.length < 2 && !(_room.options && (_room.options as any).soloMode)) {
       throw new Error('Not enough Players');
     }
 
