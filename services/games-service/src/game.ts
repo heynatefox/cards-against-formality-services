@@ -89,7 +89,7 @@ export default class Game extends TurnHandler {
   // the current deployment shape.
   private gameLocks: { [gameId: string]: Promise<void> } = {};
 
-  protected withGameLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
+  public withGameLock<T>(gameId: string, fn: () => Promise<T>): Promise<T> {
     const prev = this.gameLocks[gameId] || Promise.resolve();
     const run = prev.then(fn, fn);
     this.gameLocks[gameId] = run.then(() => undefined, () => undefined);
@@ -519,14 +519,16 @@ export default class Game extends TurnHandler {
 
     const updatedGame = await this.submitCards(game, playerId, whiteCards);
     if (this.hasEveryoneSelected(updatedGame)) {
-      // Locked and re-checked: the LAST two submits of a round routinely land
-      // within milliseconds of each other, and both used to see
-      // "everyone selected" and both announce winner selection.
-      await this.withGameLock(game._id, async () => {
-        const fresh = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(() => null);
-        if (!fresh || (fresh as any).gameState !== GameState.PICKING_CARDS) { return; }
-        await this.handleWinnerSelection(fresh);
-      });
+      // CONTRACT: the caller holds this game's lock (bot and Rando timers,
+      // the timer callback, the watchdog, and the submit action all do).
+      // Taking it again here deadlocked the whole game: the chain is a
+      // promise queue, not a reentrant mutex, so the inner acquire waited on
+      // the outer forever and every later timer queued behind the wedge.
+      // The fresh re-read plus state check keeps the transition idempotent
+      // when the last two submits race.
+      const fresh = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(() => null);
+      if (!fresh || (fresh as any).gameState !== GameState.PICKING_CARDS) { return; }
+      await this.handleWinnerSelection(fresh);
     }
   }
 

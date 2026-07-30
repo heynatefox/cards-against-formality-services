@@ -1792,8 +1792,11 @@ export default class GameService extends Service {
       return Promise.reject(new Errors.MoleculerError('You cannot submit a card for another user.', 401))
     }
 
+    // Under the game lock: onHandSubmitted's everyone-selected transition
+    // expects the caller to hold it (see the contract note there).
     const game: any = await this.getGameMatchingRoom(ctx, roomId);
-    await this.gameService.onHandSubmitted(game, clientId, cards);
+    await this.gameService.withGameLock(String(game._id), () =>
+      this.gameService.onHandSubmitted(game, clientId, cards));
     return { message: 'Cards successfully submitted' };
   }
 
