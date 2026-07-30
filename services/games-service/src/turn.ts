@@ -76,20 +76,40 @@ export default class TurnHandler {
       if (id === 'default') { continue; }
       const g = sig[id] || {};
       if (g.cardType && g.cardType !== 'white') { continue; }  // prompts are not playable answers
-      pool.push({ id, text: '', tags: {
+      const tags: any = {
         heat: g.h, cls: g.cls,
         measuresPrimary: g.measures && g.measures.primary,
-      } as CardTags });
+      };
+      // Wave-2 cards carry full axis vectors; ladder rungs share them by
+      // design, so contrastScore sees zero confound inside a ladder and the
+      // engine reaches for them on its own.
+      if (g.m != null) { tags.mode = g.m; }
+      if (g.r != null) { tags.register = g.r; }
+      if (g.s != null) { tags.sincerity = g.s; }
+      if (g.f) { tags.flavors = g.f; }
+      pool.push({ id, text: '', tags: tags as CardTags });
     }
     TurnHandler.probePool = pool;
     return pool;
+  }
+
+  /** Seeded-control membership: the 86 empirically dead cards. */
+  public isControlCard(id: string): boolean {
+    return BENCHED.has(id);
   }
 
   /** Tag vector for one card id, for profile updates and the round writer. */
   public tagsForCard(id: string): CardTags | null {
     const g = (resolvedSignal as any)[id];
     if (g && g.cardType !== 'black') {
-      return { heat: g.h, cls: g.cls, measuresPrimary: g.measures && g.measures.primary } as CardTags;
+      const t: any = { heat: g.h, cls: g.cls, measuresPrimary: g.measures && g.measures.primary };
+      if (g.m != null) { t.mode = g.m; }
+      if (g.r != null) { t.register = g.r; }
+      if (g.s != null) { t.sincerity = g.s; }
+      if (g.f) { t.flavors = g.f; }
+      if (g.ladder) { t.ladder = g.ladder; }
+      if (g.paraphrase) { t.paraphrase = g.paraphrase; }
+      return t as CardTags;
     }
     const a = (signalTags as any)[id];
     const b = (tasteTags as any)[id];
@@ -139,6 +159,18 @@ export default class TurnHandler {
         // being dealt. Reversible by emptying bench-v1.json.
         const v2 = signalTags as { [id: string]: { h: number } };
         const servableWhites = _whiteCards.filter(id => !BENCHED.has(id) && !(v2[id] && v2[id].h >= 5));
+
+        // Seeded controls: a sprinkle of the benched dead-weight cards goes
+        // back into the draw at ~1-in-40 density. They are the attention
+        // check that certifies per-player data quality: every card in the
+        // deal is otherwise at least decent, so a player who picks a known
+        // dud from a full hand is flagging their own noise. Rows mark them.
+        const dudPool = Array.from(BENCHED).filter(id => _whiteCards.includes(id));
+        const dudCount = Math.min(dudPool.length, Math.max(1, Math.floor(servableWhites.length / 40)));
+        for (let i = 0; i < dudCount; i++) {
+          const idx = this.getRandomIndex(dudPool.length - 1);
+          servableWhites.push(dudPool.splice(idx, 1)[0]);
+        }
 
         // Candidate injection: the Signal decks ride along in every game's
         // draw pile (the stratified picker caps them at 2 per hand). Prompts
@@ -500,10 +532,32 @@ export default class TurnHandler {
       const humanId = Object.keys(players).find(id => !isProbeBot(id) && id !== 'rando-cardrissian');
       const botIds = Object.keys(players).filter(id => isProbeBot(id));
       if (humanId && botIds.length) {
-        const profile: TasteProfile = await this.broker
-          .call<TasteProfile, any>('games.solo-profile-fetch', { player: humanId })
-          .catch(() => ({ mean: {}, n: {} }));
-        const probe: Probe | null = selectProbe(this.getProbePool(), profile || { mean: {}, n: {} }, botIds.length);
+        const fetched: any = await this.broker
+          .call<any, any>('games.solo-profile-fetch', { player: humanId })
+          .catch(() => null);
+        const profile: TasteProfile = fetched && fetched.mean ? fetched : { mean: {}, n: {} };
+
+        // Test-retest: when a pair served 7+ days ago is eligible, sometimes
+        // re-serve it verbatim. Same person, same choice, weeks apart: the
+        // agreement rate is the corpus's measured noise floor.
+        const retestCandidate = fetched && fetched.retestCandidate;
+        const useRetest = !!(retestCandidate && Math.random() < 0.2
+          && (retestCandidate.cards || []).length >= Math.min(2, botIds.length));
+
+        let probe: Probe | null = null;
+        if (useRetest) {
+          const byId: { [id: string]: CardTags | null } = {};
+          retestCandidate.cards.forEach((id: string) => { byId[id] = this.tagsForCard(id); });
+          probe = {
+            axis: retestCandidate.axis,
+            cards: retestCandidate.cards.map((id: string) => ({ id, text: '', tags: byId[id] || {} })),
+            score: 0,
+            authored: false,
+          };
+        } else {
+          probe = selectProbe(this.getProbePool(), profile, botIds.length);
+        }
+
         if (probe) {
           const botCards: { [botId: string]: string } = {};
           botIds.forEach((botId, i) => {
@@ -511,13 +565,39 @@ export default class TurnHandler {
             players[botId].cards = [card.id];
             botCards[botId] = card.id;
           });
+
+          // Seeded control: roughly 1-in-8 non-retest rounds, the last bot
+          // swaps its probe card for a known dud. Picking the dud over the
+          // real options is the per-player attention flag. Never counted as
+          // a taste observation (see onWinnerSelected).
+          let controlBot: string | null = null;
+          let controlCard: string | null = null;
+          if (!useRetest && botIds.length >= 3 && BENCHED.size && Math.random() < 0.125) {
+            const duds = Array.from(BENCHED);
+            controlBot = botIds[botIds.length - 1];
+            controlCard = duds[this.getRandomIndex(duds.length - 1)];
+            players[controlBot].cards = [controlCard];
+            botCards[controlBot] = controlCard;
+          }
+
           soloProbe = {
             axis: probe.axis,
             score: probe.score,
             authored: probe.authored,
             targetPlayer: humanId,
             botCards,
+            controlBot,
+            controlCard,
+            retest: useRetest ? { servedTs: retestCandidate.ts, originalWinner: retestCandidate.winnerCard || null } : null,
           };
+
+          // Record what was served so a future session can re-ask it.
+          this.broker.call('games.solo-probe-served', {
+            player: humanId,
+            axis: probe.axis,
+            cards: probe.cards.map(c => c.id),
+            retestOf: useRetest ? retestCandidate.ts : undefined,
+          }).catch(() => undefined);
         } else {
           this.logger.warn(`solo: probe selection failed for game ${game._id}; bots sit out this round`);
         }
@@ -525,7 +605,7 @@ export default class TurnHandler {
     }
 
     // tslint:disable-next-line: max-line-length
-    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {}, soloProbe });
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {}, predictions: {}, lastPredictions: {}, czarDeliberationMs: null, soloProbe });
     const tUpdate = Date.now();
 
     // Only complain when it actually went slowly, so this stays quiet in the

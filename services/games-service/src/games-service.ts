@@ -8,6 +8,7 @@ import * as tasteTagsSvc from './data/card-tags-v1.json';
 import * as signalTagsSvc from './data/card-tags-v2.json';
 import * as signalCardsPayload from './data/signal-cards-v1.json';
 import { updateProfile, emptyProfile, isProbeBot, Axis, CardTags } from './solo-probe';
+import { POINTS_SECOND, POINTS_THIRD, REBOOT_COST, REASON_TAGS } from './economy';
 import { signalRegistry } from './signal-registry';
 
 export default class GameService extends Service {
@@ -49,9 +50,20 @@ export default class GameService extends Service {
               player: 'string',
               axis: { type: 'enum', values: ['heat', 'mode', 'register', 'sincerity'] },
               tags: 'object',
+              winnerCard: { type: 'string', optional: true },
+              retest: { type: 'object', optional: true },
               decisionMs: { type: 'number', optional: true },
             },
             handler: this.soloObserve
+          },
+          'solo-probe-served': {
+            params: {
+              player: 'string',
+              axis: 'string',
+              cards: { type: 'array', items: 'string' },
+              retestOf: { type: 'number', optional: true },
+            },
+            handler: this.soloProbeServed
           },
           health: this.health,
           start: {
@@ -79,9 +91,25 @@ export default class GameService extends Service {
           reason: {
             params: {
               roomId: 'string',
-              text: { type: 'string', min: 1, max: 500 }
+              text: { type: 'string', min: 1, max: 500, optional: true },
+              tag: { type: 'enum', values: REASON_TAGS, optional: true }
             },
             handler: this.submitReason
+          },
+          predict: {
+            params: {
+              roomId: 'string',
+              predictedId: 'string'
+            },
+            handler: this.predictWinner
+          },
+          rank: {
+            params: {
+              roomId: 'string',
+              second: { type: 'string', optional: true },
+              third: { type: 'string', optional: true }
+            },
+            handler: this.rankRound
           },
           leaderboard: {
             cache: { ttl: 60 },
@@ -341,7 +369,13 @@ export default class GameService extends Service {
           // Any synthetic seat. Rando kept separately for continuity with
           // every analysis written before probe bots existed.
           isBot: playerId === 'rando-cardrissian' || isProbeBot(playerId),
-          cards: (cards ?? []).map((c: any) => ({ id: c._id, text: c.text })),
+          cards: (cards ?? []).map((c: any) => {
+            const card: any = { id: c._id, text: c.text };
+            // Seeded control: a benched dud deliberately back in circulation.
+            // Winning rounds with one of these is the noise flag.
+            if (this.gameService.isControlCard(String(c._id))) { card.control = true; }
+            return card;
+          }),
         })),
         winner: Array.isArray(turn.winner) ? turn.winner.map(hash) : hash(turn.winner),
         players: (turn.players ?? []).map((p: any) => ({ id: hash(p._id), score: p.score })),
@@ -360,6 +394,26 @@ export default class GameService extends Service {
         },
         signals: (() => {
           const sig: any = Object.keys(latencies).length ? { latencies } : {};
+
+          // Judge deliberation: ms between the cards being revealed and the
+          // verdict. Slow picks mark the close calls.
+          if (typeof (game as any)?.czarDeliberationMs === 'number') {
+            sig.czarDeliberationMs = (game as any).czarDeliberationMs;
+          }
+
+          // Audience predictions, correctness resolved. A prediction models
+          // the judge, not the predictor's own taste; it stays in its own
+          // field and is never folded into preference analysis.
+          const preds = (game as any)?.lastPredictions;
+          if (preds && Object.keys(preds).length && turn.winner) {
+            const w = Array.isArray(turn.winner) ? turn.winner[0] : turn.winner;
+            sig.predictions = Object.entries(preds).map(([predictor, predicted]: [string, any]) => ({
+              predictor: hash(predictor),
+              predicted: hash(predicted),
+              correct: predicted === w,
+            }));
+          }
+
           const probe = (game as any)?.soloProbe;
           if ((game as any)?.soloMode && probe && probe.axis) {
             const winners = new Set(Array.isArray(turn.winner) ? turn.winner : [turn.winner]);
@@ -368,12 +422,30 @@ export default class GameService extends Service {
               contrastAxis: probe.axis,
               contrastScore: probe.score,
               authoredProbe: !!probe.authored,
-              options: Object.entries(probe.botCards || {}).map(([botId, cardId]: [string, any]) => ({
-                id: cardId,
-                tags: this.gameService.tagsForCard(cardId),
-                won: winners.has(botId),
-              })),
+              options: Object.entries(probe.botCards || {}).map(([botId, cardId]: [string, any]) => {
+                const opt: any = {
+                  id: cardId,
+                  tags: this.gameService.tagsForCard(cardId),
+                  won: winners.has(botId),
+                };
+                if (probe.controlBot === botId) { opt.control = true; }
+                return opt;
+              }),
             };
+            if (probe.controlCard) {
+              sig.solo.control = {
+                id: probe.controlCard,
+                won: winners.has(probe.controlBot),
+              };
+            }
+            if (probe.retest) {
+              const winBot = Array.isArray(turn.winner) ? turn.winner[0] : turn.winner;
+              const winCard = probe.botCards && probe.botCards[winBot];
+              sig.solo.retest = {
+                originalTs: probe.retest.servedTs,
+                agreed: !!(probe.retest.originalWinner && winCard && probe.retest.originalWinner === winCard),
+              };
+            }
           }
           return sig;
         })(),
@@ -462,15 +534,33 @@ export default class GameService extends Service {
     return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
   }
 
-  private async submitReason(ctx: Context<{ roomId: string; text: string }, { user: { uid: string } }>) {
-    const { roomId, text } = ctx.params;
+  private async submitReason(ctx: Context<{ roomId: string; text?: string; tag?: string }, { user: { uid: string } }>) {
+    const { roomId, text, tag } = ctx.params;
     const uid = ctx.meta.user.uid;
+    if (!text && !tag) {
+      throw new Errors.MoleculerError('Say why: a tag or your own words', 400, 'EMPTY_REASON');
+    }
 
     const game: any = await this.getGameMatchingRoom(ctx, roomId);
     const prev = game?.prevTurnData;
     // Only the czar of the just-completed round may explain themselves
     if (!prev || prev.czar !== uid) {
       throw new Errors.MoleculerError('Only the Czar explains themselves', 403, 'NOT_THE_CZAR');
+    }
+
+    // Tap-to-tag: the fast path. One tap converts a bare preference into an
+    // attributed one; the free-text path stays for whoever wants the trophy.
+    if (tag && !text) {
+      const db2 = (this.adapter as any)?.db;
+      if (db2 && process.env.ANALYTICS_SALT) {
+        db2.collection('round_analytics')
+          .updateOne(
+            { gameId: String(game._id), turn: prev.turn },
+            { $set: { 'signals.czarReasoning.tag': tag, 'signals.czarReasoning.ts': Date.now() } },
+          )
+          .catch((err: any) => this.logger.warn(`reason tag capture failed: ${err.message}`));
+      }
+      return { score: 0, verdict: 'tagged', tag };
     }
 
     const clean = text.trim().slice(0, 500);
@@ -491,7 +581,13 @@ export default class GameService extends Service {
       db.collection('round_analytics')
         .updateOne(
           { gameId: String(game._id), turn: prev.turn },
-          { $set: { 'signals.czarReasoning': { text: clean, score, verdict, pasted: score === 2, ts: Date.now() } } }
+          { $set: {
+            'signals.czarReasoning.text': clean,
+            'signals.czarReasoning.score': score,
+            'signals.czarReasoning.verdict': verdict,
+            'signals.czarReasoning.pasted': score === 2,
+            'signals.czarReasoning.ts': Date.now(),
+          } }
         )
         .catch((err: any) => this.logger.warn(`reason capture failed: ${err.message}`));
     }
@@ -1720,24 +1816,173 @@ export default class GameService extends Service {
    * @param {Context<{ bug: string; route?: string; context?: string }>} ctx
    * @memberof GameService
    */
+  /**
+   * Audience prediction: while the czar deliberates, everyone else calls the
+   * winner. A prediction is a belief about the judge, never a taste signal;
+   * it lives in its own doc field and its own row field, and the two are
+   * never mixed (same law as bots never judging).
+   */
+  private async predictWinner(ctx: Context<{ roomId: string; predictedId: string }, { user: { uid: string } }>) {
+    const { roomId, predictedId } = ctx.params;
+    const uid = ctx.meta.user.uid;
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+
+    if (game.gameState !== 'selectingWinner') {
+      throw new Errors.MoleculerError('Predictions are open while the Czar deliberates', 400, 'NOT_DELIBERATING');
+    }
+    if (game.turnData?.czar === uid) {
+      throw new Errors.MoleculerError('The Czar cannot predict their own verdict', 400, 'CZAR_CANNOT_PREDICT');
+    }
+    if (!(predictedId in (game.selectedCards || {}))) {
+      throw new Errors.MoleculerError('That submission is not on the table', 400, 'BAD_PREDICTION');
+    }
+    if (game.predictions && uid in game.predictions) {
+      throw new Errors.MoleculerError('You already locked a prediction', 400, 'ALREADY_PREDICTED');
+    }
+
+    // Dotted path: two players predicting simultaneously must not clobber
+    // each other with a whole-object write.
+    const db = (this.adapter as any)?.db;
+    if (!db) { throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB'); }
+    const { ObjectID } = require('mongodb');
+    await db.collection('games').updateOne(
+      { _id: new ObjectID(String(game._id)) },
+      { $set: { [`predictions.${uid}`]: predictedId } },
+    );
+    return { message: 'Prediction locked' };
+  }
+
+  /**
+   * Post-verdict ranking: the czar orders the runners-up. Optional, never
+   * gates the round; second and third only score when this actually runs,
+   * which is what makes tables nag their czar into finishing it.
+   */
+  private async rankRound(ctx: Context<{ roomId: string; second?: string; third?: string }, { user: { uid: string } }>) {
+    const { roomId, second, third } = ctx.params;
+    const uid = ctx.meta.user.uid;
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+    const prev = game?.prevTurnData;
+
+    if (!prev || prev.czar !== uid) {
+      throw new Errors.MoleculerError('Only the Czar ranks the round', 403, 'NOT_THE_CZAR');
+    }
+    if ((game.lastRankedTurn ?? -1) >= prev.turn) {
+      throw new Errors.MoleculerError('This round is already ranked', 400, 'ALREADY_RANKED');
+    }
+    const winnerId = Array.isArray(prev.winner) ? prev.winner[0] : prev.winner;
+    const onTable = new Set(Object.keys(prev.selectedCards || {}));
+    const picks = [second, third].filter(Boolean) as string[];
+    if (!picks.length) {
+      throw new Errors.MoleculerError('Rank at least second place', 400, 'EMPTY_RANKING');
+    }
+    if (new Set(picks).size !== picks.length || picks.includes(winnerId)) {
+      throw new Errors.MoleculerError('Each place goes to a different player', 400, 'BAD_RANKING');
+    }
+    for (const p of picks) {
+      if (!onTable.has(p)) {
+        throw new Errors.MoleculerError('That submission was not in the round', 400, 'BAD_RANKING');
+      }
+    }
+
+    // Pay out and stamp the turn as ranked.
+    const players = game.players || {};
+    if (second && players[second]) { players[second].score += POINTS_SECOND; }
+    if (third && players[third]) { players[third].score += POINTS_THIRD; }
+    await this.broker.call('games.update', { id: game._id, players, lastRankedTurn: prev.turn });
+
+    // Dataset: the full ordering attaches to the captured row. Hashes only.
+    const db = (this.adapter as any)?.db;
+    const salt = process.env.ANALYTICS_SALT;
+    if (db && salt) {
+      // tslint:disable-next-line: no-var-requires
+      const { createHash } = require('crypto');
+      const hash = (id: string) => createHash('sha256').update(`${salt}:${id}`).digest('hex').slice(0, 16);
+      db.collection('round_analytics').updateOne(
+        { gameId: String(game._id), turn: prev.turn },
+        { $set: { 'signals.ranking': {
+          first: hash(winnerId),
+          second: second ? hash(second) : null,
+          third: third ? hash(third) : null,
+          ts: Date.now(),
+        } } },
+      ).catch((err: any) => this.logger.warn(`ranking capture failed: ${err.message}`));
+    }
+    return { message: 'Round ranked' };
+  }
+
   private async soloProfileFetch(ctx: Context<{ player: string }>) {
     const db = (this.adapter as any)?.db;
     if (!db) { return emptyProfile(); }
     const doc = await db.collection('solo_profiles').findOne({ _id: ctx.params.player });
-    return doc ? { mean: doc.mean || {}, n: doc.n || {} } : emptyProfile();
+    if (!doc) { return emptyProfile(); }
+
+    // Test-retest: oldest pair that was answered, is 7+ days cold, and has
+    // not been re-asked yet. The probe engine re-serves it verbatim.
+    const RETEST_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - RETEST_AFTER_MS;
+    const retestCandidate = (doc.probeHistory || [])
+      .filter((h: any) => h && h.ts < cutoff && h.winnerCard && !h.retested)
+      .sort((a: any, b: any) => a.ts - b.ts)[0] || null;
+
+    return { mean: doc.mean || {}, n: doc.n || {}, retestCandidate };
   }
 
-  private async soloObserve(ctx: Context<{ player: string; axis: Axis; tags: CardTags; decisionMs?: number }>) {
+  /**
+   * Serve-time record of what the probe engine asked, so a later session can
+   * ask it again. Capped so the doc never grows unbounded. When this serve IS
+   * the re-ask, the original entry gets stamped so it is never re-asked twice.
+   */
+  private async soloProbeServed(ctx: Context<{ player: string; axis: string; cards: string[]; retestOf?: number }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) { return { ok: false }; }
+    const { player, axis, cards, retestOf } = ctx.params;
+    const update: any = {
+      $push: { probeHistory: { $each: [{ ts: Date.now(), axis, cards, winnerCard: null, retested: !!retestOf }], $slice: -40 } },
+      $set: { updatedAt: Date.now() },
+    };
+    await db.collection('solo_profiles').updateOne({ _id: player }, update, { upsert: true });
+    if (retestOf) {
+      await db.collection('solo_profiles').updateOne(
+        { _id: player },
+        { $set: { 'probeHistory.$[h].retested': true } },
+        { arrayFilters: [{ 'h.ts': retestOf }] },
+      ).catch(() => undefined);
+    }
+    return { ok: true };
+  }
+
+  private async soloObserve(ctx: Context<{ player: string; axis: Axis; tags: CardTags; winnerCard?: string; retest?: { servedTs: number; originalWinner: string | null }; decisionMs?: number }>) {
     const db = (this.adapter as any)?.db;
     if (!db) { throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB'); }
-    const { player, axis, tags } = ctx.params;
+    const { player, axis, tags, winnerCard, retest } = ctx.params;
     const existing = await db.collection('solo_profiles').findOne({ _id: player });
     const next = updateProfile(existing ? { mean: existing.mean || {}, n: existing.n || {} } : emptyProfile(), axis, tags);
+
+    const set: any = { mean: next.mean, n: next.n, updatedAt: Date.now() };
+    // Retest verdicts also accumulate the reliability tally: same pair,
+    // same person, same answer? That rate is the corpus's noise floor.
+    if (retest && retest.originalWinner && winnerCard) {
+      const agreed = retest.originalWinner === winnerCard;
+      const r = (existing && existing.retests) || { n: 0, agreed: 0 };
+      set.retests = { n: r.n + 1, agreed: r.agreed + (agreed ? 1 : 0) };
+    }
     await db.collection('solo_profiles').updateOne(
       { _id: player },
-      { $set: { mean: next.mean, n: next.n, updatedAt: Date.now() } },
+      { $set: set },
       { upsert: true },
     );
+    // Stamp the verdict onto the newest unanswered history entry (matched by
+    // its ts) so it becomes retest-eligible. Matching on winnerCard null
+    // alone would stamp every abandoned round's entry with this verdict.
+    const hist: any[] = (existing && existing.probeHistory) || [];
+    const openEntry = hist.filter(h => h && !h.winnerCard).sort((a, b) => b.ts - a.ts)[0];
+    if (winnerCard && openEntry) {
+      await db.collection('solo_profiles').updateOne(
+        { _id: player },
+        { $set: { 'probeHistory.$[h].winnerCard': winnerCard } },
+        { arrayFilters: [{ 'h.ts': openEntry.ts }] },
+      ).catch(() => undefined);
+    }
     return { ok: true, n: next.n };
   }
 
@@ -1774,8 +2019,8 @@ export default class GameService extends Service {
     if (game.selectedCards && uid in game.selectedCards) {
       throw new Errors.MoleculerError('You already played this round', 400, 'ALREADY_PLAYED');
     }
-    if ((player.score || 0) < 1) {
-      throw new Errors.MoleculerError('Costs one point. You have none.', 400, 'NO_POINTS');
+    if ((player.score || 0) < REBOOT_COST) {
+      throw new Errors.MoleculerError(`Costs ${REBOOT_COST} points. You are too broke.`, 400, 'NO_POINTS');
     }
 
     // Capture the discard: a whole hand thrown away at a real cost is the
@@ -1793,7 +2038,7 @@ export default class GameService extends Service {
         player: hashed,
         gameId: game._id,
         cards: player.cards.filter((c: any) => typeof c === 'string'),
-        cost: 1,
+        cost: REBOOT_COST,
         reason: 'reboot',
         tagset: 'v2',
       }).catch(() => undefined);

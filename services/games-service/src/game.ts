@@ -2,6 +2,7 @@ import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 import TurnHandler, { GameState, TurnDataWithState, TurnData } from './turn';
 import { PROBE_BOT_IDS, isProbeBot, updateProfile, Axis } from './solo-probe';
+import { POINTS_WIN, POINTS_PREDICT, REBOOT_COST, pointsTarget } from './economy';
 
 // turn-setup -> playing cards -> selecting winner -> repeat. -> end-game.
 /**
@@ -328,6 +329,7 @@ export default class Game extends TurnHandler {
           turnData: initalTurnData,
           selectedCards: {},
           roundTime: room.options.roundTime,
+          predictions: {},
           soloMode: !!(room.options as any)?.soloMode
         });
       })
@@ -390,7 +392,7 @@ export default class Game extends TurnHandler {
 
     const { players, room } = game;
     // Target should actually be based on the first user score to get to that.
-    const isTargetReached = Object.values(players).some(player => player.score >= room.options.target);
+    const isTargetReached = Object.values(players).some(player => player.score >= pointsTarget(room.options.target));
     // if not enough cards to continue. End game.
     const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards);
     if (isTargetReached || !hasEnoughCards) {
@@ -576,7 +578,17 @@ export default class Game extends TurnHandler {
     // emit winning cards.
     const winningPlayer = players[winner];
     if (winningPlayer) {
-      winningPlayer.score += 1;
+      winningPlayer.score += POINTS_WIN;
+    }
+
+    // Audience predictions: everyone who called this winner during the
+    // deliberation gets paid. Kept out of any preference field; a prediction
+    // is a belief about the judge, not a taste signal.
+    const predictions: { [p: string]: string } = (game as any).predictions || {};
+    for (const [predictor, predicted] of Object.entries(predictions)) {
+      if (predicted === winner && players[predictor]) {
+        players[predictor].score += POINTS_PREDICT;
+      }
     }
     const populatedSelectedCards = await this.populatedSelectedCards(selectedCards);
 
@@ -591,9 +603,16 @@ export default class Game extends TurnHandler {
       state: GameState.TURN_SETUP,
     };
 
+    // Judge deliberation: SELECTING was announced at stateChangedAt (written
+    // by onTurnUpdated), so the gap to now is how long the czar actually
+    // deliberated over the revealed cards. The close calls are the slow ones.
+    const deliberationMs = (game as any).stateChangedAt
+      ? Math.max(0, Date.now() - (game as any).stateChangedAt)
+      : null;
+
     // Store the end state of each round in a collection.
     turns.push(gameData);
-    await this.broker.call('games.update', { id: game._id, turns, players });
+    await this.broker.call('games.update', { id: game._id, turns, players, czarDeliberationMs: deliberationMs, lastPredictions: predictions, predictions: {} });
 
     // Solo: the czar's verdict is the observation. Fold the winning card's
     // value on the probed axis into the player's taste profile, fire and
@@ -601,13 +620,18 @@ export default class Game extends TurnHandler {
     const probe = (game as any).soloProbe;
     if ((game as any).soloMode && probe && probe.axis && isProbeBot(winner)) {
       const winnerCardId = probe.botCards && probe.botCards[winner];
-      const tags = winnerCardId ? this.tagsForCard(winnerCardId) : null;
+      // A control-round win (the seeded dud took the crown) is an attention
+      // flag, not a taste observation; it must never move the profile.
+      const isControlWin = probe.controlBot && winner === probe.controlBot;
+      const tags = winnerCardId && !isControlWin ? this.tagsForCard(winnerCardId) : null;
       if (tags) {
         this.broker.call('games.solo-observe', {
           player: probe.targetPlayer,
           axis: probe.axis,
           tags,
-          decisionMs: (game as any).turnStartedAt ? Date.now() - (game as any).turnStartedAt : undefined,
+          winnerCard: winnerCardId,
+          retest: probe.retest || undefined,
+          decisionMs: deliberationMs || undefined,
         }).catch(err => this.logger.warn(`solo-observe failed: ${err.message}`));
       }
     }
@@ -695,7 +719,7 @@ export default class Game extends TurnHandler {
    */
   public async rebootPlayerHand(game: GameInterface, clientId: string): Promise<{ score: number }> {
     const player = game.players[clientId];
-    player.score -= 1;
+    player.score -= REBOOT_COST;
     player.cards = [];
     // Mutates player.cards and whiteCards by reference and emits the new hand
     const whiteCards = await this.dealWhiteCards(player, game.whiteCards);

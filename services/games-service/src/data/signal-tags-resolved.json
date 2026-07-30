@@ -1,2934 +1,5937 @@
 {
  "6a5c61b0ba177670dfb95f5d": {
+  "src": "md1-p01",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p01",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "absurd(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776e050b95f5e": {
+  "src": "md1-p02",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p02",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.surrealism",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 3,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776dc96b95f5f": {
+  "src": "md1-p03",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "md1-p03",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 4,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17760bd7b95f60": {
+  "src": "md1-p04",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "md1-p04",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 4,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17760b38b95f61": {
+  "src": "md1-p05",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p05",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 3,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776e059b95f62": {
+  "src": "md1-p06",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p06",
   "measures": {
    "primary": "edge_comfort",
    "secondary": null,
    "pole_or_flavor": "edge-optional fork"
-  },
-  "amp": 5,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177659a6b95f63": {
+  "src": "md1-p07",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p07",
   "measures": {
    "primary": "mode.construction",
    "secondary": "register.depth",
    "pole_or_flavor": "construction(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177687eeb95f64": {
+  "src": "md1-p08",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p08",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "mode fork"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776727bb95f65": {
+  "src": "md1-p09",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p09",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17765e10b95f66": {
+  "src": "md1-p10",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p10",
   "measures": {
    "primary": "register.currency",
    "secondary": "register.depth",
    "pole_or_flavor": "online(+)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177682ddb95f67": {
+  "src": "md1-p11",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p11",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177620c3b95f68": {
+  "src": "md1-p12",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p12",
   "measures": {
    "primary": "sincerity",
    "secondary": null,
    "pole_or_flavor": "earnest/ironic fork"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17760a19b95f69": {
+  "src": "md1-p13",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "md1-p13",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": "axis.risk.adventure_risk",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 4,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177698c9b95f6a": {
+  "src": "md1-p14",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p14",
   "measures": {
    "primary": "edge_comfort",
    "secondary": "axis.risk.social_risk",
    "pole_or_flavor": "edge-optional fork"
-  },
-  "amp": 3,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776081db95f6b": {
+  "src": "md1-p15",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p15",
   "measures": {
    "primary": "register.currency",
    "secondary": "axis.risk.social_risk",
    "pole_or_flavor": "online(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17764961b95f6c": {
+  "src": "md1-p16",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p16",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776e965b95f6d": {
+  "src": "md1-p17",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p17",
   "measures": {
    "primary": "sincerity",
    "secondary": "edge_comfort.sexual",
    "pole_or_flavor": "earnest/ironic fork"
-  },
-  "amp": 3,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17766da7b95f6e": {
+  "src": "md1-p18",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "md1-p18",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 4,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776a572b95f6f": {
+  "src": "md1-p19",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p19",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177645c9b95f70": {
+  "src": "md1-p20",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "md1-p20",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "amp": 4,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776a0c7b95f71": {
+  "src": "md1-p21",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p21",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "evergreen(-)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177691c0b95f72": {
+  "src": "md1-p22",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p22",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.surrealism",
    "pole_or_flavor": "edge-optional fork"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776213db95f73": {
+  "src": "md1-p23",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p23",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "secondary": null,
    "pole_or_flavor": "bold(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177670cab95f74": {
+  "src": "md1-p24",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p24",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "secondary": "axis.risk.payoff_risk",
    "pole_or_flavor": "snap(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17762899b95f75": {
+  "src": "md1-p25",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p25",
   "measures": {
    "primary": "axis.social_energy.recharge",
    "secondary": null,
    "pole_or_flavor": "both poles land"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17761c61b95f76": {
+  "src": "md1-p26",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p26",
   "measures": {
    "primary": "axis.risk.social_risk",
    "secondary": null,
    "pole_or_flavor": "INVERTED: cautious speaks"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177608d2b95f77": {
+  "src": "md1-p27",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p27",
   "measures": {
    "primary": "axis.structure.planning_horizon",
    "secondary": null,
    "pole_or_flavor": "spontaneous(-)"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776eef4b95f78": {
+  "src": "md1-p28",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p28",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "secondary": "axis.creativity.maker",
    "pole_or_flavor": "bold(+)"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177624b7b95f79": {
+  "src": "md1-p29",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "md1-p29",
   "measures": {
    "primary": "interest_intensity",
    "secondary": "register.depth",
    "pole_or_flavor": "depth read"
-  },
-  "amp": 1,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776852eb95f7a": {
+  "src": "md1-p30",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "md1-p30",
   "measures": {
    "primary": "axis.social_alignment.conformity",
    "secondary": null,
    "pole_or_flavor": "group-norm read"
-  },
-  "amp": 2,
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776417eb95f7b": {
+  "src": "md1-r001",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r001",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776345cb95f7c": {
+  "src": "md1-r002",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r002",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177619d4b95f7d": {
+  "src": "md1-r003",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r003",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760d4bb95f7e": {
+  "src": "md1-r004",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r004",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776e623b95f7f": {
+  "src": "md1-r005",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r005",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776a7a6b95f80": {
+  "src": "md1-r006",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r006",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768ee4b95f81": {
+  "src": "md1-r007",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r007",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776e30eb95f82": {
+  "src": "md1-r008",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r008",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "register.currency",
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761335b95f83": {
+  "src": "md1-r009",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r009",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177688efb95f84": {
+  "src": "md1-r010",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r010",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760f1cb95f85": {
+  "src": "md1-r011",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r011",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "sincerity",
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776aae5b95f86": {
+  "src": "md1-r012",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r012",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177625e6b95f87": {
+  "src": "md1-r013",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r013",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": null,
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767681b95f88": {
+  "src": "md1-r014",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r014",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "sincerity",
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761142b95f89": {
+  "src": "md1-r015",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r015",
   "measures": {
    "primary": "mode.surrealism",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "absurd(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177600c0b95f8a": {
+  "src": "md1-r016",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r016",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767fe9b95f8b": {
+  "src": "md1-r017",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r017",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177655c5b95f8c": {
+  "src": "md1-r018",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r018",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761de7b95f8d": {
+  "src": "md1-r019",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r019",
   "measures": {
    "primary": "mode.construction",
    "secondary": "sincerity",
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763c19b95f8e": {
+  "src": "md1-r020",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r020",
   "measures": {
    "primary": "mode.construction",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769615b95f8f": {
+  "src": "md1-r021",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r021",
   "measures": {
    "primary": "mode.construction",
    "secondary": "mode.surrealism",
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776b949b95f90": {
+  "src": "md1-r022",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r022",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177669dbb95f91": {
+  "src": "md1-r023",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r023",
   "measures": {
    "primary": "mode.construction",
    "secondary": null,
    "pole_or_flavor": "construction(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769b3db95f92": {
+  "src": "md1-r024",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r024",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177658d2b95f93": {
+  "src": "md1-r025",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r025",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776007eb95f94": {
+  "src": "md1-r026",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r026",
   "measures": {
    "primary": "register.currency",
    "secondary": "sincerity",
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765e16b95f95": {
+  "src": "md1-r027",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r027",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764763b95f96": {
+  "src": "md1-r028",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r028",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763cc9b95f97": {
+  "src": "md1-r029",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r029",
   "measures": {
    "primary": "register.currency",
    "secondary": null,
    "pole_or_flavor": "online(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177636ebb95f98": {
+  "src": "md1-r030",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r030",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776900db95f99": {
+  "src": "md1-r031",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r031",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177661fcb95f9a": {
+  "src": "md1-r032",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r032",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776149eb95f9b": {
+  "src": "md1-r033",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r033",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762661b95f9c": {
+  "src": "md1-r034",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r034",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760e95b95f9d": {
+  "src": "md1-r035",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r035",
   "measures": {
    "primary": "register.depth",
    "secondary": null,
    "pole_or_flavor": "deep-lore(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764d5bb95f9e": {
+  "src": "md1-r036",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r036",
   "measures": {
    "primary": "sincerity",
    "secondary": null,
    "pole_or_flavor": "earnest(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177669f1b95f9f": {
+  "src": "md1-r037",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r037",
   "measures": {
    "primary": "sincerity",
    "secondary": null,
    "pole_or_flavor": "earnest(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761a64b95fa0": {
+  "src": "md1-r038",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r038",
   "measures": {
    "primary": "sincerity",
    "secondary": null,
    "pole_or_flavor": "earnest(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776ca9ab95fa1": {
+  "src": "md1-r039",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r039",
   "measures": {
    "primary": "sincerity",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "earnest(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761725b95fa2": {
+  "src": "md1-r040",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r040",
   "measures": {
    "primary": "sincerity",
    "secondary": null,
    "pole_or_flavor": "earnest(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768142b95fa3": {
+  "src": "md1-r041",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r041",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776062ab95fa4": {
+  "src": "md1-r042",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r042",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177615ffb95fa5": {
+  "src": "md1-r043",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r043",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c00ab95fa6": {
+  "src": "md1-r044",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r044",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177653c1b95fa7": {
+  "src": "md1-r045",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r045",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768f8db95fa8": {
+  "src": "md1-r046",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r046",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "register.currency",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776a9d7b95fa9": {
+  "src": "md1-r047",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r047",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776794ab95faa": {
+  "src": "md1-r048",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r048",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c75db95fab": {
+  "src": "md1-r049",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r049",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764ed6b95fac": {
+  "src": "md1-r050",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r050",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "axis.risk.social_risk",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760d31b95fad": {
+  "src": "md1-r051",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r051",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": "mode.surrealism",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769beeb95fae": {
+  "src": "md1-r052",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r052",
   "measures": {
    "primary": "edge_comfort.sexual",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762709b95faf": {
+  "src": "md1-r053",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r053",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776179bb95fb0": {
+  "src": "md1-r054",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r054",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776924fb95fb1": {
+  "src": "md1-r055",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r055",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": "axis.risk.payoff_risk",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768c10b95fb2": {
+  "src": "md1-r056",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r056",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762a19b95fb3": {
+  "src": "md1-r057",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r057",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776ec83b95fb4": {
+  "src": "md1-r058",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r058",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": "axis.risk.adventure_risk",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776aec9b95fb5": {
+  "src": "md1-r059",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r059",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177663d2b95fb6": {
+  "src": "md1-r060",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r060",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": "register.currency",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776baa1b95fb7": {
+  "src": "md1-r061",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r061",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762a07b95fb8": {
+  "src": "md1-r062",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r062",
   "measures": {
    "primary": "edge_comfort.gross_out",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766628b95fb9": {
+  "src": "md1-r063",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r063",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": "register.currency",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763213b95fba": {
+  "src": "md1-r064",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r064",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761027b95fbb": {
+  "src": "md1-r065",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r065",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765a48b95fbc": {
+  "src": "md1-r066",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r066",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769354b95fbd": {
+  "src": "md1-r067",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r067",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776334cb95fbe": {
+  "src": "md1-r068",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r068",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": "register.currency",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768b64b95fbf": {
+  "src": "md1-r069",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r069",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c956b95fc0": {
+  "src": "md1-r070",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r070",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177623a0b95fc1": {
+  "src": "md1-r071",
+  "cardType": "white",
   "h": 5,
   "cls": "probe",
-  "src": "md1-r071",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776e5a6b95fc2": {
+  "src": "md1-r072",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "md1-r072",
   "measures": {
    "primary": "edge_comfort.morbid",
    "secondary": "edge_comfort.gross_out",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776b718b95fc3": {
+  "src": "md1-r073",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r073",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "register.currency",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764326b95fc4": {
+  "src": "md1-r074",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r074",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767feab95fc5": {
+  "src": "md1-r075",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r075",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765580b95fc6": {
+  "src": "md1-r076",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r076",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776eb5db95fc7": {
+  "src": "md1-r077",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r077",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776b4ccb95fc8": {
+  "src": "md1-r078",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r078",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.surrealism",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177658d6b95fc9": {
+  "src": "md1-r079",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r079",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": null,
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762fc2b95fca": {
+  "src": "md1-r080",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r080",
   "measures": {
    "primary": "edge_comfort.taboo",
    "secondary": "mode.construction",
    "pole_or_flavor": "flavor ceiling"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177605bbb95fcb": {
+  "src": "md1-r081",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r081",
   "measures": {
    "primary": "axis.risk.social_risk",
    "secondary": null,
    "pole_or_flavor": "bold(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776257eb95fcc": {
+  "src": "md1-r082",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "md1-r082",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "secondary": "mode.construction",
    "pole_or_flavor": "bold(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760c21b95fcd": {
+  "src": "md1-r083",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r083",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "secondary": "register.currency",
    "pole_or_flavor": "bold(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177684a0b95fce": {
+  "src": "md1-r084",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r084",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "secondary": "register.currency",
    "pole_or_flavor": "bold(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768214b95fcf": {
+  "src": "md1-r085",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r085",
   "measures": {
    "primary": "axis.risk.social_risk",
    "secondary": null,
    "pole_or_flavor": "bold(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776af0fb95fd0": {
+  "src": "md1-r086",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r086",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "secondary": "axis.structure.planning_horizon",
    "pole_or_flavor": "cautious(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769264b95fd1": {
+  "src": "md1-r087",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r087",
   "measures": {
    "primary": "axis.novelty.experiential",
    "secondary": null,
    "pole_or_flavor": "comfort(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764139b95fd2": {
+  "src": "md1-r088",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r088",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "secondary": null,
    "pole_or_flavor": "cautious(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776f22fb95fd3": {
+  "src": "md1-r089",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r089",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "secondary": null,
    "pole_or_flavor": "cautious(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776785ab95fd4": {
+  "src": "md1-r090",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r090",
   "measures": {
    "primary": "axis.social_energy.spotlight",
    "secondary": "axis.social_energy.recharge",
    "pole_or_flavor": "avoids(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768bf9b95fd5": {
+  "src": "md1-r091",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r091",
   "measures": {
    "primary": "axis.social_energy.group_scale",
    "secondary": null,
    "pole_or_flavor": "extrovert(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776dca9b95fd6": {
+  "src": "md1-r092",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r092",
   "measures": {
    "primary": "axis.social_energy.recharge",
    "secondary": null,
    "pole_or_flavor": "solitude(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765a3bb95fd7": {
+  "src": "md1-r093",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r093",
   "measures": {
    "primary": "axis.social_energy.initiative",
    "secondary": null,
    "pole_or_flavor": "initiates(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177675d8b95fd8": {
+  "src": "md1-r094",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r094",
   "measures": {
    "primary": "axis.novelty.change_tolerance",
    "secondary": "axis.risk.adventure_risk",
    "pole_or_flavor": "embraces(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766955b95fd9": {
+  "src": "md1-r095",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r095",
   "measures": {
    "primary": "axis.novelty.experiential",
    "secondary": "axis.risk.adventure_risk",
    "pole_or_flavor": "new(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761451b95fda": {
+  "src": "md1-r096",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r096",
   "measures": {
    "primary": "axis.structure.order_preference",
    "secondary": null,
    "pole_or_flavor": "organized(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761a4ab95fdb": {
+  "src": "md1-r097",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r097",
   "measures": {
    "primary": "axis.structure.planning_horizon",
    "secondary": "axis.risk.social_risk",
    "pole_or_flavor": "improvises(-)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767c2db95fdc": {
+  "src": "md1-r098",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r098",
   "measures": {
    "primary": "axis.creativity.maker",
    "secondary": null,
    "pole_or_flavor": "makes(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776a7c1b95fdd": {
+  "src": "md1-r099",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "md1-r099",
   "measures": {
    "primary": "axis.creativity.originality",
    "secondary": null,
    "pole_or_flavor": "invents(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776a270b95fde": {
+  "src": "md1-r100",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "md1-r100",
   "measures": {
    "primary": "axis.creativity.imagination",
    "secondary": "edge_comfort.morbid",
    "pole_or_flavor": "fanciful(+)"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177652a0b95fdf": {
+  "src": "rdm1-r01",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r01",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760133b95fe0": {
+  "src": "rdm1-r02",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r02",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177666d8b95fe1": {
+  "src": "rdm1-r03",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r03",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776011eb95fe2": {
+  "src": "rdm1-r04",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r04",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766b6cb95fe3": {
+  "src": "rdm1-r05",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r05",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764d98b95fe4": {
+  "src": "rdm1-r06",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r06",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177695bab95fe5": {
+  "src": "rdm1-r07",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r07",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768c6eb95fe6": {
+  "src": "rdm1-r08",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r08",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761f52b95fe7": {
+  "src": "rdm1-r09",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r09",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764783b95fe8": {
+  "src": "rdm1-r10",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r10",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776bed0b95fe9": {
+  "src": "rdm1-r11",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r11",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764fafb95fea": {
+  "src": "rdm1-r12",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r12",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762a46b95feb": {
+  "src": "rdm1-r13",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r13",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776d728b95fec": {
+  "src": "rdm1-r14",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r14",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761f3bb95fed": {
+  "src": "rdm1-r15",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r15",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766448b95fee": {
+  "src": "rdm1-r16",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r16",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766ffcb95fef": {
+  "src": "rdm1-r18",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r18",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760831b95ff0": {
+  "src": "rdm1-r19",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r19",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766ce0b95ff1": {
+  "src": "rdm1-r20",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r20",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177659c2b95ff2": {
+  "src": "rdm1-r21",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r21",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763a04b95ff3": {
+  "src": "rdm1-r22",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r22",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177630e2b95ff4": {
+  "src": "rdm1-r23",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r23",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776550fb95ff5": {
+  "src": "rdm1-r24",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r24",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c626b95ff6": {
+  "src": "rdm1-r25",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r25",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766529b95ff7": {
+  "src": "rdm1-r27",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r27",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776425db95ff8": {
+  "src": "rdm1-r28",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r28",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765405b95ff9": {
+  "src": "rdm1-r29",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r29",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766b80b95ffa": {
+  "src": "rdm1-r31",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r31",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177650c1b95ffb": {
+  "src": "rdm1-r33",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r33",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776414fb95ffc": {
+  "src": "rdm1-r34",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r34",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776ebb5b95ffd": {
+  "src": "rdm1-r35",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r35",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765c35b95ffe": {
+  "src": "rdm1-r36",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r36",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776903ab95fff": {
+  "src": "rdm1-r37",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r37",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762ce8b96000": {
+  "src": "rdm1-r38",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r38",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177659e0b96001": {
+  "src": "rdm1-r39",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r39",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776690bb96002": {
+  "src": "rdm1-r40",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r40",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763fb5b96003": {
+  "src": "rdm1-r41",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r41",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765f05b96004": {
+  "src": "rdm1-r42",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r42",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177608bbb96005": {
+  "src": "rdm1-r43",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r43",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776622bb96006": {
+  "src": "rdm1-r44",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r44",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776e4edb96007": {
+  "src": "rdm1-r45",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r45",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776379bb96008": {
+  "src": "rdm1-r46",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r46",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765614b96009": {
+  "src": "rdm1-r47",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r47",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761686b9600a": {
+  "src": "rdm1-r48",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r48",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776aaa2b9600b": {
+  "src": "rdm1-r49",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r49",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765641b9600c": {
+  "src": "rdm1-r50",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r50",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766435b9600d": {
+  "src": "rdm1-r51",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r51",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776dc54b9600e": {
+  "src": "rdm1-r52",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r52",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17769829b9600f": {
+  "src": "rdm1-r53",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r53",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776116ab96010": {
+  "src": "rdm1-r54",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r54",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760d12b96011": {
+  "src": "rdm1-r55",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r55",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776d265b96012": {
+  "src": "rdm1-r56",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r56",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177627d0b96013": {
+  "src": "rdm1-r59",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r59",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763977b96014": {
+  "src": "rdm1-r61",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r61",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763287b96015": {
+  "src": "rdm1-r62",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r62",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776b0aab96016": {
+  "src": "rdm1-r63",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r63",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177691aab96017": {
+  "src": "rdm1-r64",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r64",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760810b96018": {
+  "src": "rdm1-r65",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r65",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177681a3b96019": {
+  "src": "rdm1-r66",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r66",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767246b9601a": {
+  "src": "rdm1-r67",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r67",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766f5eb9601b": {
+  "src": "rdm1-r68",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r68",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776d089b9601c": {
+  "src": "rdm1-r69",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r69",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c602b9601d": {
+  "src": "rdm1-r70",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r70",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17761849b9601e": {
+  "src": "rdm1-r71",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r71",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776646bb9601f": {
+  "src": "rdm1-r72",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r72",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177671b4b96020": {
+  "src": "rdm1-r73",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r73",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776859eb96021": {
+  "src": "rdm1-r74",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r74",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776e259b96022": {
+  "src": "rdm1-r75",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r75",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177600cdb96023": {
+  "src": "rdm1-r76",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r76",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177603d0b96024": {
+  "src": "rdm1-r77",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r77",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776eb09b96025": {
+  "src": "rdm1-r78",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r78",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768b5db96026": {
+  "src": "rdm1-r79",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r79",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766044b96027": {
+  "src": "rdm1-r80",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r80",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17768590b96028": {
+  "src": "rdm1-r81",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r81",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767676b96029": {
+  "src": "rdm1-r82",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r82",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c5bbb9602a": {
+  "src": "rdm1-r83",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r83",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17760b57b9602b": {
+  "src": "rdm1-r84",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r84",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776035bb9602c": {
+  "src": "rdm1-r85",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r85",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177693f4b9602d": {
+  "src": "rdm1-r86",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r86",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c265b9602e": {
+  "src": "rdm1-r87",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r87",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764907b9602f": {
+  "src": "rdm1-r091",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r091",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177683e2b96030": {
+  "src": "rdm1-r092",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r092",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776cba8b96031": {
+  "src": "rdm1-r093",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r093",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766ff0b96032": {
+  "src": "rdm1-r094",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r094",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766975b96033": {
+  "src": "rdm1-r095",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r095",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776cca6b96034": {
+  "src": "rdm1-r099",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r099",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765171b96035": {
+  "src": "rdm1-r100",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r100",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776fddcb96036": {
+  "src": "rdm1-r101",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r101",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17762a58b96037": {
+  "src": "rdm1-r102",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r102",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17766910b96038": {
+  "src": "rdm1-r104",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r104",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17764f36b96039": {
+  "src": "rdm1-r105",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r105",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776c969b9603a": {
+  "src": "rdm1-r106",
+  "cardType": "white",
   "h": 4,
   "cls": "probe",
-  "src": "rdm1-r106",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17767141b9603b": {
+  "src": "rdm1-r107",
+  "cardType": "white",
   "h": 3,
   "cls": "probe",
-  "src": "rdm1-r107",
   "measures": {
    "primary": "axis.risk.social_risk",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17763a45b9603c": {
+  "src": "rdm1-r108",
+  "cardType": "white",
   "h": 2,
   "cls": "probe",
-  "src": "rdm1-r108",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776fd30b9603d": {
+  "src": "rdm1-r109",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r109",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "bold"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba177622b4b9603e": {
+  "src": "rdm1-r110",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r110",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba1776716ab9603f": {
+  "src": "rdm1-r111",
+  "cardType": "white",
   "h": 1,
   "cls": "probe",
-  "src": "rdm1-r111",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "pole": "cautious"
-  },
-  "cardType": "white",
-  "pick": null
+  }
  },
  "6a5c61b0ba17765a4bb96040": {
+  "src": "risk-p01",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p01",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: extreme activity; cautious: cozy/subversive comfort play"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17765c77b96041": {
+  "src": "risk-p02",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "risk-p02",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: injury-worthy thrill; cautious: mock-mundane mishap"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177626fdb96042": {
+  "src": "risk-p03",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p03",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: genuine danger; cautious: trivially safe as the joke"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17766fdeb96043": {
+  "src": "risk-p04",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p04",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: real peril; cautious: melodramatized small stuff"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17763dc1b96044": {
+  "src": "risk-p05",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p05",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: signs anyway energy; cautious: the fine-print reader's pick"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776496bb96045": {
+  "src": "risk-p06",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p06",
   "measures": {
    "primary": "axis.risk.adventure_risk",
    "read_design": "bold: extreme experience; cautious: comfort item played straight"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17763a10b96046": {
+  "src": "risk-p07",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p07",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "bold: spotlight-grabbing; cautious: deflection/exit play"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17769d51b96047": {
+  "src": "risk-p08",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "risk-p08",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "bold: shameless public act; cautious: small private shame inflated"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17765441b96048": {
+  "src": "risk-p09",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "risk-p09",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "bold: says the unsayable; cautious: conflict-avoidant swerve"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177611d2b96049": {
+  "src": "risk-p10",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p10",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "bold: spectacular flop; cautious: tiny failure treated as huge"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17761493b9604a": {
+  "src": "risk-p11",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p11",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "INVERTED frame: cautious pole speaks naturally; bold plays subvert"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776c0e3b9604b": {
+  "src": "risk-p12",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p12",
   "measures": {
    "primary": "axis.risk.social_risk",
    "read_design": "bold: attention-seizing entrance; cautious: blend-in play"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177607a4b9604c": {
+  "src": "risk-p13",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p13",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "read_design": "bold: long-shot gamble; cautious: sure thing as the joke"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17768e6fb9604d": {
+  "src": "risk-p14",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p14",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "read_design": "bold: obviously-doomed scheme; cautious: scam-wary irony"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17760a71b9604e": {
+  "src": "risk-p15",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "risk-p15",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "read_design": "bold: impulse splurge; cautious: absurdly prudent trade"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776414db9604f": {
+  "src": "risk-p16",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p16",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "read_design": "INVERTED frame: cautious pole speaks naturally; bold subverts"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776bbeab96050": {
+  "src": "risk-p17",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p17",
   "measures": {
    "primary": "axis.risk.payoff_risk",
    "read_design": "bold: escalates stakes; cautious: banking/undo plays"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17767577b96051": {
+  "src": "risk-p18",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p18",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "read_design": "snap-decision frame; card choice weak, latency is the real read"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17764ae6b96052": {
+  "src": "risk-p19",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p19",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "read_design": "deliberator frame; bold plays mock the research, cautious play it straight"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776acf2b96053": {
+  "src": "risk-p20",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p20",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "read_design": "bold: leaps blind; cautious: the horrified 'never' read"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17769f75b96054": {
+  "src": "risk-p21",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p21",
   "measures": {
    "primary": "axis.risk.decisiveness",
    "read_design": "impulse frame; bold: act now; cautious: gut says stay home"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17767951b96055": {
+  "src": "risk-p22",
+  "cardType": "black",
   "h": 3,
   "cls": "probe",
-  "src": "risk-p22",
   "measures": {
    "primary": "axis.risk",
    "read_design": "parent-level: sheer recklessness magnitude"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba17763884b96056": {
+  "src": "risk-p23",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p23",
   "measures": {
    "primary": "axis.risk",
    "read_design": "pole-neutral ceiling probe: WHERE the line lands is the read (band-scoped)"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba1776b274b96057": {
+  "src": "risk-p24",
+  "cardType": "black",
   "h": 2,
   "cls": "probe",
-  "src": "risk-p24",
   "measures": {
    "primary": "axis.risk",
    "read_design": "bold: legacy of chaos; cautious: tidy affairs as the joke"
-  },
-  "cardType": "black",
-  "pick": 1
+  }
  },
  "6a5c61b0ba177667e8b96058": {
+  "src": "risk-p25",
+  "cardType": "black",
   "h": 1,
   "cls": "probe",
-  "src": "risk-p25",
   "measures": {
    "primary": "axis.risk",
    "read_design": "universal frame: high appeal, LOW discrimination — control-type prompt"
+  }
+ },
+ "6a6ba10e3f5d0426e804a292": {
+  "src": "lad-mor-grandma-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
   },
-  "cardType": "black",
-  "pick": 1
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-grandma",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a293": {
+  "src": "lad-mor-grandma-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-grandma",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a294": {
+  "src": "lad-mor-grandma-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-grandma",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a295": {
+  "src": "lad-mor-grandma-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-grandma",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a296": {
+  "src": "lad-mor-grandma-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-grandma",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a297": {
+  "src": "lad-mor-family-dog-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-family-dog",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a298": {
+  "src": "lad-mor-family-dog-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-family-dog",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a299": {
+  "src": "lad-mor-family-dog-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-family-dog",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29a": {
+  "src": "lad-mor-family-dog-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-family-dog",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29b": {
+  "src": "lad-mor-family-dog-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-family-dog",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29c": {
+  "src": "lad-mor-funeral-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-funeral",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29d": {
+  "src": "lad-mor-funeral-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-funeral",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29e": {
+  "src": "lad-mor-funeral-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-funeral",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a29f": {
+  "src": "lad-mor-funeral-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-funeral",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a0": {
+  "src": "lad-mor-funeral-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-funeral",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a1": {
+  "src": "lad-mor-obituary-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-obituary",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a2": {
+  "src": "lad-mor-obituary-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-obituary",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a3": {
+  "src": "lad-mor-obituary-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-obituary",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a4": {
+  "src": "lad-mor-obituary-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-obituary",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a5": {
+  "src": "lad-mor-obituary-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-obituary",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a6": {
+  "src": "lad-mor-hospital-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-hospital",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a7": {
+  "src": "lad-mor-hospital-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-hospital",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a8": {
+  "src": "lad-mor-hospital-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-hospital",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2a9": {
+  "src": "lad-mor-hospital-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-hospital",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2aa": {
+  "src": "lad-mor-hospital-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-hospital",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ab": {
+  "src": "lad-mor-last-words-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-last-words",
+   "rung": 1,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ac": {
+  "src": "lad-mor-last-words-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-last-words",
+   "rung": 2,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ad": {
+  "src": "lad-mor-last-words-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-last-words",
+   "rung": 3,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ae": {
+  "src": "lad-mor-last-words-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-last-words",
+   "rung": 4,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2af": {
+  "src": "lad-mor-last-words-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.morbid"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "morbid"
+  ],
+  "ladder": {
+   "id": "mor-last-words",
+   "rung": 5,
+   "flavor": "morbid"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b0": {
+  "src": "lad-sex-honeymoon-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-honeymoon",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b1": {
+  "src": "lad-sex-honeymoon-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-honeymoon",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b2": {
+  "src": "lad-sex-honeymoon-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-honeymoon",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b3": {
+  "src": "lad-sex-honeymoon-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-honeymoon",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b4": {
+  "src": "lad-sex-honeymoon-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-honeymoon",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b5": {
+  "src": "lad-sex-romance-novel-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-romance-novel",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b6": {
+  "src": "lad-sex-romance-novel-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-romance-novel",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b7": {
+  "src": "lad-sex-romance-novel-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-romance-novel",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b8": {
+  "src": "lad-sex-romance-novel-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-romance-novel",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2b9": {
+  "src": "lad-sex-romance-novel-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-romance-novel",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ba": {
+  "src": "lad-sex-browser-history-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-browser-history",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2bb": {
+  "src": "lad-sex-browser-history-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-browser-history",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2bc": {
+  "src": "lad-sex-browser-history-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-browser-history",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2bd": {
+  "src": "lad-sex-browser-history-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-browser-history",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2be": {
+  "src": "lad-sex-browser-history-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-browser-history",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2bf": {
+  "src": "lad-sex-massage-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-massage",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c0": {
+  "src": "lad-sex-massage-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-massage",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c1": {
+  "src": "lad-sex-massage-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-massage",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c2": {
+  "src": "lad-sex-massage-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-massage",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c3": {
+  "src": "lad-sex-massage-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-massage",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c4": {
+  "src": "lad-sex-dating-profile-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-dating-profile",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c5": {
+  "src": "lad-sex-dating-profile-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-dating-profile",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c6": {
+  "src": "lad-sex-dating-profile-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-dating-profile",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c7": {
+  "src": "lad-sex-dating-profile-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-dating-profile",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c8": {
+  "src": "lad-sex-dating-profile-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -2,
+  "s": 1,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-dating-profile",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2c9": {
+  "src": "lad-sex-sex-ed-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-sex-ed",
+   "rung": 1,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ca": {
+  "src": "lad-sex-sex-ed-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-sex-ed",
+   "rung": 2,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2cb": {
+  "src": "lad-sex-sex-ed-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-sex-ed",
+   "rung": 3,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2cc": {
+  "src": "lad-sex-sex-ed-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-sex-ed",
+   "rung": 4,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2cd": {
+  "src": "lad-sex-sex-ed-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.sexual"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "sexual"
+  ],
+  "ladder": {
+   "id": "sex-sex-ed",
+   "rung": 5,
+   "flavor": "sexual"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ce": {
+  "src": "lad-tab-church-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-church",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2cf": {
+  "src": "lad-tab-church-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-church",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d0": {
+  "src": "lad-tab-church-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-church",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d1": {
+  "src": "lad-tab-church-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-church",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d2": {
+  "src": "lad-tab-church-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-church",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d3": {
+  "src": "lad-tab-thanksgiving-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-thanksgiving",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d4": {
+  "src": "lad-tab-thanksgiving-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-thanksgiving",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d5": {
+  "src": "lad-tab-thanksgiving-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-thanksgiving",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d6": {
+  "src": "lad-tab-thanksgiving-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-thanksgiving",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d7": {
+  "src": "lad-tab-thanksgiving-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": -1,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-thanksgiving",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d8": {
+  "src": "lad-tab-hr-department-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-hr-department",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2d9": {
+  "src": "lad-tab-hr-department-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-hr-department",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2da": {
+  "src": "lad-tab-hr-department-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-hr-department",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2db": {
+  "src": "lad-tab-hr-department-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-hr-department",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2dc": {
+  "src": "lad-tab-hr-department-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 1,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-hr-department",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2dd": {
+  "src": "lad-tab-national-anthem-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-national-anthem",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2de": {
+  "src": "lad-tab-national-anthem-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-national-anthem",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2df": {
+  "src": "lad-tab-national-anthem-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-national-anthem",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e0": {
+  "src": "lad-tab-national-anthem-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-national-anthem",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e1": {
+  "src": "lad-tab-national-anthem-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-national-anthem",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e2": {
+  "src": "lad-tab-therapy-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-therapy",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e3": {
+  "src": "lad-tab-therapy-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-therapy",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e4": {
+  "src": "lad-tab-therapy-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-therapy",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e5": {
+  "src": "lad-tab-therapy-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-therapy",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e6": {
+  "src": "lad-tab-therapy-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 2,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-therapy",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e7": {
+  "src": "lad-tab-billionaire-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-billionaire",
+   "rung": 1,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e8": {
+  "src": "lad-tab-billionaire-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-billionaire",
+   "rung": 2,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2e9": {
+  "src": "lad-tab-billionaire-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-billionaire",
+   "rung": 3,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ea": {
+  "src": "lad-tab-billionaire-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-billionaire",
+   "rung": 4,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2eb": {
+  "src": "lad-tab-billionaire-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.taboo"
+  },
+  "m": -3,
+  "r": 0,
+  "s": 0,
+  "f": [
+   "taboo"
+  ],
+  "ladder": {
+   "id": "tab-billionaire",
+   "rung": 5,
+   "flavor": "taboo"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ec": {
+  "src": "lad-gro-buffet-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-buffet",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ed": {
+  "src": "lad-gro-buffet-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-buffet",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ee": {
+  "src": "lad-gro-buffet-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-buffet",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ef": {
+  "src": "lad-gro-buffet-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-buffet",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f0": {
+  "src": "lad-gro-buffet-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-buffet",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f1": {
+  "src": "lad-gro-gym-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-gym",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f2": {
+  "src": "lad-gro-gym-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-gym",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f3": {
+  "src": "lad-gro-gym-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-gym",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f4": {
+  "src": "lad-gro-gym-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-gym",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f5": {
+  "src": "lad-gro-gym-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-gym",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f6": {
+  "src": "lad-gro-leftovers-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-leftovers",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f7": {
+  "src": "lad-gro-leftovers-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-leftovers",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f8": {
+  "src": "lad-gro-leftovers-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-leftovers",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2f9": {
+  "src": "lad-gro-leftovers-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-leftovers",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2fa": {
+  "src": "lad-gro-leftovers-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-leftovers",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2fb": {
+  "src": "lad-gro-porta-potty-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -4,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-porta-potty",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2fc": {
+  "src": "lad-gro-porta-potty-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -4,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-porta-potty",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2fd": {
+  "src": "lad-gro-porta-potty-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -4,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-porta-potty",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2fe": {
+  "src": "lad-gro-porta-potty-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -4,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-porta-potty",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a2ff": {
+  "src": "lad-gro-porta-potty-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -4,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-porta-potty",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a300": {
+  "src": "lad-gro-swimming-pool-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-swimming-pool",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a301": {
+  "src": "lad-gro-swimming-pool-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-swimming-pool",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a302": {
+  "src": "lad-gro-swimming-pool-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-swimming-pool",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a303": {
+  "src": "lad-gro-swimming-pool-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-swimming-pool",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a304": {
+  "src": "lad-gro-swimming-pool-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-swimming-pool",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a305": {
+  "src": "lad-gro-airplane-r1",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-airplane",
+   "rung": 1,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a306": {
+  "src": "lad-gro-airplane-r2",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-airplane",
+   "rung": 2,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a307": {
+  "src": "lad-gro-airplane-r3",
+  "cardType": "white",
+  "h": 3,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-airplane",
+   "rung": 3,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a308": {
+  "src": "lad-gro-airplane-r4",
+  "cardType": "white",
+  "h": 4,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-airplane",
+   "rung": 4,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a309": {
+  "src": "lad-gro-airplane-r5",
+  "cardType": "white",
+  "h": 5,
+  "cls": "probe",
+  "measures": {
+   "primary": "heat",
+   "secondary": "edge_comfort.gross_out"
+  },
+  "m": -3,
+  "r": -3,
+  "s": 1,
+  "f": [
+   "gross_out"
+  ],
+  "ladder": {
+   "id": "gro-airplane",
+   "rung": 5,
+   "flavor": "gross_out"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30a": {
+  "src": "par-fired-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "fired",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30b": {
+  "src": "par-fired-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "fired",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30c": {
+  "src": "par-fired-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "fired",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30d": {
+  "src": "par-bad-date-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "bad-date",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30e": {
+  "src": "par-bad-date-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "bad-date",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a30f": {
+  "src": "par-bad-date-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "bad-date",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a310": {
+  "src": "par-hangover-flat",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "hangover",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a311": {
+  "src": "par-hangover-concrete",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "hangover",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a312": {
+  "src": "par-hangover-oblique",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "hangover",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a313": {
+  "src": "par-divorce-flat",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "divorce",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a314": {
+  "src": "par-divorce-concrete",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "divorce",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a315": {
+  "src": "par-divorce-oblique",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "divorce",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a316": {
+  "src": "par-taxes-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 1,
+  "paraphrase": {
+   "setId": "taxes",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a317": {
+  "src": "par-taxes-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 1,
+  "paraphrase": {
+   "setId": "taxes",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a318": {
+  "src": "par-taxes-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 1,
+  "paraphrase": {
+   "setId": "taxes",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a319": {
+  "src": "par-aging-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 2,
+  "paraphrase": {
+   "setId": "aging",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31a": {
+  "src": "par-aging-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 2,
+  "paraphrase": {
+   "setId": "aging",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31b": {
+  "src": "par-aging-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 2,
+  "paraphrase": {
+   "setId": "aging",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31c": {
+  "src": "par-group-chat-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "group-chat",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31d": {
+  "src": "par-group-chat-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "group-chat",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31e": {
+  "src": "par-group-chat-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "group-chat",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a31f": {
+  "src": "par-road-rage-flat",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "road-rage",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a320": {
+  "src": "par-road-rage-concrete",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "road-rage",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a321": {
+  "src": "par-road-rage-oblique",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "road-rage",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a322": {
+  "src": "par-diet-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "diet",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a323": {
+  "src": "par-diet-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "diet",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a324": {
+  "src": "par-diet-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "diet",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a325": {
+  "src": "par-karaoke-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "karaoke",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a326": {
+  "src": "par-karaoke-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "karaoke",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a327": {
+  "src": "par-karaoke-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -2,
+  "s": 1,
+  "paraphrase": {
+   "setId": "karaoke",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a328": {
+  "src": "par-landlord-flat",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "landlord",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a329": {
+  "src": "par-landlord-concrete",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "landlord",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32a": {
+  "src": "par-landlord-oblique",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "landlord",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32b": {
+  "src": "par-wedding-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "wedding",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32c": {
+  "src": "par-wedding-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "wedding",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32d": {
+  "src": "par-wedding-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "wedding",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32e": {
+  "src": "par-printer-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "printer",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a32f": {
+  "src": "par-printer-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "printer",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a330": {
+  "src": "par-printer-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "printer",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a331": {
+  "src": "par-gym-january-flat",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "gym-january",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a332": {
+  "src": "par-gym-january-concrete",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "gym-january",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a333": {
+  "src": "par-gym-january-oblique",
+  "cardType": "white",
+  "h": 1,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": -1,
+  "s": 1,
+  "paraphrase": {
+   "setId": "gym-january",
+   "variant": "oblique"
+  }
+ },
+ "6a6ba10e3f5d0426e804a334": {
+  "src": "par-therapy-bill-flat",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 2,
+  "paraphrase": {
+   "setId": "therapy-bill",
+   "variant": "flat"
+  }
+ },
+ "6a6ba10e3f5d0426e804a335": {
+  "src": "par-therapy-bill-concrete",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 2,
+  "paraphrase": {
+   "setId": "therapy-bill",
+   "variant": "concrete"
+  }
+ },
+ "6a6ba10e3f5d0426e804a336": {
+  "src": "par-therapy-bill-oblique",
+  "cardType": "white",
+  "h": 2,
+  "cls": "probe",
+  "measures": {
+   "primary": "delivery.style",
+   "secondary": null
+  },
+  "m": -4,
+  "r": 0,
+  "s": 2,
+  "paraphrase": {
+   "setId": "therapy-bill",
+   "variant": "oblique"
+  }
  }
 }
