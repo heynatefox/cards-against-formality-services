@@ -1,6 +1,7 @@
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 import TurnHandler, { GameState, TurnDataWithState, TurnData } from './turn';
+import { PROBE_BOT_IDS, isProbeBot, updateProfile, Axis } from './solo-probe';
 
 // turn-setup -> playing cards -> selecting winner -> repeat. -> end-game.
 /**
@@ -246,6 +247,7 @@ export default class Game extends TurnHandler {
           return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNextTurn(game), timeout, armedFor);
         case GameState.PICKING_CARDS:
           this.scheduleRandoPlay(updatedTurn.gameId);
+          if ((updatedGame as any).soloMode) { this.scheduleProbePlay(updatedTurn.gameId); }
           return this.setGameTimeout(updatedTurn.gameId, (game) =>
             this.handleWinnerSelection(game), updatedGame.roundTime, armedFor);
         case GameState.SELECTING_WINNER:
@@ -283,6 +285,13 @@ export default class Game extends TurnHandler {
     if (room.options?.randoCardrissian) {
       players[RANDO_ID] = { _id: RANDO_ID, cards: [], isCzar: false, score: 0 };
     }
+    // Solo: probe bots fill the seats. They play cards chosen by the probe
+    // engine and never judge, so the single human is czar every round.
+    if ((room.options as any)?.soloMode) {
+      for (const botId of PROBE_BOT_IDS) {
+        players[botId] = { _id: botId, cards: [], isCzar: false, score: 0 };
+      }
+    }
     return players;
   }
 
@@ -318,7 +327,8 @@ export default class Game extends TurnHandler {
           blackCards,
           turnData: initalTurnData,
           selectedCards: {},
-          roundTime: room.options.roundTime
+          roundTime: room.options.roundTime,
+          soloMode: !!(room.options as any)?.soloMode
         });
       })
       .then((game: GameInterface) => {
@@ -469,6 +479,37 @@ export default class Game extends TurnHandler {
     }), delay);
   }
 
+  // Bot timers per game, one slot like Rando's: re-arming clears the old run.
+  private probeTimeout: { [gameId: string]: NodeJS.Timer[] } = {};
+
+  /**
+   * Solo: the bots submit their probe-selected cards on a humanised stagger.
+   * Each submit re-reads the doc under the game lock and checks state and
+   * turn, so a round that advanced early (the czar can pick as soon as all
+   * bots are in) is never double-played.
+   */
+  private scheduleProbePlay(gameId: string) {
+    (this.probeTimeout[gameId] || []).forEach(t => clearTimeout(t));
+    this.probeTimeout[gameId] = PROBE_BOT_IDS.map((botId, i) => setTimeout(
+      () => this.withGameLock(gameId, async () => {
+        try {
+          const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+          const probe = (game as any)?.soloProbe;
+          if (!game || game.gameState !== GameState.PICKING_CARDS || !probe || !probe.botCards) { return; }
+          if (game.selectedCards?.[botId]) { return; }
+          const cardId = probe.botCards[botId];
+          if (!cardId) { return; }
+          await this.onHandSubmitted(game, botId, [cardId]);
+        } catch (err) {
+          this.logger.warn(`probe bot play failed (gameId: ${gameId}, bot: ${botId}): ${err.message}`);
+        }
+      }),
+      // 1.6s, 3.4s, 5.2s with jitter: fast enough that a solo round never
+      // drags, spaced enough to read as opponents rather than a batch job.
+      1600 + i * 1800 + Math.random() * 900,
+    ));
+  }
+
   public async onHandSubmitted(game: GameInterface, playerId: string, whiteCards: string[]) {
     const { gameState } = game;
     // Ignore cards if the game state is no longer picking cards.
@@ -551,6 +592,24 @@ export default class Game extends TurnHandler {
     // Store the end state of each round in a collection.
     turns.push(gameData);
     await this.broker.call('games.update', { id: game._id, turns, players });
+
+    // Solo: the czar's verdict is the observation. Fold the winning card's
+    // value on the probed axis into the player's taste profile, fire and
+    // forget: a failed profile write must never block the round.
+    const probe = (game as any).soloProbe;
+    if ((game as any).soloMode && probe && probe.axis && isProbeBot(winner)) {
+      const winnerCardId = probe.botCards && probe.botCards[winner];
+      const tags = winnerCardId ? this.tagsForCard(winnerCardId) : null;
+      if (tags) {
+        this.broker.call('games.solo-observe', {
+          player: probe.targetPlayer,
+          axis: probe.axis,
+          tags,
+          decisionMs: (game as any).turnStartedAt ? Date.now() - (game as any).turnStartedAt : undefined,
+        }).catch(err => this.logger.warn(`solo-observe failed: ${err.message}`));
+      }
+    }
+
     // Emit the winning card, and winning player, for front-end display
     await this.broker.emit('games.turn.updated', gameData);
   }

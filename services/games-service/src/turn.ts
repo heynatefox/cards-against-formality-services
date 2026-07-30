@@ -8,6 +8,9 @@ import * as tasteTags from './data/card-tags-v1.json';
 import * as promptTags from './data/prompt-tags-v1.json';
 // Tagset v2 (partner-scored: heat + flavors) + the bench list + candidate decks
 import * as signalTags from './data/card-tags-v2.json';
+// Authored measurement candidates, resolved to live card ids by text match.
+import * as resolvedSignal from './data/signal-tags-resolved.json';
+import { selectProbe, isProbeBot, TaggedCard, CardTags, TasteProfile, Probe } from './solo-probe';
 import * as benchList from './data/bench-v1.json';
 import { signalRegistry } from './signal-registry';
 
@@ -46,6 +49,64 @@ export interface TurnDataWithState extends TurnData {
 }
 
 export default class TurnHandler {
+
+  // ── Solo probe pool ────────────────────────────────────────────────────
+  // Built once from the tag catalogues. Contains every card the probe engine
+  // may hand to a bot, with its full tag vector.
+  private static probePool: TaggedCard[] | null = null;
+
+  protected getProbePool(): TaggedCard[] {
+    if (TurnHandler.probePool) { return TurnHandler.probePool; }
+    const v2 = signalTags as any;
+    const v1 = tasteTags as any;
+    const sig = resolvedSignal as any;
+    const pool: TaggedCard[] = [];
+    for (const id of Object.keys(v2)) {
+      if (id === 'default') { continue; }   // json-module artefact
+      const t = v2[id] || {};
+      const b = v1[id] || {};
+      const tags: any = {
+        heat: t.h, mode: t.m, register: t.r, sincerity: t.s,
+        flavors: t.f, cls: t.cls,
+      };
+      if (b.e != null) { tags.edge = b.e; }
+      pool.push({ id, text: '', tags: tags as CardTags });
+    }
+    for (const id of Object.keys(sig)) {
+      if (id === 'default') { continue; }
+      const g = sig[id] || {};
+      if (g.cardType && g.cardType !== 'white') { continue; }  // prompts are not playable answers
+      pool.push({ id, text: '', tags: {
+        heat: g.h, cls: g.cls,
+        measuresPrimary: g.measures && g.measures.primary,
+      } as CardTags });
+    }
+    TurnHandler.probePool = pool;
+    return pool;
+  }
+
+  /** Tag vector for one card id, for profile updates and the round writer. */
+  public tagsForCard(id: string): CardTags | null {
+    const g = (resolvedSignal as any)[id];
+    if (g && g.cardType !== 'black') {
+      return { heat: g.h, cls: g.cls, measuresPrimary: g.measures && g.measures.primary } as CardTags;
+    }
+    const a = (signalTags as any)[id];
+    const b = (tasteTags as any)[id];
+    if (!a && !b) { return null; }
+    const t: any = {};
+    if (a) {
+      if (a.h != null) { t.heat = a.h; }
+      if (a.m != null) { t.mode = a.m; }
+      if (a.r != null) { t.register = a.r; }
+      if (a.s != null) { t.sincerity = a.s; }
+      if (a.f) { t.flavors = a.f; }
+      if (a.cls) { t.cls = a.cls; }
+    }
+    if (b && b.e != null) { t.edge = b.e; }
+    return Object.keys(t).length ? t as CardTags : null;
+  }
+
 
   constructor(protected broker: ServiceBroker, protected logger: LoggerInstance) { }
 
@@ -126,7 +187,7 @@ export default class TurnHandler {
     }
 
     // pick czar — Rando plays but never judges
-    const playersArr = Object.values(players).filter(player => player._id !== 'rando-cardrissian');
+    const playersArr = Object.values(players).filter(player => player._id !== 'rando-cardrissian' && !isProbeBot(player._id));
     let selectedPlayer;
     if (!prevCzar) {
       selectedPlayer = playersArr[0];
@@ -154,7 +215,20 @@ export default class TurnHandler {
    * @returns {Promise<Card>}
    * @memberof TurnHandler
    */
-  private async pickBlackCard(blackCards: string[]): Promise<Card> {
+  private async pickBlackCard(blackCards: string[], requirePickOne = false): Promise<Card> {
+    if (requirePickOne) {
+      // Solo rounds: every bot plays exactly one card, so multi-pick prompts
+      // cannot be answered. Draw until a pick-1 prompt lands; rejects go back
+      // to the END of the deck so they are not permanently lost, and the try
+      // cap keeps a pathological deck from looping.
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const candidate = await this.pickBlackCard(blackCards, false);
+        if ((candidate.pick || 1) === 1) { return candidate; }
+        blackCards.push(candidate._id);
+      }
+      // Deck is overwhelmingly multi-pick: fall through and accept whatever
+      // comes; the bots will sit the round out and the czar sees a no-winner.
+    }
     // Prompt weighting: 85% of rounds draw a measurement-fork prompt (grade
     // A/B in prompt-tags-v1 — both a clean and a spicy card, or a grounded
     // and an absurd card, genuinely land). 15% keep the pure-fun tail alive.
@@ -344,6 +418,9 @@ export default class TurnHandler {
    */
   private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[], handSize = 10) {
     for (const player of Object.values(players)) {
+      // Probe bots are stocked by the probe engine in startTurn; dealing them
+      // ten deck cards each would only starve the humans' deck.
+      if (isProbeBot(player._id)) { continue; }
       whiteCards = await this.dealWhiteCards(player, whiteCards, handSize);
     }
 
@@ -362,6 +439,9 @@ export default class TurnHandler {
   public hasEnoughCards(players: GamePlayer[], whiteCards: string[], blackCards: string[]): boolean {
     // check if there are enough cards left to play the turn.
     const whiteCardsRequired = Object.values(players).reduce((totalRequired, player) => {
+      // Bots draw from the probe pool, not the deck; counting them here would
+      // end solo games early with hundreds of cards still undealt.
+      if (isProbeBot(player._id)) { return totalRequired; }
       const cardsRequired = Math.max(0, 10 - player.cards.length);
       return totalRequired + cardsRequired;
     }, 0);
@@ -379,6 +459,7 @@ export default class TurnHandler {
    */
   protected async startTurn(game: GameInterface): Promise<TurnDataWithState> {
     const { turnData, players, room, turns, whiteCards, blackCards } = game;
+    const solo = !!(room && room.options && (room.options as any).soloMode);
 
     // mutate by reference. ensure we reset the czar.
     Object.values(players).forEach(player => player.isCzar = false);
@@ -395,7 +476,7 @@ export default class TurnHandler {
     turnData.czar = this.pickCzar(turns, players);
     const tCzar = Date.now();
     // mutate black and white cards by reference
-    turnData.blackCard = await this.pickBlackCard(blackCards);
+    turnData.blackCard = await this.pickBlackCard(blackCards, solo);
     const tBlack = Date.now();
     // House rule "Packing Heat": everyone draws an extra card on 2+ pick
     // prompts. The extra card is absorbed next round (hands top up to 10).
@@ -404,8 +485,41 @@ export default class TurnHandler {
     const newWhiteCards = await this.ensurePlayersHaveCards(players, whiteCards, handSize);
     const tDeal = Date.now();
 
+    // ── Solo: stock the bots from the probe engine ─────────────────────────
+    // Each round is a paired comparison on the axis the player's profile is
+    // least certain about. The engine picks the cards; each bot's hand IS its
+    // assigned card, so the normal submit path just works.
+    let soloProbe: any = null;
+    if (solo) {
+      const humanId = Object.keys(players).find(id => !isProbeBot(id) && id !== 'rando-cardrissian');
+      const botIds = Object.keys(players).filter(id => isProbeBot(id));
+      if (humanId && botIds.length) {
+        const profile: TasteProfile = await this.broker
+          .call<TasteProfile, any>('games.solo-profile-fetch', { player: humanId })
+          .catch(() => ({ mean: {}, n: {} }));
+        const probe: Probe | null = selectProbe(this.getProbePool(), profile || { mean: {}, n: {} }, botIds.length);
+        if (probe) {
+          const botCards: { [botId: string]: string } = {};
+          botIds.forEach((botId, i) => {
+            const card = probe.cards[i % probe.cards.length];
+            players[botId].cards = [card.id];
+            botCards[botId] = card.id;
+          });
+          soloProbe = {
+            axis: probe.axis,
+            score: probe.score,
+            authored: probe.authored,
+            targetPlayer: humanId,
+            botCards,
+          };
+        } else {
+          this.logger.warn(`solo: probe selection failed for game ${game._id}; bots sit out this round`);
+        }
+      }
+    }
+
     // tslint:disable-next-line: max-line-length
-    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {} });
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {}, soloProbe });
     const tUpdate = Date.now();
 
     // Only complain when it actually went slowly, so this stays quiet in the

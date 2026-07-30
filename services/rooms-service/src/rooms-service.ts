@@ -74,7 +74,10 @@ export default class RoomsService extends Service {
         // House rule: draw an extra white card on 2+ pick prompts
         packingHeat: { type: 'boolean', optional: true, default: false },
         // House rule: pay one point to swap your whole hand
-        rebootingUniverse: { type: 'boolean', optional: true, default: false }
+        rebootingUniverse: { type: 'boolean', optional: true, default: false },
+        // Solo: three probe bots fill the seats and the human always judges.
+        // The games service reads this to bypass the two-player minimum.
+        soloMode: { type: 'boolean', optional: true, default: false }
       },
     },
     passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },

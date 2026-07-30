@@ -117,7 +117,18 @@ const human = (n) => n.toLocaleString();
                 handCards: 0, handTagged: 0, heatPlayed: {}, heatWon: {}, flavors: {} };
   const bump = (o, k) => { if (k != null && k !== '') o[k] = (o[k] || 0) + 1; };
 
+  // The round-replay bug (fixed 2026-07-30, see game.ts) completed ~3% of
+  // game+turn pairs twice, writing two nearly identical rows. Keep the first
+  // completion of each pair so no preference is counted twice; the raw
+  // rounds.json still holds everything for anyone auditing the dedupe.
+  rawRounds.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  const seenTurn = new Set();
+  let dupesDropped = 0;
+
   for (const r of rawRounds) {
+    const turnKey = `${r.gameId}:${r.turn}`;
+    if (seenTurn.has(turnKey)) { dupesDropped++; continue; }
+    seenTurn.add(turnKey);
     cov.rounds++;
     let promptTag = null;
     if (r.blackCard && r.blackCard.id) {
@@ -170,7 +181,9 @@ const human = (n) => n.toLocaleString();
   await new Promise((res) => tagged.end(res));
 
   const rate = (a, b) => (b ? +(100 * a / b).toFixed(1) : null);
+  console.log(`  replay duplicates dropped: ${dupesDropped.toLocaleString()}`);
   const tagCoverage = {
+    replayDuplicatesDropped: dupesDropped,
     playedCardsTaggedPct: rate(cov.playedTagged, cov.playedCards),
     handCardsTaggedPct: rate(cov.handTagged, cov.handCards),
     blackCardsTaggedPct: rate(cov.blackTagged, cov.blackSeen),

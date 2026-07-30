@@ -7,6 +7,7 @@ import * as cardTags from './data/card-tags-v0.json';
 import * as tasteTagsSvc from './data/card-tags-v1.json';
 import * as signalTagsSvc from './data/card-tags-v2.json';
 import * as signalCardsPayload from './data/signal-cards-v1.json';
+import { updateProfile, emptyProfile, isProbeBot, Axis, CardTags } from './solo-probe';
 import { signalRegistry } from './signal-registry';
 
 export default class GameService extends Service {
@@ -36,6 +37,22 @@ export default class GameService extends Service {
           }
         },
         actions: {
+          // ── Solo taste profiles ─────────────────────────────────────────
+          // Written by the game loop, read by the probe engine. Keyed by the
+          // raw player id; the corpus only ever sees the salted hash.
+          'solo-profile-fetch': {
+            params: { player: 'string' },
+            handler: this.soloProfileFetch
+          },
+          'solo-observe': {
+            params: {
+              player: 'string',
+              axis: { type: 'enum', values: ['heat', 'mode', 'register', 'sincerity'] },
+              tags: 'object',
+              decisionMs: { type: 'number', optional: true },
+            },
+            handler: this.soloObserve
+          },
           health: this.health,
           start: {
             params: {
@@ -321,6 +338,9 @@ export default class GameService extends Service {
         submissions: Object.entries(turn.selectedCards ?? {}).map(([playerId, cards]: [string, any]) => ({
           player: hash(playerId),
           isRando: playerId === 'rando-cardrissian',
+          // Any synthetic seat. Rando kept separately for continuity with
+          // every analysis written before probe bots existed.
+          isBot: playerId === 'rando-cardrissian' || isProbeBot(playerId),
           cards: (cards ?? []).map((c: any) => ({ id: c._id, text: c.text })),
         })),
         winner: Array.isArray(turn.winner) ? turn.winner.map(hash) : hash(turn.winner),
@@ -334,8 +354,29 @@ export default class GameService extends Service {
           // joins card ids against this tagset version offline). Read from
           // env so a catalog re-tag can't leave rows claiming an old rubric.
           tagset: process.env.CARD_TAGSET || 'v2',
+          // 'solo' rounds are one human judging probe bots. The verdict is
+          // human; the plays are synthetic and flagged isBot above.
+          mode: (game as any)?.soloMode ? 'solo' : 'table',
         },
-        signals: Object.keys(latencies).length ? { latencies } : {},
+        signals: (() => {
+          const sig: any = Object.keys(latencies).length ? { latencies } : {};
+          const probe = (game as any)?.soloProbe;
+          if ((game as any)?.soloMode && probe && probe.axis) {
+            const winners = new Set(Array.isArray(turn.winner) ? turn.winner : [turn.winner]);
+            sig.solo = {
+              judgedBy: 'human',
+              contrastAxis: probe.axis,
+              contrastScore: probe.score,
+              authoredProbe: !!probe.authored,
+              options: Object.entries(probe.botCards || {}).map(([botId, cardId]: [string, any]) => ({
+                id: cardId,
+                tags: this.gameService.tagsForCard(cardId),
+                won: winners.has(botId),
+              })),
+            };
+          }
+          return sig;
+        })(),
       };
 
       const db = (this.adapter as any)?.db;
@@ -1661,6 +1702,27 @@ export default class GameService extends Service {
    * @param {Context<{ bug: string; route?: string; context?: string }>} ctx
    * @memberof GameService
    */
+  private async soloProfileFetch(ctx: Context<{ player: string }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) { return emptyProfile(); }
+    const doc = await db.collection('solo_profiles').findOne({ _id: ctx.params.player });
+    return doc ? { mean: doc.mean || {}, n: doc.n || {} } : emptyProfile();
+  }
+
+  private async soloObserve(ctx: Context<{ player: string; axis: Axis; tags: CardTags; decisionMs?: number }>) {
+    const db = (this.adapter as any)?.db;
+    if (!db) { throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB'); }
+    const { player, axis, tags } = ctx.params;
+    const existing = await db.collection('solo_profiles').findOne({ _id: player });
+    const next = updateProfile(existing ? { mean: existing.mean || {}, n: existing.n || {} } : emptyProfile(), axis, tags);
+    await db.collection('solo_profiles').updateOne(
+      { _id: player },
+      { $set: { mean: next.mean, n: next.n, updatedAt: Date.now() } },
+      { upsert: true },
+    );
+    return { ok: true, n: next.n };
+  }
+
   private async bugReport(ctx: Context<{ bug: string; route?: string; context?: string }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     if (!db) {

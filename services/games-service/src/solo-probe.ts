@@ -34,6 +34,17 @@
  * ask the question whose answer you cannot already predict.
  */
 
+/**
+ * Bot seats for solo games. A prefix check rather than a set, so the bot count
+ * can change without touching every call site. Bots play, never judge, and
+ * every exclusion below (czar rotation, dealing, deck maths, corpus stats)
+ * keys off this one predicate.
+ */
+export const PROBE_BOT_PREFIX = 'probe-bot-';
+export const PROBE_BOT_IDS = ['probe-bot-1', 'probe-bot-2', 'probe-bot-3'];
+export const isProbeBot = (id: string): boolean =>
+  typeof id === 'string' && id.indexOf(PROBE_BOT_PREFIX) === 0;
+
 /** The four taste axes carried by card-tags-v1/v2. */
 export type Axis = 'heat' | 'mode' | 'register' | 'sincerity';
 export const AXES: Axis[] = ['heat', 'mode', 'register', 'sincerity'];
