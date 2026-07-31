@@ -91,5 +91,60 @@ const lpad = (s, n) => String(s).padStart(n);
   console.log('  wording is weak; a low CONV means the page is. They are different');
   console.log('  problems and this is the only view that separates them.\n');
 
+  // ── Hero slot A/B: fundraiser vs Hot or Cold ──────────────────────────
+
+  // Both arms render in the same slot and log to promo_events under their
+
+  // own property, so CTR is computed against each arm's own impressions.
+
+  const heroRows = await events.aggregate([
+
+    { $match: { placement: 'hero', ts: { $gte: SINCE } } },
+
+    { $group: { _id: { prop: '$property', t: '$type' }, n: { $sum: 1 } } },
+
+  ]).toArray();
+
+  const arms = { measure: { impression: 0, click: 0 }, hotorcold: { impression: 0, click: 0 } };
+
+  for (const r of heroRows) {
+
+    const a = arms[r._id.prop];
+
+    if (a) a[r._id.t] = r.n;
+
+  }
+
+  if (arms.hotorcold.impression || arms.hotorcold.click) {
+
+    console.log('\n  HERO SLOT A/B · same button, re-rolled per visit\n');
+
+    console.log('  ARM                 SEEN   CLICKS      CTR');
+
+    console.log('  ------------------------------------------');
+
+    for (const [name, label] of [['measure', 'measure your dick'], ['hotorcold', 'hot or cold']]) {
+
+      const a = arms[name];
+
+      console.log('  ' + pad(label, 18) + lpad(a.impression, 6) + lpad(a.click, 9) + lpad(pct(a.click, a.impression), 9));
+
+    }
+
+    const mC = pct(arms.measure.click, arms.measure.impression);
+
+    const hC = pct(arms.hotorcold.click, arms.hotorcold.impression);
+
+    console.log('\n  Clicks are the metric here, not dollars: the arms go to');
+
+    console.log('  different places, so only the CTR is comparable (' + mC + ' vs ' + hC + ').');
+
+  } else {
+
+    console.log('\n  Hero A/B: no Hot or Cold arm impressions yet.');
+
+  }
+
+
   await client.close();
 })().catch((e) => { console.error('ERR', e.message); process.exit(1); });
