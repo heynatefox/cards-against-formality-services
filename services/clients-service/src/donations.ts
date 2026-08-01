@@ -22,6 +22,8 @@ export interface CheckoutInput {
   donor?: string;
   /** Placement that produced the click: banner, endgame, home. */
   from?: string;
+  /** Page framing arm the donor was shown. */
+  copy?: string;
 }
 
 /**
@@ -62,7 +64,7 @@ const form = (obj: Record<string, string | number | undefined>) =>
  */
 export async function createCheckout(
   secretKey: string,
-  { inches, name, ref, origin, donor, from }: CheckoutInput,
+  { inches, name, ref, origin, donor, from, copy }: CheckoutInput,
 ): Promise<{ url: string; id: string }> {
   const cents = Math.round(inches * 100);
   if (!Number.isFinite(cents) || cents < MIN_INCHES * 100) {
@@ -94,6 +96,8 @@ export async function createCheckout(
     // Which placement sent them. The whole point of shipping three at once
     // is finding out which one earns, and that is unknowable after the fact.
     'metadata[from]': (from || '').slice(0, 24),
+    // Which page framing was on screen. Same reason as `from`.
+    'metadata[copy]': (copy || '').slice(0, 16),
     success_url: `${safeOrigin(origin)}/measure/?paid={CHECKOUT_SESSION_ID}`,
     cancel_url: `${safeOrigin(origin)}/measure/`,
     submit_type: 'donate',
@@ -171,6 +175,8 @@ export interface DonationRow {
   donor: string;
   /** Which on-site placement produced the click. */
   from?: string;
+  /** Which page framing was on screen: the messaging A/B arm. */
+  copy?: string;
   ts: number;
   livemode: boolean;
   /** Whether the donor ticked Stripe's marketing opt-in. Proof, not an address. */
@@ -210,6 +216,7 @@ export async function recordDonation(db: any, event: any): Promise<DonationResul
     ref: (session?.metadata?.ref || '').slice(0, 40),
     donor: (session?.metadata?.donor || '').slice(0, 64),
     from: (session?.metadata?.from || '').slice(0, 24),
+    copy: (session?.metadata?.copy || '').slice(0, 16),
     ts: (Number(event.created) || Math.floor(Date.now() / 1000)) * 1000,
     livemode: !!event.livemode,
     // The flag is kept as proof of consent. The address deliberately is NOT:

@@ -146,5 +146,99 @@ const lpad = (s, n) => String(s).padStart(n);
   }
 
 
+  // ── Page framing A/B: vanity vs support ───────────────────────────────
+
+
+  // Conversion is the metric here, not clicks: both arms are the same page
+
+
+  // reached the same way, so the only question is which ask gets paid.
+
+
+  const copyRows = await events.aggregate([
+
+
+    { $match: { property: 'measure-copy', ts: { $gte: SINCE } } },
+
+
+    { $group: { _id: { arm: '$variant', t: '$type' }, n: { $sum: 1 } } },
+
+
+  ]).toArray();
+
+
+  const copyArms = { vanity: { impression: 0, click: 0, gave: 0, dollars: 0 },
+
+
+                    support: { impression: 0, click: 0, gave: 0, dollars: 0 } };
+
+
+  for (const r of copyRows) {
+
+
+    const a = copyArms[r._id.arm];
+
+
+    if (a) a[r._id.t] = r.n;
+
+
+  }
+
+
+  for (const d of await donations.find({ ts: { $gte: SINCE }, livemode: true, seed: { $ne: true } }).toArray()) {
+
+
+    const a = copyArms[d.copy];
+
+
+    if (a) { a.gave += 1; a.dollars += (d.inches || 0); }
+
+
+  }
+
+
+  if (copyArms.vanity.impression || copyArms.support.impression) {
+
+
+    console.log('\n  PAGE FRAMING A/B · same page, re-rolled per visit\n');
+
+
+    console.log('  ARM        SEEN  REACHED PAY     GAVE          $');
+
+
+    console.log('  ------------------------------------------------');
+
+
+    for (const [name, label] of [['vanity', 'vanity'], ['support', 'support']]) {
+
+
+      const a = copyArms[name];
+
+
+      console.log('  ' + pad(label, 9) + lpad(a.impression, 6) + lpad(a.click, 9)
+
+
+        + lpad(pct(a.click, a.impression), 8) + lpad(a.gave, 5) + lpad('$' + a.dollars.toFixed(2), 11));
+
+
+    }
+
+
+    console.log('\n  SEEN is page views of that framing. REACHED PAY is people who');
+
+
+    console.log('  pressed the button. GAVE is money that actually arrived.');
+
+
+  } else {
+
+
+    console.log('\n  Page framing A/B: no impressions yet.');
+
+
+  }
+
+
+
   await client.close();
 })().catch((e) => { console.error('ERR', e.message); process.exit(1); });

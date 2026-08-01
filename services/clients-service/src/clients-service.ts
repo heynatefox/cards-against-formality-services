@@ -119,6 +119,10 @@ export default class ClientsService extends Service {
               donor: { type: 'string', optional: true, max: 64 },
               origin: { type: 'string', optional: true, max: 120 },
               from: { type: 'string', optional: true, max: 24 },
+              // Which framing of the page they were shown. Rides the same
+              // route as `from` so a completed donation says which pitch
+              // earned it, which is unknowable after the fact.
+              copy: { type: 'string', optional: true, max: 16 },
             },
             handler: this.donateCheckout
           },
@@ -653,7 +657,7 @@ export default class ClientsService extends Service {
 
   /** Hands back a Stripe Checkout URL for the frontend to redirect to. */
   private async donateCheckout(
-    ctx: Context<{ inches: number; name?: string; ref?: string; origin?: string; donor?: string; from?: string }>,
+    ctx: Context<{ inches: number; name?: string; ref?: string; origin?: string; donor?: string; from?: string; copy?: string }>,
   ) {
     const key = process.env.STRIPE_SECRET_KEY;
     if (!key) throw new Errors.MoleculerError('Donations unavailable', 503, 'NO_STRIPE');
@@ -676,6 +680,7 @@ export default class ClientsService extends Service {
         // donations never stack.
         donor: ctx.params.donor,
         from: ctx.params.from,
+        copy: ctx.params.copy,
         origin: ctx.params.origin || '',
       });
       return { url, id };
