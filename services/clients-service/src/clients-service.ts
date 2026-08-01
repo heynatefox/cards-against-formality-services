@@ -4,6 +4,20 @@ import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
 import { createCheckout, verifySignature, recordDonation, board, sessionStatus, claimName, recordClick, nameIsBlocked, MIN_INCHES } from './donations';
 
+/**
+ * One username rule, used by the entity validator, the guest auto-register
+ * path and the client's own pre-check. Any script's letters, any digits, and
+ * single _ - or space between them. Kept as a named export so the rule cannot
+ * fork again.
+ */
+export const USERNAME_PATTERN = /^[\p{L}\p{N}]+([_ -]?[\p{L}\p{N}])*$/u;
+export const USERNAME_MIN = 2;
+export const USERNAME_MAX = 16;
+export function isValidUsername(name: string): boolean {
+  const n = (name || '').trim();
+  return n.length >= USERNAME_MIN && n.length <= USERNAME_MAX && USERNAME_PATTERN.test(n);
+}
+
 
 /**
  * Interface that represents the Client object.
@@ -55,7 +69,11 @@ export default class ClientsService extends Service {
    */
   private validationSchema = {
     _id: { type: 'string' },
-    username: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 3, max: 12 },
+    // Unicode-aware: the ASCII-only rule silently rejected every accented or
+    // non-Latin name (José, Müller, Łukasz, and every Russian and Japanese
+    // player) in a game localised into eleven languages. Bounds match the
+    // client input (2-16) so the two can never disagree again.
+    username: { type: 'string', pattern: '^[\\p{L}\\p{N}]+([_ -]?[\\p{L}\\p{N}])*$', patternFlags: 'u', min: 2, max: 16 },
     email: { type: 'string', optional: true },
     socket: { type: 'string', optional: true },
     roomId: { type: 'string', optional: true },
@@ -391,8 +409,14 @@ export default class ClientsService extends Service {
         if (ctx.meta.user.firebase?.sign_in_provider === 'anonymous') {
           let username = `Anon-${uid.slice(-4)}`;
           const requested = typeof ctx.params?.username === 'string' ? ctx.params.username.trim() : '';
-          if (requested.length >= 3 && requested.length <= 12 && /^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$/.test(requested)) {
+          // Must stay in step with the entity validator above and with the
+          // client's own check. When these drifted apart, a guest typed a
+          // name, the modal accepted it, and the server quietly handed back
+          // Anon-xxxx: "I uploaded my name and it gave me an anonymous name".
+          if (isValidUsername(requested)) {
             username = requested;
+          } else if (requested.length) {
+            this.logger.info(`guest nickname rejected, falling back to ${username}: ${JSON.stringify(requested).slice(0, 40)}`);
           }
           const data = { uid, username, isAnonymous: true, displayName: null, photoURL: null, email: null, emailVerified: false, phoneNumber: null };
           await this.firestoreDb
