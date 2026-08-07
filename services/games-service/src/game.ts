@@ -234,6 +234,12 @@ export default class Game extends TurnHandler {
   }
 
   public async onTurnUpdated(updatedTurn: TurnDataWithState) {
+    // Submission-progress pings are display only. They must never reach the
+    // state machine: this handler stamps stateChangedAt and re-arms the phase
+    // timer, so treating a ping as a real transition would reset the round
+    // clock on every submit (an endless picking phase), overwrite prevTurnData
+    // with a payload carrying winner:null, and re-schedule Rando each time.
+    if ((updatedTurn as any)?.progressOnly) { return; }
     try {
       // Try update the games prevState.
       // tslint:disable-next-line: max-line-length
@@ -520,6 +526,30 @@ export default class Game extends TurnHandler {
     }
 
     const updatedGame = await this.submitCards(game, playerId, whiteCards);
+
+    // Broadcast who has submitted so the "N of M answers in" counter moves.
+    // The PICKING payload ships selectedCards:{} and nothing ever refreshed it,
+    // so that counter has always read 0 for everyone (there was a TODO on it in
+    // turn.ts). Keys only, values deliberately emptied: revealing the actual
+    // cards mid-round would let players see each other's plays before judging.
+    try {
+      const submittedKeys: { [id: string]: any[] } = {};
+      Object.keys(updatedGame.selectedCards || {}).forEach(id => { submittedKeys[id] = []; });
+      await this.broker.emit('games.turn.updated', {
+        gameId: updatedGame._id,
+        roomId: (updatedGame.room as any)?._id ?? updatedGame.room,
+        players: Object.values(updatedGame.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+        ...updatedGame.turnData,
+        selectedCards: submittedKeys,
+        winner: null,
+        winningCards: [],
+        state: GameState.PICKING_CARDS,
+        progressOnly: true,
+      });
+    } catch (err) {
+      this.logger.warn(`submit progress broadcast failed: ${err.message}`);
+    }
+
     if (this.hasEveryoneSelected(updatedGame)) {
       // CONTRACT: the caller holds this game's lock (bot and Rando timers,
       // the timer callback, the watchdog, and the submit action all do).

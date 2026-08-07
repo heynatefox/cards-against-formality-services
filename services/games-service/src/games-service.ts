@@ -153,6 +153,15 @@ export default class GameService extends Service {
             },
             handler: this.bugReport
           },
+          // A player's hand only ever arrived as a PUSH (games.deal). Refresh the
+          // page, reconnect, or join during turnSetup/selectingWinner and that
+          // event is simply missed, leaving the player staring at an empty tray
+          // for the rest of the round. Reported repeatedly as "cards aren't
+          // here" / "no card" / "I cant pick". This lets the client pull.
+          'my-hand': {
+            params: { roomId: { type: 'string', max: 40 } },
+            handler: this.myHand
+          },
           'promo-event': {
             params: {
               type: { type: 'enum', values: ['impression', 'click'] },
@@ -322,6 +331,7 @@ export default class GameService extends Service {
       }
       // Only completed rounds carry signal: a winner announcement (turnSetup
       // with winner set), a failed round (errorMessage), or the game end.
+      if (turn?.progressOnly) { return; }   // display-only ping, not a round
       const isRoundEnd = turn?.state === 'turnSetup' && !turn?.initializing && (turn?.winner || turn?.errorMessage);
       const isGameEnd = turn?.state === 'ended';
       if (!isRoundEnd && !isGameEnd) {
@@ -1984,6 +1994,18 @@ export default class GameService extends Service {
       ).catch(() => undefined);
     }
     return { ok: true, n: next.n };
+  }
+
+  private async myHand(ctx: Context<{ roomId: string }, { user: { uid: string } }>) {
+    const uid = ctx.meta.user.uid;
+    const game: any = await this.getGameMatchingRoom(ctx, ctx.params.roomId).catch(() => null);
+    if (!game) { return { cards: [] }; }
+    const player = game.players && game.players[uid];
+    if (!player || !Array.isArray(player.cards) || !player.cards.length) { return { cards: [] }; }
+    const ids = player.cards.filter((c: any) => typeof c === 'string' && c.length);
+    if (!ids.length) { return { cards: [] }; }
+    const cards = await this.broker.call('cards.get', { id: ids }).catch(() => null);
+    return { cards: cards || [] };
   }
 
   private async bugReport(ctx: Context<{ bug: string; route?: string; context?: string }>) {
