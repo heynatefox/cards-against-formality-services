@@ -198,6 +198,13 @@ export default class ClientsService extends Service {
               username: 'string'
             },
             handler: this.checkUsername
+          },
+          // There was no way to change a name after signup. Anyone whose name
+          // was silently replaced with Anon-xxxx by the old ASCII rule is still
+          // stuck with it.
+          rename: {
+            params: { username: { type: 'string', min: 2, max: 16 } },
+            handler: this.renameUser
           }
         },
         events: {
@@ -245,11 +252,10 @@ export default class ClientsService extends Service {
    * @memberof ClientsService
    */
   private isUsernameValid(username: string): boolean {
-    if (username.length < 3 || username.length > 12) {
-      return false;
-    }
-
-    return /^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$/.test(username);
+    // Was a separate ASCII-only 3-12 rule, which meant check-username still
+    // rejected every accented and non-Latin name after the rest of the service
+    // had been widened. One predicate now, so these cannot drift apart again.
+    return isValidUsername(username);
   }
 
   /**
@@ -277,6 +283,37 @@ export default class ClientsService extends Service {
         }
         throw new Errors.MoleculerError('Username already exists', 409, 'USERNAME_CONFLICT');
       });
+  }
+
+  /**
+   * Change the display name of the authenticated user. Reserves the new name,
+   * releases the old one, and keeps Firestore and the client entity in step.
+   */
+  private async renameUser(ctx: Context<{ username: string }, { user: { uid: string } }>) {
+    const uid = ctx.meta.user.uid;
+    const next = (ctx.params.username || '').trim();
+    if (!isValidUsername(next)) {
+      throw new Errors.MoleculerError('Letters and numbers only, 2 to 16 characters', 400, 'USERNAME_INVALID');
+    }
+
+    const existing: any = await this.actions.get({ id: uid }).catch(() => null);
+    const current = existing && existing.username;
+    if (current === next) { return { username: next, unchanged: true }; }
+
+    const names = this.firestoreDb.collection('usernames');
+    const taken = await names.doc(next).get();
+    if (taken.exists) {
+      throw new Errors.MoleculerError('That name is taken', 409, 'USERNAME_CONFLICT');
+    }
+
+    await names.doc(next).set({ uid, at: Date.now() });
+    await this.firestoreDb.collection('users').doc(uid).set({ username: next }, { merge: true });
+    await this.actions.update({ id: uid, username: next });
+    // Released last: if anything above fails the old name is still reserved to
+    // this user rather than orphaned to whoever grabs it next.
+    if (current) { await names.doc(current).delete().catch(() => undefined); }
+
+    return { username: next };
   }
 
   /**

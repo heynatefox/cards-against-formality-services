@@ -148,6 +148,7 @@ export default class WebGatewayService extends Service {
                 'PUT /login/renew': 'clients.renew',
                 'POST /login': 'clients.login',
                 'POST /check/username': 'clients.check-username',
+                'POST /clients/rename': 'clients.rename',
 
                 'POST /rooms': 'rooms.create',
                 'PUT /rooms/join/players': 'rooms.join-players',
