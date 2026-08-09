@@ -32,7 +32,7 @@
     "ioredis": "^4.16.2",
     "jsonwebtoken": "^8.5.1",
     "nats": "^1.4.0",
-    "lodash": "4.17.20"
+    "lodash": "4.17.21"
   },
   "engines": {
     "node": ">= 8.x.x"
