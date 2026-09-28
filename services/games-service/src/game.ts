@@ -898,13 +898,16 @@ export default class Game extends TurnHandler {
    * @returns {Promise<{ score: number }>}
    * @memberof Game
    */
-  public async rebootPlayerHand(game: GameInterface, clientId: string): Promise<{ score: number }> {
+  public async rebootPlayerHand(game: GameInterface, clientId: string, cost: number = REBOOT_COST): Promise<{ score: number }> {
     const player = game.players[clientId];
-    player.score -= REBOOT_COST;
+    player.score -= cost;
     player.cards = [];
+    // Track reboots per player so the first one is free and the rest cost.
+    const rebootsUsed = { ...((game as any).rebootsUsed || {}) };
+    rebootsUsed[clientId] = (rebootsUsed[clientId] || 0) + 1;
     // Mutates player.cards and whiteCards by reference and emits the new hand
     const whiteCards = await this.dealWhiteCards(player, game.whiteCards);
-    await this.broker.call('games.update', { id: game._id, players: game.players, whiteCards });
+    await this.broker.call('games.update', { id: game._id, players: game.players, whiteCards, rebootsUsed });
     return { score: player.score };
   }
 }

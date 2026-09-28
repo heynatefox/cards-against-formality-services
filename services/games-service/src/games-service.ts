@@ -2250,10 +2250,11 @@ export default class GameService extends Service {
     if (!game) { return { cards: [] }; }
     const player = game.players && game.players[uid];
     if (!player || !Array.isArray(player.cards) || !player.cards.length) { return { cards: [] }; }
+    const rebootsUsed = (game.rebootsUsed && game.rebootsUsed[uid]) || 0;
     const ids = player.cards.filter((c: any) => typeof c === 'string' && c.length);
-    if (!ids.length) { return { cards: [] }; }
+    if (!ids.length) { return { cards: [], rebootsUsed }; }
     const cards = await this.broker.call('cards.get', { id: ids }).catch(() => null);
-    return { cards: cards || [] };
+    return { cards: cards || [], rebootsUsed };
   }
 
   private async bugReport(ctx: Context<{ bug: string; route?: string; context?: string }>) {
@@ -2289,7 +2290,12 @@ export default class GameService extends Service {
     if (game.selectedCards && uid in game.selectedCards) {
       throw new Errors.MoleculerError('You already played this round', 400, 'ALREADY_PLAYED');
     }
-    if ((player.score || 0) < REBOOT_COST) {
+    // First reboot of the game is free: the complaint was a bad opening hand
+    // with zero points to fix it, so the score gate hid the button exactly
+    // when it was wanted. Free first, then it costs points like before.
+    const rebootsUsed = (game.rebootsUsed && game.rebootsUsed[uid]) || 0;
+    const cost = rebootsUsed === 0 ? 0 : REBOOT_COST;
+    if (cost > 0 && (player.score || 0) < cost) {
       throw new Errors.MoleculerError(`Costs ${REBOOT_COST} points. You are too broke.`, 400, 'NO_POINTS');
     }
 
@@ -2308,13 +2314,13 @@ export default class GameService extends Service {
         player: hashed,
         gameId: game._id,
         cards: player.cards.filter((c: any) => typeof c === 'string'),
-        cost: REBOOT_COST,
-        reason: 'reboot',
+        cost,
+        reason: rebootsUsed === 0 ? 'reboot_free' : 'reboot',
         tagset: 'v2',
       }).catch(() => undefined);
     }
 
-    return this.gameService.rebootPlayerHand(game, uid);
+    return this.gameService.rebootPlayerHand(game, uid, cost);
   }
 
   private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[]; locale?: string }, any>) {
