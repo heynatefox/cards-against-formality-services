@@ -10,7 +10,7 @@ import * as promptTags from './data/prompt-tags-v1.json';
 import * as signalTags from './data/card-tags-v2.json';
 // Authored measurement candidates, resolved to live card ids by text match.
 import * as resolvedSignal from './data/signal-tags-resolved.json';
-import { selectProbe, isProbeBot, TaggedCard, CardTags, TasteProfile, Probe } from './solo-probe';
+import { selectProbe, isProbeBot, pickJudgePersona, TaggedCard, CardTags, TasteProfile, Probe } from './solo-probe';
 import * as benchList from './data/bench-v1.json';
 import { signalRegistry } from './signal-registry';
 
@@ -46,6 +46,17 @@ export interface TurnDataWithState extends TurnData {
   winningCards: Card[];
   errorMessage?: string;
   initializing?: boolean;
+  /**
+   * Bot-judge solo only: what the judging bot is looking for, shown to the
+   * player before they pick. Just the persona, never the rest of soloProbe.
+   */
+  soloPersona?: { axis: string; direction: number; label: string } | null;
+  /**
+   * Player ids in the order the judge is shown their plays. Seeded per round,
+   * so it is identical for every client and stable across reconnects. Recorded
+   * on the round so position effects are measurable rather than invisible.
+   */
+  displayOrder?: string[];
 }
 
 export default class TurnHandler {
@@ -61,8 +72,16 @@ export default class TurnHandler {
     const v1 = tasteTags as any;
     const sig = resolvedSignal as any;
     const pool: TaggedCard[] = [];
+    // card-tags-v2 covers the whole deck, prompts included: 2,568 entries =
+    // 2,059 answers + 509 prompts. Nothing here filtered them out, so every
+    // prompt was a legal thing for a bot to "answer" with. It stayed invisible
+    // while selectProbe was a deterministic argmax that only ever surfaced a
+    // dozen cards; sampling the pool exposed it immediately ("answered with
+    // black card in solo mode"). prompt-tags-v1 is exactly that set of 509.
+    const promptIds = new Set(Object.keys(promptTags as any).filter(k => k !== 'default'));
     for (const id of Object.keys(v2)) {
       if (id === 'default') { continue; }   // json-module artefact
+      if (promptIds.has(id)) { continue; }  // prompts are not playable answers
       const t = v2[id] || {};
       const b = v1[id] || {};
       const tags: any = {
@@ -209,7 +228,22 @@ export default class TurnHandler {
    * @returns {string}
    * @memberof TurnHandler
    */
-  private pickCzar(turns: TurnDataWithState[], players: { [id: string]: GamePlayer }): string {
+  private pickCzar(turns: TurnDataWithState[], players: { [id: string]: GamePlayer }, botCzar = false): string {
+    // Bot-judge solo: the seat rotates among the probe bots so the human is
+    // free to actually play a card. Kept inside pickCzar rather than special
+    // cased at the call site, so czar rotation stays in exactly one place.
+    if (botCzar) {
+      const bots = Object.values(players).filter(p => isProbeBot(p._id));
+      if (bots.length) {
+        const prev = turns.length ? turns[turns.length - 1].czar : null;
+        const i = prev ? bots.findIndex(b => b._id === prev) : -1;
+        const next = bots[(i + 1) % bots.length];
+        next.isCzar = true;
+        return next._id;
+      }
+      // No bots seated: fall through to the human rotation rather than
+      // throwing, so a malformed solo game still produces a playable round.
+    }
     // get the previous rounds czar.
     const turnsLength = turns.length;
     let prevCzar;
@@ -455,10 +489,13 @@ export default class TurnHandler {
    * @memberof TurnHandler
    */
   private async ensurePlayersHaveCards(players: { [id: string]: GamePlayer }, whiteCards: string[], handSize = 10) {
-    for (const player of Object.values(players)) {
-      // Probe bots are stocked by the probe engine in startTurn; dealing them
-      // ten deck cards each would only starve the humans' deck.
-      if (isProbeBot(player._id)) { continue; }
+    // Deal the thinnest hands first. With the guard above this loop should
+    // never run short, but if it ever does, the cards go to whoever has least
+    // rather than to whoever happens to sit first in the object.
+    const queue = Object.values(players)
+      .filter(pl => !isProbeBot(pl._id))
+      .sort((a, b) => (a.cards || []).length - (b.cards || []).length);
+    for (const player of queue) {
       whiteCards = await this.dealWhiteCards(player, whiteCards, handSize);
     }
 
@@ -474,13 +511,25 @@ export default class TurnHandler {
    * @returns {boolean}
    * @memberof TurnHandler
    */
-  public hasEnoughCards(players: GamePlayer[], whiteCards: string[], blackCards: string[]): boolean {
+  public hasEnoughCards(players: GamePlayer[], whiteCards: string[], blackCards: string[], handSize = 10): boolean {
     // check if there are enough cards left to play the turn.
+    //
+    // handSize MUST match what startTurn will actually deal. It used to be
+    // hardcoded to 10 while Packing Heat deals 11 on a pick-2 prompt, so on
+    // those turns the check cleared the game to continue and then the dealer
+    // ran the deck dry one card per player short. ensurePlayersHaveCards deals
+    // in a fixed player order, so the shortfall always landed on the same
+    // people, who then sat with a stub hand or none at all. That is the
+    // "I don't have cards" report.
+    //
+    // The next black card is not drawn yet here, so the pick value is unknown.
+    // Assume the worst case whenever Packing Heat is on: ending a game one
+    // turn early is recoverable, dealing a player an empty hand is not.
     const whiteCardsRequired = Object.values(players).reduce((totalRequired, player) => {
       // Bots draw from the probe pool, not the deck; counting them here would
       // end solo games early with hundreds of cards still undealt.
       if (isProbeBot(player._id)) { return totalRequired; }
-      const cardsRequired = Math.max(0, 10 - player.cards.length);
+      const cardsRequired = Math.max(0, handSize - player.cards.length);
       return totalRequired + cardsRequired;
     }, 0);
 
@@ -511,7 +560,8 @@ export default class TurnHandler {
 
     turnData.turn += 1;
     // players mutated by reference.
-    turnData.czar = this.pickCzar(turns, players);
+    const botJudge = solo && !!(game as any).soloPlayMode;
+    turnData.czar = this.pickCzar(turns, players, botJudge);
     const tCzar = Date.now();
     // mutate black and white cards by reference
     turnData.blackCard = await this.pickBlackCard(blackCards, solo);
@@ -555,7 +605,14 @@ export default class TurnHandler {
             authored: false,
           };
         } else {
-          probe = selectProbe(this.getProbePool(), profile, botIds.length);
+          // Skip what this player has been served recently. Without it the
+          // engine happily re-serves the same high-contrast pair round after
+          // round, which is what emptied solo games by round three. Every
+          // serve is recorded via games.solo-probe-served below, so this
+          // covers earlier rounds of the current game as well as past ones.
+          // `undefined` for axis keeps the parameter's own default.
+          const seen = new Set<string>(Array.isArray(fetched && fetched.recent) ? fetched.recent : []);
+          probe = selectProbe(this.getProbePool(), profile, botIds.length, undefined, seen);
         }
 
         if (probe) {
@@ -580,6 +637,14 @@ export default class TurnHandler {
             botCards[controlBot] = controlCard;
           }
 
+          // Bot-judge mode: the czar bot judges, so it must not also play a
+          // card. Leaving it in botCards had it competing against itself and
+          // handed it a free win whenever its own card matched its persona.
+          if (botJudge && turnData.czar && botCards[turnData.czar]) {
+            delete botCards[turnData.czar];
+            if (players[turnData.czar]) { players[turnData.czar].cards = []; }
+          }
+
           soloProbe = {
             axis: probe.axis,
             score: probe.score,
@@ -588,6 +653,9 @@ export default class TurnHandler {
             botCards,
             controlBot,
             controlCard,
+            // Stated up front to the player, so their pick is a choice against
+            // a named target rather than a guess. Only set in bot-judge mode.
+            persona: botJudge ? pickJudgePersona(turnData.turn) : null,
             retest: useRetest ? { servedTs: retestCandidate.ts, originalWinner: retestCandidate.winnerCard || null } : null,
           };
 
@@ -605,7 +673,7 @@ export default class TurnHandler {
     }
 
     // tslint:disable-next-line: max-line-length
-    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {}, predictions: {}, lastPredictions: {}, czarDeliberationMs: null, soloProbe });
+    await this.broker.call('games.update', { id: game._id, selectedCards: {}, players, whiteCards: newWhiteCards, blackCards, turnData, turnStartedAt: Date.now(), submittedAt: {}, predictions: {}, lastPredictions: {}, favorites: {}, lastFavorites: {}, predictionAt: {}, lastPredictionAt: {}, favoriteAt: {}, lastFavoriteAt: {}, choiceSnapshots: {}, czarDeliberationMs: null, soloProbe });
     const tUpdate = Date.now();
 
     // Only complain when it actually went slowly, so this stays quiet in the
@@ -626,6 +694,10 @@ export default class TurnHandler {
       winner: null,
       winningCards: [],
       ...turnData,
+      // Only the persona, never the whole soloProbe: that object holds
+      // botCards and the seeded control card, and shipping it would both
+      // reveal the competition mid-round and blow the attention check.
+      soloPersona: (soloProbe && soloProbe.persona) || null,
       state: GameState.PICKING_CARDS,
     };
   }
@@ -668,9 +740,20 @@ export default class TurnHandler {
     const playersProp = `players.${clientId}.cards`;
     const selectedCardsProp = `selectedCards.${clientId}`;
     const submittedAtProp = `submittedAt.${clientId}`;
+    const snapshotProp = `choiceSnapshots.${clientId}`;
 
+    // The full set this player was choosing FROM, taken here because this is
+    // the last moment it exists. `playersCards` is the pre-play hand; one line
+    // below it becomes the post-play hand forever.
+    //
+    // Reconstructing it later from the live hand looks equivalent and is not:
+    // if the next turn deals before the round is captured, the "held" cards are
+    // the NEXT hand and the play can even reappear inside them. Measured at
+    // 5.1% of human submissions before this snapshot existed. Written in the
+    // same update as the mutation, so there is no window between them.
     await this.broker.call('games.update', {
-      id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards, [submittedAtProp]: Date.now()
+      id: game._id, [playersProp]: newCards, [selectedCardsProp]: cards, [submittedAtProp]: Date.now(),
+      [snapshotProp]: { fullHand: playersCards, played: cards, held: newCards },
     });
     const updatedGame = await this.broker.call<GameInterface, any>('games.get', { id: game._id, populate: ['room'] }).catch(err => {
       this.logger.warn(`submitCards: game not found after update ${game._id}: ${err.message}`);

@@ -146,6 +146,17 @@ export default class ClientsService extends Service {
             },
             handler: this.donateName
           },
+          // Records that a player was shown, and acknowledged, a specific
+          // version of the terms. The version matters more than the timestamp:
+          // when the wording is revised, this is what tells us who is covered
+          // by which text instead of leaving one undifferentiated blob.
+          'accept-terms': {
+            params: {
+              version: { type: 'string', max: 32 },
+              surface: { type: 'enum', values: ['signin', 'banner'] },
+            },
+            handler: this.acceptTerms
+          },
           // One millimetre of girth per unique visitor who follows a link.
           'donate-click': {
             params: {
@@ -774,6 +785,29 @@ export default class ClientsService extends Service {
   }
 
   /** Names a donation after the fact, authorised by its checkout session id. */
+  /**
+   * Store the terms version this player acknowledged, and where.
+   *
+   * `signin` is an affirmative act tied to entering the game, which is the
+   * record worth having. `banner` is weaker, a notice that was displayed and
+   * clicked through, and exists to reach players who already have an identity
+   * and will never see the sign-in screen again. They are kept apart because
+   * they are not the same evidence and should not be counted as if they were.
+   */
+  private async acceptTerms(ctx: Context<{ version: string; surface: string }, { user: { uid: string } }>) {
+    const uid = ctx.meta?.user?.uid;
+    if (!uid) { throw new Errors.MoleculerError('Sign in first', 401, 'NO_USER'); }
+    const db = (this.adapter as any)?.db;
+    if (!db) throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
+    // First acknowledgement of a version wins, so a later banner click cannot
+    // overwrite the stronger sign-in record or move the original date.
+    await db.collection('clients').updateOne(
+      { _id: uid, termsVersion: { $ne: ctx.params.version } },
+      { $set: { termsVersion: ctx.params.version, termsAcceptedAt: Date.now(), termsSurface: ctx.params.surface } },
+    ).catch(() => undefined);
+    return { ok: true };
+  }
+
   private async donateName(ctx: Context<{ id: string; name: string }>) {
     const db = (this.adapter as any)?.db;
     if (!db) throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');

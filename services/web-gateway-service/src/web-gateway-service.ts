@@ -148,6 +148,7 @@ export default class WebGatewayService extends Service {
                 'PUT /login/renew': 'clients.renew',
                 'POST /login': 'clients.login',
                 'POST /check/username': 'clients.check-username',
+                'POST /accept-terms': 'clients.accept-terms',
                 'POST /clients/rename': 'clients.rename',
 
                 'POST /rooms': 'rooms.create',
@@ -162,6 +163,7 @@ export default class WebGatewayService extends Service {
                 'POST /games/reason': 'games.reason',
                 'POST /games/my-hand': 'games.my-hand',
                 'POST /games/predict': 'games.predict',
+                'POST /games/favorite': 'games.favorite',
                 'POST /games/rank': 'games.rank',
                 'POST /games/reboot': 'games.reboot',
                 'POST /games/wyr-response': 'games.wyr-response',

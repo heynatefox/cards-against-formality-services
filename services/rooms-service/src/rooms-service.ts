@@ -1,4 +1,5 @@
 import { Service, ServiceBroker, ServiceSchema, Context, NodeHealthStatus, Errors } from 'moleculer';
+import { ObjectId } from 'mongodb';
 import { forbidden } from 'boom';
 import dbMixin from '@cards-against-formality/db-mixin';
 import CacheCleaner from '@cards-against-formality/cache-clean-mixin';
@@ -80,7 +81,10 @@ export default class RoomsService extends Service {
         soloMode: { type: 'boolean', optional: true, default: false }
       },
     },
-    passcode: { type: 'string', pattern: '^[a-zA-Z0-9]+([_ -]?[a-zA-Z0-9])*$', min: 4, max: 12, optional: true },
+    // Any 4-12 visible characters. This used to be alphanumeric with single
+    // separators, which rejected the passwords people actually type ("pizza!")
+    // and read to them as the room being broken, not the password being picky.
+    passcode: { type: 'string', pattern: '^\\S{4,12}$', min: 4, max: 12, optional: true },
     // Epoch ms, set server-side on create. Lets cleanup jobs age rooms out
     // (target policy: empty rooms live for 24h) and lets clients sort by age.
     createdAt: { type: 'number', optional: true },
@@ -125,6 +129,7 @@ export default class RoomsService extends Service {
         hooks: {
           before: {
             create: [this.beforeCreate] as any,
+            list: [this.beforeList] as any,
             'join-players': [this.confirmUserAction] as any,
             'join-spectators': [this.confirmUserAction] as any
           },
@@ -179,8 +184,58 @@ export default class RoomsService extends Service {
         entityCreated: this.entityCreated,
         entityUpdated: this.entityUpdated,
         entityRemoved: this.entityRemoved,
+        started: this.startCleanupTimer,
+        stopped: this.stopCleanupTimer,
       },
     );
+  }
+
+  /**
+   * Daily sweep for rooms nothing will ever delete.
+   *
+   * Deleting a room is purely event-driven: the last player leaving triggers
+   * it. Every missed event is therefore permanent, and they are missed
+   * constantly (a tab closed without a clean socket close, a deploy killing
+   * in-flight work, a mobile browser backgrounded). The result was 35,806
+   * empty rooms, still growing by 330-460 a day, listed in the lobby where
+   * new players walked into them.
+   *
+   * scripts/cleanup-stale-data.js has done this since 2026-07-15 but was
+   * never scheduled. Running it in-process needs no new infrastructure and no
+   * second copy of the Mongo credentials. Deletes are idempotent, so extra
+   * replicas racing each other is harmless.
+   */
+  private cleanupTimer: any = null;
+
+  private async sweepStaleRooms() {
+    const STALE_DAYS = 7;
+    try {
+      const cutoff = Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000;
+      // Rooms predating the createdAt field have no timestamp, so fall back to
+      // the ObjectId's own embedded time.
+      const cutoffId = ObjectId.createFromTime(Math.floor(cutoff / 1000));
+      const res = await this.adapter.collection.deleteMany({
+        players: { $size: 0 },
+        $or: [{ createdAt: { $lt: cutoff } }, { createdAt: { $exists: false }, _id: { $lt: cutoffId } }],
+      });
+      if (res.deletedCount) {
+        this.logger.info(`room sweep: removed ${res.deletedCount} empty rooms older than ${STALE_DAYS}d`);
+      }
+    } catch (e) {
+      this.logger.error('room sweep failed', e);
+    }
+  }
+
+  private async startCleanupTimer(): Promise<void> {
+    const DAY = 24 * 60 * 60 * 1000;
+    // Not on boot: a deploy restarts every service at once and this would run
+    // against a cold database while rooms are still reconnecting.
+    this.cleanupTimer = setInterval(() => this.sweepStaleRooms(), DAY);
+    setTimeout(() => this.sweepStaleRooms(), 5 * 60 * 1000);
+  }
+
+  private async stopCleanupTimer(): Promise<void> {
+    if (this.cleanupTimer) { clearInterval(this.cleanupTimer); this.cleanupTimer = null; }
   }
 
   /**
@@ -325,6 +380,47 @@ export default class RoomsService extends Service {
     await ctx.emit(`${this.name}.player.left`, { clientId, roomId });
     await ctx.emit(`${this.name}.player.kicked`, { clientId, roomId });
     return res;
+  }
+
+  /**
+   * Keep player-less rooms out of the listing.
+   *
+   * A room is supposed to be destroyed when its last player leaves, but any
+   * departure the service never observes (tab closed, process restart) leaks
+   * the row. 35,797 of 38,367 rooms were empty when this was written, and the
+   * lobby pages ten at a time straight off the collection, so the first page
+   * came back almost entirely corpses: 7 of 10, with one joinable game on it.
+   * The client filters what it receives, which cannot recover rooms that were
+   * never in the page. Reported as "had trouble finding a game". Filtering at
+   * query time also means a future leak can never crowd the lobby again.
+   * An explicit players.0 query still wins, so admin can ask for the corpses.
+   *
+   * @private
+   * @param {Context<any>} ctx
+   * @returns {Context<any>}
+   * @memberof RoomsService
+   */
+  private beforeList(ctx: Context<any>): Context<any> {
+    const params: any = ctx.params || {};
+    if (typeof params.query === 'string') {
+      try { params.query = JSON.parse(params.query); } catch { params.query = {}; }
+    }
+    if (!params.query || typeof params.query !== 'object') { params.query = {}; }
+    if (params.query['players.0'] === undefined) {
+      params.query['players.0'] = { $exists: true };
+    }
+    // Newest first, or the lobby is useless. With no sort the collection came
+    // back in natural order, so page 1 held rooms created 113 days ago and a
+    // room made a minute ago landed on page 279 of 279. Nobody browsing ever
+    // saw a fresh game, which is what "created a public room, it never
+    // appeared in the room list" was. Sort on _id, not createdAt: createdAt is
+    // optional on the schema so older rows do not carry it, and an ObjectId is
+    // always present and already monotonic with creation time.
+    if (params.sort === undefined) {
+      params.sort = '-_id';
+    }
+    ctx.params = params;
+    return ctx;
   }
 
   /**
@@ -523,9 +619,8 @@ export default class RoomsService extends Service {
       (json as any).passcode = true;
     }
 
-    // If all players have left. OR the room status is still pending, and the host leaves. Destroy the room.
-    if (!json.players?.length || (json.status === Status.PENDING && !json.players?.includes(json.host))) {
-      // Everyone has left. Destroy the room.
+    // Everyone has left. Destroy the room.
+    if (!json.players?.length) {
       try {
         await ctx.call(`${this.name}.remove`, { id: json._id });
         return;
@@ -533,6 +628,25 @@ export default class RoomsService extends Service {
         this.logger.error(e);
       }
     }
+
+    // The host left but players remain: promote the longest-standing survivor.
+    // Starting, "play again" and kicking are all host-gated, so a room with no
+    // host in it is a room nobody can ever start. This case used to be handled
+    // only for PENDING rooms, and by destroying them, so a host who quit
+    // mid-game (status 'started') left the room hostless: everyone still
+    // sitting in it was stranded the moment that game finished, with no button
+    // to press. 1,141 rooms were in that state when this was written, 61 of
+    // them with players still waiting in one.
+    if (json.players?.length && !json.players.includes(json.host)) {
+      try {
+        const promoted = await this.adapter.updateById(json._id, { $set: { host: json.players[0] } });
+        // Re-enters this handler with a valid host, which emits 'updated' there.
+        return this.entityChanged('updated', promoted, ctx);
+      } catch (e) {
+        this.logger.error(e);
+      }
+    }
+
     ctx.emit(`${this.name}.updated`, json);
   }
 

@@ -1,7 +1,7 @@
 import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 import TurnHandler, { GameState, TurnDataWithState, TurnData } from './turn';
-import { PROBE_BOT_IDS, isProbeBot, updateProfile, Axis } from './solo-probe';
+import { PROBE_BOT_IDS, isProbeBot, updateProfile, judgeAsPersona, Axis } from './solo-probe';
 import { POINTS_WIN, POINTS_PREDICT, REBOOT_COST, pointsTarget } from './economy';
 
 // turn-setup -> playing cards -> selecting winner -> repeat. -> end-game.
@@ -258,6 +258,10 @@ export default class Game extends TurnHandler {
           return this.setGameTimeout(updatedTurn.gameId, (game) =>
             this.handleWinnerSelection(game), updatedGame.roundTime, armedFor);
         case GameState.SELECTING_WINNER:
+          // Bot-judge solo: nobody human is going to press anything, so the
+          // czar bot picks on a short delay. The no-winner timer stays armed
+          // underneath as the safety net, exactly as it is for a human czar.
+          if ((updatedGame as any).soloPlayMode) { this.scheduleBotJudge(updatedTurn.gameId); }
           return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), updatedGame.roundTime, armedFor);
         case GameState.ENEDED:
           return this.setGameTimeout(updatedTurn.gameId, (game) => {
@@ -336,7 +340,15 @@ export default class Game extends TurnHandler {
           selectedCards: {},
           roundTime: room.options.roundTime,
           predictions: {},
-          soloMode: !!(room.options as any)?.soloMode
+          favorites: {},
+          predictionAt: {},
+          favoriteAt: {},
+          soloMode: !!(room.options as any)?.soloMode,
+          // Solo A/B, assigned once at creation so a game never switches
+          // format mid-run. SOLO_PLAY_PCT is the share of solo games that get
+          // the bot-judge format; 0 (the default) means nothing changes for
+          // anyone and every solo game takes the existing human-judges path.
+          soloPlayMode: !!(room.options as any)?.soloMode && this.rollSoloPlayMode()
         });
       })
       .then((game: GameInterface) => {
@@ -386,7 +398,16 @@ export default class Game extends TurnHandler {
     };
 
     await this.broker.emit('games.turn.updated', gameData);
-    return this.broker.call<Room, any>('rooms.update', { id: room._id, status: 'finished' })
+    // Back to 'pending', NOT 'finished'. Nothing anywhere reads 'finished': it
+    // was a write-only terminal state that bricked the room. The game doc gets
+    // reaped shortly after, and the client only offers the lobby (and the
+    // start button) when status is 'pending', so a finished room with people
+    // still in it showed them "setting up round" forever, for a game that no
+    // longer existed and could never be restarted. 1,448 rooms holding 1,615
+    // players were in exactly that state when this was written, and because
+    // the lobby does not filter on status they stayed listed and kept
+    // collecting new arrivals. The game is over, the room is idle: pending.
+    return this.broker.call<Room, any>('rooms.update', { id: room._id, status: 'pending' })
       .then(() => this.logger.info('Game ended', gameData))
       .catch((err) => { this.logger.error(err); });
   }
@@ -400,7 +421,11 @@ export default class Game extends TurnHandler {
     // Target should actually be based on the first user score to get to that.
     const isTargetReached = Object.values(players).some(player => player.score >= pointsTarget(room.options.target));
     // if not enough cards to continue. End game.
-    const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards);
+    // Same hand size the dealer will use next turn, so the check and the deal
+    // cannot disagree. Packing Heat can deal 11, and the prompt that decides
+    // that is not drawn yet, so assume the larger hand.
+    const nextHandSize = (room && (room as any).options && (room as any).options.packingHeat) ? 11 : 10;
+    const hasEnoughCards = this.hasEnoughCards(Object.values(players), game.whiteCards, game.blackCards, nextHandSize);
     if (isTargetReached || !hasEnoughCards) {
       this.endGame(game).catch(err => this.logger.error(`endGame error: ${err.message}`));
       return;
@@ -415,6 +440,32 @@ export default class Game extends TurnHandler {
       .catch(err => {
         this.logger.error(err);
       });
+  }
+
+  /**
+   * Deterministic Fisher-Yates. Same seed always yields the same order, so a
+   * reconnecting client sees the cards where it left them. mulberry32 over a
+   * cheap string hash: this only needs to be stable and unbiased, not secure.
+   */
+  private seededShuffle(items: string[], seed: string): string[] {
+    let h = 1779033703 ^ seed.length;
+    for (let i = 0; i < seed.length; i++) {
+      h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+      h = (h << 13) | (h >>> 19);
+    }
+    let a = h >>> 0;
+    const rnd = () => {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const out = [...items];
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      const tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+    }
+    return out;
   }
 
   private async handleWinnerSelection(game: GameInterface) {
@@ -433,16 +484,39 @@ export default class Game extends TurnHandler {
     const populatedSelectedCards = await this.populatedSelectedCards(selectedCards);
     // Send all cards for everyone to view.
 
+    // Shuffle the order the judge sees, and record it.
+    //
+    // Plays were rendered straight from Object.entries(selectedCards), whose
+    // key order is submission arrival order. So the judge always saw the
+    // fastest submitter first, and position mattered: measured across 135,533
+    // three-play rounds where chance is exactly 33.3%, slot one won 36.63%,
+    // slot two 31.48%, slot three 30.65%. A six point spread bought purely by
+    // submitting quickly, contaminating every preference number in the corpus.
+    //
+    // The shuffle is SEEDED on gameId+turn rather than random, so it is stable
+    // across re-renders, reconnects and every client in the room. An unstable
+    // order would reshuffle the cards under the judge mid-decision.
+    const displayOrder = this.seededShuffle(
+      Object.keys(populatedSelectedCards),
+      `${game._id}:${turnData.turn}`,
+    );
+
     const gameData: TurnDataWithState = {
       gameId: game._id,
       players: Object.values(players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
       roomId: room._id,
       ...turnData,
       selectedCards: populatedSelectedCards,
+      displayOrder,
       winner: null,
       winningCards: [],
       state: GameState.SELECTING_WINNER,
     };
+
+    // Persist it: captureRound runs on the WINNER payload, not this one, and
+    // reads the game document. Emitting it here only reached the client, which
+    // is why the first attempt logged displayOrder on zero rounds.
+    await this.broker.call('games.update', { id: game._id, displayOrder }).catch(() => undefined);
 
     await this.broker.emit('games.turn.updated', gameData);
   }
@@ -457,6 +531,61 @@ export default class Game extends TurnHandler {
    * @memberof Game
    */
   private randoTimeout: { [gameId: string]: NodeJS.Timer } = {};
+
+  /**
+   * Solo A/B roll: does this game use the bot-judge format?
+   *
+   * Reads the env var per call rather than caching it, so the split can be
+   * changed on Railway without a redeploy. Anything unparseable reads as 0,
+   * because the safe failure here is "keep the format everyone already has".
+   */
+  // One judge timer per game, same single-slot shape as Rando's: re-arming
+  // clears the old run so a re-entered state cannot double-judge a round.
+  private judgeTimeout: { [gameId: string]: NodeJS.Timer } = {};
+
+  /**
+   * Bot-judge solo: the czar bot picks a winner after a beat.
+   *
+   * Re-reads the game under the lock and re-checks state and turn before
+   * acting, so a round that already advanced (human left, timer fired first)
+   * is never judged twice. The delay is deliberate: an instant verdict reads
+   * as a bug, and the player needs a moment to see what everyone played.
+   */
+  private scheduleBotJudge(gameId: string) {
+    if (this.judgeTimeout[gameId]) { clearTimeout(this.judgeTimeout[gameId] as any); }
+    this.judgeTimeout[gameId] = setTimeout(
+      () => this.withGameLock(gameId, async () => {
+        try {
+          const game = await this.broker.call<GameInterface, any>('games.get', { id: gameId, populate: ['room'] });
+          if (!game || game.gameState !== GameState.SELECTING_WINNER) { return; }
+          const probe = (game as any).soloProbe;
+          const persona = probe && probe.persona;
+          const czar = game.turnData && game.turnData.czar;
+          if (!persona || !czar || !isProbeBot(czar)) { return; }
+
+          const plays = Object.keys(game.selectedCards || {})
+            .filter(pid => pid !== czar)
+            .map(pid => {
+              const cards = (game.selectedCards as any)[pid] || [];
+              const first = cards[0];
+              const id = typeof first === 'string' ? first : (first && first._id);
+              return { playerId: pid, tags: id ? this.tagsForCard(id) : null };
+            });
+          if (!plays.length) { return; }
+
+          const winner = judgeAsPersona(persona, plays);
+          if (winner) { await this.onWinnerSelected(game, winner, czar); }
+        } catch (err) {
+          this.logger.warn(`bot judge failed (gameId: ${gameId}): ${(err as any).message}`);
+        }
+      }), 4000);
+  }
+
+  private rollSoloPlayMode(): boolean {
+    const raw = parseFloat(process.env.SOLO_PLAY_PCT || '0');
+    const pct = Number.isFinite(raw) ? Math.max(0, Math.min(100, raw)) : 0;
+    return pct > 0 && Math.random() * 100 < pct;
+  }
 
   private scheduleRandoPlay(gameId: string) {
     if (this.randoTimeout[gameId]) {
@@ -532,25 +661,35 @@ export default class Game extends TurnHandler {
     // so that counter has always read 0 for everyone (there was a TODO on it in
     // turn.ts). Keys only, values deliberately emptied: revealing the actual
     // cards mid-round would let players see each other's plays before judging.
-    try {
-      const submittedKeys: { [id: string]: any[] } = {};
-      Object.keys(updatedGame.selectedCards || {}).forEach(id => { submittedKeys[id] = []; });
-      await this.broker.emit('games.turn.updated', {
-        gameId: updatedGame._id,
-        roomId: (updatedGame.room as any)?._id ?? updatedGame.room,
-        players: Object.values(updatedGame.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
-        ...updatedGame.turnData,
-        selectedCards: submittedKeys,
-        winner: null,
-        winningCards: [],
-        state: GameState.PICKING_CARDS,
-        progressOnly: true,
-      });
-    } catch (err) {
-      this.logger.warn(`submit progress broadcast failed: ${err.message}`);
+    // Only while the round is still waiting on someone. On the final submit we
+    // transition to selecting-winner immediately below, and a ping racing that
+    // transition would land after it: the client merges the ping's empty
+    // selectedCards over the real plays, leaving the czar a screen of blank
+    // cards and no way to judge ("no cards showing, cant select a winner").
+    // The bot and Rando timers make this reachable, since they call in with a
+    // game object captured when the timer was scheduled.
+    const everyoneIn = this.hasEveryoneSelected(updatedGame);
+    if (!everyoneIn) {
+      try {
+        const submittedKeys: { [id: string]: any[] } = {};
+        Object.keys(updatedGame.selectedCards || {}).forEach(id => { submittedKeys[id] = []; });
+        await this.broker.emit('games.turn.updated', {
+          gameId: updatedGame._id,
+          roomId: (updatedGame.room as any)?._id ?? updatedGame.room,
+          players: Object.values(updatedGame.players).map(({ _id, score, isCzar }) => ({ _id, score, isCzar })),
+          ...updatedGame.turnData,
+          selectedCards: submittedKeys,
+          winner: null,
+          winningCards: [],
+          state: GameState.PICKING_CARDS,
+          progressOnly: true,
+        });
+      } catch (err) {
+        this.logger.warn(`submit progress broadcast failed: ${err.message}`);
+      }
     }
 
-    if (this.hasEveryoneSelected(updatedGame)) {
+    if (everyoneIn) {
       // CONTRACT: the caller holds this game's lock (bot and Rando timers,
       // the timer callback, the watchdog, and the submit action all do).
       // Taking it again here deadlocked the whole game: the chain is a
@@ -642,13 +781,25 @@ export default class Game extends TurnHandler {
 
     // Store the end state of each round in a collection.
     turns.push(gameData);
-    await this.broker.call('games.update', { id: game._id, turns, players, czarDeliberationMs: deliberationMs, lastPredictions: predictions, predictions: {} });
+    // Favourites move to lastFavorites for capture, exactly as predictions do.
+    // They carry no score: a favourite is worth more unpaid than paid.
+    const favorites: { [p: string]: string } = (game as any).favorites || {};
+    await this.broker.call('games.update', { id: game._id, turns, players, czarDeliberationMs: deliberationMs, lastPredictions: predictions, predictions: {}, lastFavorites: favorites, favorites: {},
+      lastPredictionAt: (game as any).predictionAt || {}, predictionAt: {},
+      lastFavoriteAt: (game as any).favoriteAt || {}, favoriteAt: {} });
 
     // Solo: the czar's verdict is the observation. Fold the winning card's
     // value on the probed axis into the player's taste profile, fire and
     // forget: a failed profile write must never block the round.
+    // CONTRACT: never write a verdict a human did not make. In bot-judge solo
+    // the czar is a bot, so the winner reflects the BOT's persona, not the
+    // player's taste. Recording it would put synthetic preferences in the same
+    // collection as the real ones, indistinguishable at analysis time, which is
+    // the exact failure this file's header was written to prevent. In that mode
+    // the observation is the human's own card choice, recorded separately.
     const probe = (game as any).soloProbe;
-    if ((game as any).soloMode && probe && probe.axis && isProbeBot(winner)) {
+    const botJudged = !!(game as any).soloPlayMode;
+    if ((game as any).soloMode && !botJudged && probe && probe.axis && isProbeBot(winner)) {
       const winnerCardId = probe.botCards && probe.botCards[winner];
       // A control-round win (the seeded dud took the crown) is an attention
       // flag, not a taste observation; it must never move the profile.

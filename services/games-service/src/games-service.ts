@@ -10,6 +10,8 @@ import * as signalCardsPayload from './data/signal-cards-v1.json';
 import { updateProfile, emptyProfile, isProbeBot, Axis, CardTags } from './solo-probe';
 import { POINTS_SECOND, POINTS_THIRD, REBOOT_COST, REASON_TAGS } from './economy';
 import { signalRegistry } from './signal-registry';
+// Authored (non-CAH) card ids, for per-round provenance.
+import * as resolvedSignal from './data/signal-tags-resolved.json';
 
 export default class GameService extends Service {
 
@@ -76,7 +78,11 @@ export default class GameService extends Service {
             params: {
               clientId: 'string',
               roomId: 'string',
-              cards: { type: 'array', items: 'string' }
+              cards: { type: 'array', items: 'string' },
+              // Locale of the person making the choice, not of the room. A
+              // table can be mixed, and where a mixed room diverges is the
+              // cultural signal; a single room-level locale would erase it.
+              locale: { type: 'string', optional: true, max: 8 }
             },
             handler: this.submitCards
           },
@@ -102,6 +108,13 @@ export default class GameService extends Service {
               predictedId: 'string'
             },
             handler: this.predictWinner
+          },
+          favorite: {
+            params: {
+              roomId: 'string',
+              favoriteId: 'string'
+            },
+            handler: this.favoriteSubmission
           },
           rank: {
             params: {
@@ -164,10 +177,22 @@ export default class GameService extends Service {
           },
           'promo-event': {
             params: {
-              type: { type: 'enum', values: ['impression', 'click'] },
+              // impression = the page rendered the element (fires on mount,
+              //   so for anything below the fold it counts page loads, not eyes)
+              // view       = the element actually entered the viewport
+              // click      = self-explanatory
+              // dwell      = time spent on the page, carries ms
+              type: { type: 'enum', values: ['impression', 'click', 'view', 'dwell'] },
               property: { type: 'string', max: 20 },
               variant: { type: 'string', max: 20 },
-              placement: { type: 'string', max: 20 }
+              placement: { type: 'string', max: 20 },
+              // Only sent with 'dwell'. Capped at 2h: anything longer is a tab
+              // left open overnight, not a session, and would wreck the mean.
+              ms: { type: 'number', optional: true, convert: true, integer: true, min: 0, max: 7200000 },
+              // Random per-visit id, also appended to the outbound promo URL
+              // as caf_sid. Lets a click here be joined to a game started on
+              // the destination, so cross-promo stops being judged on CTR.
+              sid: { type: 'string', optional: true, max: 40 }
             },
             handler: this.promoEvent
           },
@@ -185,6 +210,11 @@ export default class GameService extends Service {
           },
           'tot-response': {
             params: {
+              // Which modality the choice was made in. Text and visual items
+              // are interleaved in the same session on purpose, so this is
+              // what makes a within-person cross-modality comparison possible
+              // rather than two separate populations.
+              modality: { type: 'enum', values: ['text', 'visual'], optional: true },
               itemId: { type: 'string', max: 40 },
               cat: { type: 'string', max: 30 },
               choice: { type: 'enum', values: ['a', 'b'] },
@@ -350,10 +380,43 @@ export default class GameService extends Service {
 
       // Hands (card ids) come from the game doc — one read per round
       const game: any = await this.broker.call('games.get', { id: turn.gameId }).catch(() => null);
+
+      // `hands` is the hand AFTER the played card was removed, so a ten-card
+      // hand reads as nine and the played card is silently absent. It is kept
+      // for continuity with every analysis written before this change.
+      //
+      // `choiceSets` is the thing that should actually be used: the full set a
+      // player was choosing FROM, resolved here at capture instead of being
+      // reconstructed by each consumer at read time. Anyone who forgets that
+      // reconstruction gets a biased answer and no error, which is the most
+      // expensive trap in this collection.
       const hands = {};
+      const choiceSets = {};
       if (game?.players) {
+        const playedByPlayer: { [pid: string]: string[] } = {};
+        Object.entries(turn.selectedCards ?? {}).forEach(([pid, cards]: [string, any]) => {
+          playedByPlayer[pid] = (cards ?? []).filter(Boolean).map((c: any) => String(c._id ?? c.id));
+        });
+        const snaps = (game as any).choiceSnapshots || {};
         Object.values(game.players).forEach((p: any) => {
-          hands[hash(p._id)] = p.cards ?? [];
+          const h = hash(p._id);
+          hands[h] = p.cards ?? [];
+          // Prefer the snapshot taken at submit time. The reconstruction below
+          // is the fallback for rounds where nobody submitted (the czar, a
+          // timed-out player) and for anything mid-deploy.
+          const snap = snaps[p._id];
+          if (snap && Array.isArray(snap.fullHand)) {
+            choiceSets[h] = {
+              held: (snap.held ?? []).map(String),
+              played: (snap.played ?? []).map(String),
+              fullHand: snap.fullHand.map(String),
+              atSubmit: true,
+            };
+            return;
+          }
+          const held: string[] = (p.cards ?? []).map((c: any) => String(c?._id ?? c?.id ?? c));
+          const played: string[] = playedByPlayer[p._id] ?? [];
+          choiceSets[h] = { held, played, fullHand: [...held, ...played], atSubmit: false };
         });
       }
       // Submission latency per player (ms from turn start to card submit)
@@ -365,8 +428,21 @@ export default class GameService extends Service {
         });
       }
 
+      // Present but silent. Without this, a player who ran out of time and a
+      // player who never had the round are the same absence, and the czar is a
+      // third kind of absence on top. Any per-player response-rate measure was
+      // wrong by however many of these there were.
+      const submittedIds = new Set(Object.keys(turn.selectedCards ?? {}));
+      const czarId = turn.czar ? String(turn.czar) : null;
+      const nonSubmitters = (turn.players ?? [])
+        .map((pl: any) => String(pl && (pl._id ?? pl.id ?? pl)))
+        .filter((pid: string) => pid && pid !== czarId && !submittedIds.has(pid))
+        .map((pid: string) => hash(pid));
+
       const row = {
         v: 1,
+        // Players who were dealt into the round and did not submit.
+        timedOut: nonSubmitters,
         ts: Date.now(),
         gameId: turn.gameId,
         roomId: String(turn.roomId ?? ''),
@@ -388,8 +464,52 @@ export default class GameService extends Service {
           }),
         })),
         winner: Array.isArray(turn.winner) ? turn.winner.map(hash) : hash(turn.winner),
+        // The judge, recorded rather than inferred.
+        //
+        // Until now the czar was never written, and every downstream analysis
+        // had to derive it as "the one player in players[] who is absent from
+        // submissions". That resolves uniquely in 96.6% of rounds and silently
+        // fails on the rest (timeouts, disconnects), and one change to how a
+        // disconnect is recorded would quietly break reconstructability for
+        // the entire back catalogue. The prediction benchmark is built on
+        // knowing who judged, so it gets its own field.
+        czar: turn.czar ? hash(turn.czar) : null,
+        // The order the judge actually saw, hashed to match player ids. Without
+        // it, position effects are invisible: plays used to render in
+        // submission-arrival order and the first slot won 36.63% against a
+        // 33.3% baseline, so speed was buying wins. Now the order is seeded
+        // server-side and recorded, which both removes the bias and makes it
+        // auditable after the fact.
+        displayOrder: Array.isArray(game && game.displayOrder) ? game.displayOrder.map(hash) : null,
+        // Card provenance, recorded rather than looked up.
+        //
+        // 417 of the 2,985 live cards are ours; the other 2,568 are CAH under
+        // CC BY-NC-SA. Those two halves can be licensed on completely
+        // different terms (ours with text, CAH behaviour-only), so the split
+        // has to be a fact on the round, not a join against a build artifact
+        // that can drift. `authoredIds` is the resolved signal set.
+        provenance: (() => {
+          const isAuthored = (id: string) => !!id && !!(resolvedSignal as any)[id];
+          const played: string[] = [];
+          Object.values(turn.selectedCards ?? {}).forEach((cards: any) =>
+            (cards ?? []).forEach((c: any) => { if (c && (c._id || c.id)) { played.push(String(c._id || c.id)); } }));
+          return {
+            prompt: turn.blackCard && turn.blackCard._id ? (isAuthored(String(turn.blackCard._id)) ? 'authored' : 'cah') : null,
+            playedAuthored: played.filter(isAuthored).length,
+            playedTotal: played.length,
+          };
+        })(),
         players: (turn.players ?? []).map((p: any) => ({ id: hash(p._id), score: p.score })),
         hands,
+        choiceSets,
+        // Per-player locale. Mixed rooms are the interesting case, so this is
+        // a map rather than one value on the round.
+        locales: (() => {
+          const src = (game && game.locales) || {};
+          const out = {};
+          Object.entries(src).forEach(([pid, loc]: [string, any]) => { out[hash(pid)] = loc; });
+          return out;
+        })(),
         context: {
           roundTime: game?.roundTime ?? null,
           playerCount: (turn.players ?? []).length,
@@ -417,10 +537,38 @@ export default class GameService extends Service {
           const preds = (game as any)?.lastPredictions;
           if (preds && Object.keys(preds).length && turn.winner) {
             const w = Array.isArray(turn.winner) ? turn.winner[0] : turn.winner;
+            // Time from the cards being revealed to the tap. A snap call and a
+            // considered one are different observations and were previously
+            // indistinguishable, which made every "humans predict at X%" claim
+            // an average over two different behaviours.
+            const predAt = (game as any)?.lastPredictionAt || {};
             sig.predictions = Object.entries(preds).map(([predictor, predicted]: [string, any]) => ({
               predictor: hash(predictor),
               predicted: hash(predicted),
               correct: predicted === w,
+              ms: typeof predAt[predictor] === 'number' ? predAt[predictor] : null,
+            }));
+          }
+
+          // Own-favourite votes. Kept in a separate field from predictions on
+          // purpose: pooling "what I like" with "what I think wins" would make
+          // both unusable. `self` marks a vote for the voter's own submission,
+          // `agreedWithJudge` marks agreement with the verdict on the same item.
+          const favs = (game as any)?.lastFavorites;
+          if (favs && Object.keys(favs).length) {
+            const w = turn.winner ? (Array.isArray(turn.winner) ? turn.winner[0] : turn.winner) : null;
+            const preds2 = ((game as any)?.lastPredictions) || {};
+            const favAt = (game as any)?.lastFavoriteAt || {};
+            sig.favorites = Object.entries(favs).map(([voter, favorite]: [string, any]) => ({
+              voter: hash(voter),
+              favorite: hash(favorite),
+              ms: typeof favAt[voter] === 'number' ? favAt[voter] : null,
+              self: favorite === voter,
+              agreedWithJudge: w ? favorite === w : null,
+              // Same person, same item, both questions answered. Non-null only
+              // when they also predicted, which is where the conformity gap is
+              // measurable rather than inferred.
+              matchedOwnPrediction: voter in preds2 ? preds2[voter] === favorite : null,
             }));
           }
 
@@ -428,7 +576,25 @@ export default class GameService extends Service {
           if ((game as any)?.soloMode && probe && probe.axis) {
             const winners = new Set(Array.isArray(turn.winner) ? turn.winner : [turn.winner]);
             sig.solo = {
-              judgedBy: 'human',
+              // The single most important field for anyone analysing this
+              // collection later. A bot-judged round's winner is NOT a human
+              // preference and must never be pooled with the human-judged
+              // ones; in that mode the interesting datum is what the human
+              // PLAYED against a stated persona, which is a different
+              // measurement (can they model someone else's taste) and lives
+              // in `persona` and `humanPlay` below.
+              judgedBy: (game as any)?.soloPlayMode ? 'bot' : 'human',
+              ...((game as any)?.soloPlayMode && probe.persona ? {
+                persona: probe.persona,
+                humanPlay: (() => {
+                  const hid = probe.targetPlayer;
+                  const played = hid && (game as any)?.selectedCards
+                    ? ((game as any).selectedCards[hid] || []) : [];
+                  const first = played[0];
+                  const id = typeof first === 'string' ? first : (first && first._id);
+                  return id ? { id, tags: this.gameService.tagsForCard(id), won: winners.has(hid) } : null;
+                })(),
+              } : {}),
               contrastAxis: probe.axis,
               contrastScore: probe.score,
               authoredProbe: !!probe.authored,
@@ -1139,7 +1305,7 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async totResponse(ctx: Context<{ itemId: string; cat: string; choice: 'a' | 'b'; sig?: string; latencyMs?: number; locale?: string }, { user: { uid: string } }>) {
+  private async totResponse(ctx: Context<{ itemId: string; cat: string; choice: 'a' | 'b'; sig?: string; latencyMs?: number; locale?: string; modality?: string }, { user: { uid: string } }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     const salt = process.env.ANALYTICS_SALT;
     if (!db || !salt) {
@@ -1160,8 +1326,12 @@ export default class GameService extends Service {
       choice: ctx.params.choice,
       sig: ctx.params.sig || null,
       latencyMs: ctx.params.latencyMs || null,
-      bank: 'tot-v1',
+      // Derived from the id rather than hardcoded: the two banks are
+      // interleaved into one surface, so a fixed value would file every
+      // visual answer under the text bank and make them indistinguishable.
+      bank: String(ctx.params.itemId).startsWith('vis-') ? 'vis-v1' : 'tot-v1',
       locale: (ctx.params.locale || '').slice(0, 8) || null,
+      modality: ctx.params.modality === 'visual' ? 'visual' : 'text',
     });
     return { ok: true, split: await this.choiceSplit(db, 'tot_responses', { itemId: ctx.params.itemId }) };
   }
@@ -1639,18 +1809,27 @@ export default class GameService extends Service {
    * @private
    * @memberof GameService
    */
-  private async promoEvent(ctx: Context<{ type: string; property: string; variant: string; placement: string }>) {
+  private async promoEvent(ctx: Context<{ type: string; property: string; variant: string; placement: string; ms?: number; sid?: string }>) {
     const db = (this.adapter as any) && (this.adapter as any).db;
     if (!db) {
       throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB');
     }
-    await db.collection('promo_events').insertOne({
+    const doc: any = {
       ts: Date.now(),
       type: ctx.params.type,
       property: ctx.params.property,
       variant: ctx.params.variant,
       placement: ctx.params.placement,
-    });
+    };
+    // Only on dwell, so the field stays absent (not null) on every other row
+    // and `{ ms: { $exists: true } }` is a clean filter.
+    if (ctx.params.type === 'dwell' && typeof ctx.params.ms === 'number') {
+      doc.ms = ctx.params.ms;
+    }
+    if (ctx.params.sid) {
+      doc.sid = ctx.params.sid;
+    }
+    await db.collection('promo_events').insertOne(doc);
     return { ok: true };
   }
 
@@ -1849,6 +2028,8 @@ export default class GameService extends Service {
     if (game.predictions && uid in game.predictions) {
       throw new Errors.MoleculerError('You already locked a prediction', 400, 'ALREADY_PREDICTED');
     }
+    // Still the SELECTING_WINNER transition at this point in the round.
+    const revealedAt = (game as any).stateChangedAt || null;
 
     // Dotted path: two players predicting simultaneously must not clobber
     // each other with a whole-object write.
@@ -1857,9 +2038,65 @@ export default class GameService extends Service {
     const { ObjectID } = require('mongodb');
     await db.collection('games').updateOne(
       { _id: new ObjectID(String(game._id)) },
-      { $set: { [`predictions.${uid}`]: predictedId } },
+      { $set: { [`predictions.${uid}`]: predictedId, [`predictionAt.${uid}`]: revealedAt ? Math.max(0, Date.now() - revealedAt) : null } },
     );
     return { message: 'Prediction locked' };
+  }
+
+  /**
+   * Own-favourite vote. Distinct from a prediction and never merged with one.
+   *
+   *   predict  = "which one do I think the judge will crown"   theory of mind
+   *   favorite = "which one do I actually like best"            own taste
+   *
+   * Only the verdict has ever been recorded, so a five-player round produced
+   * one preference label and threw away four. This records the other four.
+   *
+   * Deliberately unscored. Predictions pay points, so they are the strategic
+   * answer; a favourite pays nothing, so there is no reason to vote anything
+   * but honestly. That difference is the point. Holding both answers from the
+   * same person on the same item measures the gap between what someone likes
+   * and what they think the room rewards, which is not recoverable from
+   * verdicts alone and is not in any corpus we know of.
+   */
+  private async favoriteSubmission(ctx: Context<{ roomId: string; favoriteId: string }, { user: { uid: string } }>) {
+    const { roomId, favoriteId } = ctx.params;
+    const uid = ctx.meta.user.uid;
+    const game: any = await this.getGameMatchingRoom(ctx, roomId);
+
+    if (game.gameState !== 'selectingWinner') {
+      throw new Errors.MoleculerError('Votes are open while the Czar deliberates', 400, 'NOT_DELIBERATING');
+    }
+    if (game.turnData?.czar === uid) {
+      // The czar expresses their favourite by crowning it. A second vote from
+      // them would be the same datum recorded twice under two names.
+      throw new Errors.MoleculerError('The Czar votes by crowning', 400, 'CZAR_CANNOT_VOTE');
+    }
+    if (!(favoriteId in (game.selectedCards || {}))) {
+      throw new Errors.MoleculerError('That submission is not on the table', 400, 'BAD_FAVORITE');
+    }
+    if (game.favorites && uid in game.favorites) {
+      throw new Errors.MoleculerError('You already voted', 400, 'ALREADY_VOTED');
+    }
+    const revealedAt = (game as any).stateChangedAt || null;
+    // Your own play is not eligible. Voting for the card you just played is
+    // self-report, not a preference between alternatives, and it ran at 40.2%
+    // of all votes, well above the ~33% you would get by chance in a
+    // three-option round. An earlier version allowed it on the theory that
+    // hiding it would leak which submission was yours; that was wrong, since
+    // the voter is the one person who already knows. Historical rows keep the
+    // `self` flag so the contaminated ones stay identifiable.
+    if (favoriteId === uid) {
+      throw new Errors.MoleculerError('Pick someone else\'s', 400, 'CANNOT_FAVORITE_OWN');
+    }
+    const db = (this.adapter as any)?.db;
+    if (!db) { throw new Errors.MoleculerError('Storage unavailable', 500, 'NO_DB'); }
+    const { ObjectID } = require('mongodb');
+    await db.collection('games').updateOne(
+      { _id: new ObjectID(String(game._id)) },
+      { $set: { [`favorites.${uid}`]: favoriteId, [`favoriteAt.${uid}`]: revealedAt ? Math.max(0, Date.now() - revealedAt) : null } },
+    );
+    return { message: 'Vote locked' };
   }
 
   /**
@@ -1934,7 +2171,18 @@ export default class GameService extends Service {
       .filter((h: any) => h && h.ts < cutoff && h.winnerCard && !h.retested)
       .sort((a: any, b: any) => a.ts - b.ts)[0] || null;
 
-    return { mean: doc.mean || {}, n: doc.n || {}, retestCandidate };
+    // Cards this player was served in their last dozen rounds, so the probe
+    // engine can avoid repeating itself at them. Deliberately short: the
+    // retest path needs old pairs to stay re-servable, and it reads
+    // probeHistory directly rather than going through this list.
+    const RECENT_SERVES = 12;
+    const recent: string[] = [];
+    (doc.probeHistory || [])
+      .slice(-RECENT_SERVES)
+      .forEach((h: any) => (h && Array.isArray(h.cards) ? h.cards : [])
+        .forEach((id: string) => { if (id && recent.indexOf(id) === -1) { recent.push(id); } }));
+
+    return { mean: doc.mean || {}, n: doc.n || {}, retestCandidate, recent };
   }
 
   /**
@@ -2069,8 +2317,8 @@ export default class GameService extends Service {
     return this.gameService.rebootPlayerHand(game, uid);
   }
 
-  private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[] }, any>) {
-    const { roomId, cards, clientId } = ctx.params;
+  private async submitCards(ctx: Context<{ clientId: string; roomId: string; cards: string[]; locale?: string }, any>) {
+    const { roomId, cards, clientId, locale } = ctx.params;
     if (clientId !== ctx.meta.user.uid) {
       return Promise.reject(new Errors.MoleculerError('You cannot submit a card for another user.', 401))
     }
@@ -2078,6 +2326,21 @@ export default class GameService extends Service {
     // Under the game lock: onHandSubmitted's everyone-selected transition
     // expects the caller to hold it (see the contract note there).
     const game: any = await this.getGameMatchingRoom(ctx, roomId);
+
+    // Stamp the player's locale on the game doc, fire and forget. A dotted
+    // path so two players submitting at once cannot clobber each other, and a
+    // failure here must never stop someone playing their card.
+    if (locale) {
+      const db = (this.adapter as any)?.db;
+      if (db) {
+        const { ObjectID } = require('mongodb');
+        db.collection('games').updateOne(
+          { _id: new ObjectID(String(game._id)) },
+          { $set: { [`locales.${clientId}`]: String(locale).slice(0, 8) } },
+        ).catch(() => undefined);
+      }
+    }
+
     await this.gameService.withGameLock(String(game._id), () =>
       this.gameService.onHandSubmitted(game, clientId, cards));
     return { message: 'Cards successfully submitted' };

@@ -15,6 +15,26 @@
  *
  *   - No synthetic verdict is ever written. The corpus stays clean by
  *     construction rather than by remembering to filter.
+ *
+ * ── Amendment: bot-judge solo (flag-gated, see pickJudgePersona below) ─────
+ *
+ * The above still holds for the default mode, and the no-synthetic-verdict
+ * rule holds for BOTH modes. But the reasoning above got one thing wrong: it
+ * optimised the round for signal quality and never asked whether the player
+ * was enjoying it. In this mode the human never plays a card, and picking the
+ * funny card is the entire game. Solo games end at a median of 3 rounds.
+ *
+ * We fixed card repetition first, on the theory that seeing the same jokes was
+ * why people quit. Variety improved 20x and retention moved from 3.37 rounds
+ * to 3.43, so that theory was wrong.
+ *
+ * The bot-judge mode inverts the round: the human gets a real hand and plays,
+ * a bot judges with its taste stated up front, and the HUMAN'S PLAY is the
+ * observation. The bot's verdict is never recorded as preference data, which
+ * keeps the guarantee above intact (see the botJudged guard in game.ts).
+ * A choice from a known hand against a named target is also strictly richer
+ * than a ranking: it measures whether someone can model another person's
+ * taste, not just report their own.
  *   - Every round is a real human judgment over a choice set WE controlled,
  *     which is strictly better evidence than a random hand. A table deals what
  *     it happens to deal; here we choose what to ask.
@@ -127,6 +147,16 @@ export function contrastScore(a: CardTags, b: CardTags, axis: Axis): number {
   return separation * separation - meanConfound;
 }
 
+/** Fisher-Yates on a copy. Used to rotate the probe search window. */
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = out[i]; out[i] = out[j]; out[j] = t;
+  }
+  return out;
+}
+
 export interface Probe {
   axis: Axis;
   cards: TaggedCard[];   // what the bots will play, in order
@@ -147,39 +177,101 @@ export function selectProbe(
   profile: TasteProfile,
   botCount = 2,
   axis: Axis = nextAxis(profile),
+  exclude: Set<string> = new Set(),
 ): Probe | null {
   const usable = pool.filter((c) => c.tags && c.tags[axis] != null);
   if (usable.length < botCount) return null;
+
+  // Skip what this player has seen lately, but never at the cost of returning
+  // nothing: if the exclusion empties the pool, ignore it for this round.
+  const fresh = usable.filter((c) => !exclude.has(c.id));
+  const field = fresh.length >= botCount ? fresh : usable;
 
   // Authored probes for this axis first, then the rest, so the search
   // prioritises interpretable pairs without excluding the deck.
   const onAxis = (c: TaggedCard) =>
     c.tags.cls === 'probe' && (c.tags.measuresPrimary || '').startsWith(axis);
-  const ranked = [...usable].sort((a, b) => Number(onAxis(b)) - Number(onAxis(a)));
 
-  // Cap the search: the pool is ~2,800 cards and an exhaustive pairwise pass
+  // Cap the search: the pool is ~2,900 cards and an exhaustive pairwise pass
   // runs every round of every solo game.
-  const head = ranked.slice(0, 240);
+  //
+  // The window is filled by sampling, not by taking a fixed prefix. Slicing a
+  // stably-sorted list meant the same ~240 cards were the only ones ever
+  // considered, so the rest of the deck could not appear no matter how the
+  // pair was chosen downstream: 2,900 cards in the pool and 186 reachable.
+  // Authored probes still go in first, they are just drawn in a different
+  // order each round, and the deck cards behind them rotate.
+  const SEARCH_WINDOW = 240;
+  const authored = shuffled(field.filter(onAxis));
+  const head = authored.slice(0, SEARCH_WINDOW);
+  if (head.length < SEARCH_WINDOW) {
+    const rest = shuffled(field.filter((c) => !onAxis(c)));
+    head.push(...rest.slice(0, SEARCH_WINDOW - head.length));
+  }
 
-  let best: { a: TaggedCard; b: TaggedCard; s: number } | null = null;
+  // Keep the top K pairs rather than the single argmax, then sample one.
+  //
+  // This used to return the highest-contrast pair outright, with no randomness
+  // anywhere in the path. That made the whole function deterministic per axis:
+  // the same two cards came back for every player, in every game, every time
+  // that axis came up. With only a handful of axes, solo could only ever show
+  // about a dozen distinct cards. Measured over 923 games: 249 distinct cards
+  // total, the top 10 accounting for 83.8% of everything played, and a single
+  // card served 1,087 times. Players saw the same joke by round two and left
+  // (26% quit after round one, half gone by round three).
+  //
+  // Sampling from the top of the ranking keeps contrast high, so the round is
+  // still a clean read on the axis, while making the run different per player.
+  const TOP_K = 50;
+  const top: { a: TaggedCard; b: TaggedCard; s: number }[] = [];
+  let worstKept = -Infinity;
   for (let i = 0; i < head.length; i++) {
     for (let j = i + 1; j < head.length; j++) {
       const s = contrastScore(head[i].tags, head[j].tags, axis);
-      if (!best || s > best.s) best = { a: head[i], b: head[j], s };
+      if (top.length < TOP_K) {
+        top.push({ a: head[i], b: head[j], s });
+        if (top.length === TOP_K) {
+          top.sort((x, y) => y.s - x.s);
+          worstKept = top[TOP_K - 1].s;
+        }
+      } else if (s > worstKept) {
+        top[TOP_K - 1] = { a: head[i], b: head[j], s };
+        top.sort((x, y) => y.s - x.s);
+        worstKept = top[TOP_K - 1].s;
+      }
     }
   }
-  if (!best) return null;
+  if (!top.length) return null;
+  top.sort((x, y) => y.s - x.s);
+
+  // Weight by contrast so the best pairs still come up most often, shifted so
+  // the weakest kept pair keeps a non-zero chance (scores can be negative).
+  const floor = top[top.length - 1].s;
+  const weights = top.map((p) => p.s - floor + 0.05);
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  let r = Math.random() * total;
+  let best = top[0];
+  for (let i = 0; i < top.length; i++) {
+    r -= weights[i];
+    if (r <= 0) { best = top[i]; break; }
+  }
 
   const cards = [best.a, best.b];
   // More than two bots: fill the remaining seats with the widest spread still
   // available on this axis, so the extra seats add range instead of noise.
+  // Sampled from the widest handful for the same reason as the pair above: a
+  // hard argmax here put the identical third card in every game.
   if (botCount > 2) {
     const chosen = new Set(cards.map((c) => c.id));
-    const rest = usable
+    const rest = field
       .filter((c) => !chosen.has(c.id))
-      .sort((x, y) => Math.abs((y.tags[axis] as number) - (best!.a.tags[axis] as number))
-                    - Math.abs((x.tags[axis] as number) - (best!.a.tags[axis] as number)));
-    cards.push(...rest.slice(0, botCount - 2));
+      .sort((x, y) => Math.abs((y.tags[axis] as number) - (best.a.tags[axis] as number))
+                    - Math.abs((x.tags[axis] as number) - (best.a.tags[axis] as number)));
+    const needed = botCount - 2;
+    const widest = rest.slice(0, Math.max(needed, Math.min(rest.length, needed * 6)));
+    for (let n = 0; n < needed && widest.length; n++) {
+      cards.push(widest.splice(Math.floor(Math.random() * widest.length), 1)[0]);
+    }
   }
 
   return {
@@ -241,4 +333,71 @@ export function describeRound(probe: Probe, winnerId: string, decisionMs?: numbe
     options: probe.cards.map((c) => ({ id: c.id, tags: c.tags, won: c.id === winnerId })),
     decisionMs,
   };
+}
+
+// ── Bot-judge solo ("you play, a bot judges") ───────────────────────────────
+//
+// The original solo made the human the czar every round: three bots play, you
+// pick a winner, repeat. Variety was broken and we fixed it, and retention did
+// not move at all (3.37 rounds before, 3.43 after, on a 20x improvement in
+// card variety). So repetition was not why people leave.
+//
+// The likelier reason is structural: the fun of this game is choosing the
+// funny card, and the old solo gave that job to the bots and left the human
+// doing admin. Half the games now invert it. You get a real hand, a bot judges
+// with its taste stated up front, and your pick is the observation.
+//
+// That is also better data. Judging ranks two cards someone else chose;
+// playing is a discrete choice from a known choice set against a named target,
+// which measures whether you can model another person's taste rather than just
+// your own. That is the read the data product actually sells.
+
+export interface JudgePersona {
+  axis: Axis;
+  /** +1 = this judge rewards the high end of the axis, -1 = the low end. */
+  direction: 1 | -1;
+  /** Shown to the player, so the choice is against a known target. */
+  label: string;
+}
+
+const PERSONA_LABELS: { [K in Axis]: { high: string; low: string } } = {
+  heat: { high: 'goes for the meanest option', low: 'prefers to keep it gentle' },
+  mode: { high: 'loves the absurd', low: 'likes it grounded and real' },
+  register: { high: 'enjoys a bit of class', low: 'prefers it crude' },
+  sincerity: { high: 'takes things at face value', low: 'lives on irony' },
+};
+
+/** Pick a judge persona for a round. Rotates by turn so a run varies. */
+export function pickJudgePersona(turn: number, rng: () => number = Math.random): JudgePersona {
+  const axis = AXES[Math.abs(turn) % AXES.length];
+  const direction: 1 | -1 = rng() < 0.5 ? -1 : 1;
+  return {
+    axis,
+    direction,
+    label: direction > 0 ? PERSONA_LABELS[axis].high : PERSONA_LABELS[axis].low,
+  };
+}
+
+/**
+ * Judge submitted plays as the persona would.
+ *
+ * Scores each play by its value on the persona's axis, signed by direction.
+ * Untagged cards score at the midpoint rather than losing by default, so an
+ * untagged human card can still win: the alternative is a judge that only ever
+ * rewards tagged cards, which would quietly bias every observation collected.
+ * Ties break randomly so the same hand does not always produce the same winner.
+ */
+export function judgeAsPersona(
+  persona: JudgePersona,
+  plays: Array<{ playerId: string; tags: CardTags | null }>,
+  rng: () => number = Math.random,
+): string | null {
+  if (!plays.length) return null;
+  const scored = plays.map((p) => {
+    const v = p.tags ? p.tags[persona.axis] : null;
+    const base = v == null ? 0 : (v as number) * persona.direction;
+    return { playerId: p.playerId, score: base + rng() * 0.01 };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].playerId;
 }
