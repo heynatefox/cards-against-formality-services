@@ -2,7 +2,7 @@ import { ServiceBroker, LoggerInstance } from 'moleculer';
 
 import TurnHandler, { GameState, TurnDataWithState, TurnData } from './turn';
 import { PROBE_BOT_IDS, isProbeBot, updateProfile, judgeAsPersona, Axis } from './solo-probe';
-import { POINTS_WIN, POINTS_PREDICT, REBOOT_COST, pointsTarget } from './economy';
+import { POINTS_WIN, POINTS_PREDICT, REBOOT_COST, pointsTarget, effectiveRoundSecs } from './economy';
 
 // turn-setup -> playing cards -> selecting winner -> repeat. -> end-game.
 /**
@@ -178,7 +178,7 @@ export default class Game extends TurnHandler {
       // has genuinely passed.
       const stateAge = Date.now() - ((game as any).stateChangedAt || 0);
       const phase = String((game as any).gameState || '');
-      const phaseSecs = phase === GameState.TURN_SETUP ? 10 : ((game as any).roundTime || 60);
+      const phaseSecs = phase === GameState.TURN_SETUP ? 10 : effectiveRoundSecs((game as any).roundTime || 60, (game as any).prevTurnData);
       if (stateAge < phaseSecs * 1000 + GRACE_MS) {
         // Healthy game, dead timer (fresh boot). Re-arm quietly for the time
         // it has left instead of replaying the announcement.
@@ -256,13 +256,13 @@ export default class Game extends TurnHandler {
           this.scheduleRandoPlay(updatedTurn.gameId);
           if ((updatedGame as any).soloMode) { this.scheduleProbePlay(updatedTurn.gameId); }
           return this.setGameTimeout(updatedTurn.gameId, (game) =>
-            this.handleWinnerSelection(game), updatedGame.roundTime, armedFor);
+            this.handleWinnerSelection(game), effectiveRoundSecs(updatedGame.roundTime, updatedTurn), armedFor);
         case GameState.SELECTING_WINNER:
           // Bot-judge solo: nobody human is going to press anything, so the
           // czar bot picks on a short delay. The no-winner timer stays armed
           // underneath as the safety net, exactly as it is for a human czar.
           if ((updatedGame as any).soloPlayMode) { this.scheduleBotJudge(updatedTurn.gameId); }
-          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), updatedGame.roundTime, armedFor);
+          return this.setGameTimeout(updatedTurn.gameId, (game) => this.handleNoWinner(game, 'The Czar did not pick a winner! They have failed us all...'), effectiveRoundSecs(updatedGame.roundTime, updatedTurn), armedFor);
         case GameState.ENEDED:
           return this.setGameTimeout(updatedTurn.gameId, (game) => {
             // kick everyone out and end the game;
